@@ -5,7 +5,7 @@ export async function getNearbyHealthFacilities(lat, lng, radius = 5, type = "do
     const apiKey = process.env.GEOAPIFY_API_KEY;
     if (!apiKey) throw new Error("Geoapify API Key not found");
 
-    const category = type === "hospitals" ? "healthcare.hospital" : "healthcare.clinic_or_doctor";
+    const category = type === "hospitals" ? "healthcare.hospital" : "healthcare.clinic_or_praxis";
     // Geoapify uses meters for radius
     const url = `https://api.geoapify.com/v2/places?categories=${category}&filter=circle:${lng},${lat},${radius * 1000}&bias=proximity:${lng},${lat}&limit=10&apiKey=${apiKey}`;
 

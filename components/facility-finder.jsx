@@ -65,8 +65,18 @@ export function FacilityFinder() {
       const response = await fetch(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
           searchQuery
-        )}&limit=1`
+        )}&limit=1`,
+        {
+          headers: {
+            'Accept-Language': 'en-US,en;q=0.9',
+          }
+        }
       );
+
+      if (!response.ok) {
+        throw new Error(`Location search failed with status: ${response.status}`);
+      }
+
       const data = await response.json();
 
       if (data && data.length > 0) {
@@ -76,7 +86,7 @@ export function FacilityFinder() {
         setError("Location not found. Please try a different area name.");
       }
     } catch (err) {
-      console.error(err);
+      console.error("Search error:", err);
       setError("Failed to search location. Please try again.");
     } finally {
       setLoading(false);
@@ -86,44 +96,106 @@ export function FacilityFinder() {
   const fetchFacilities = async (lat, lon) => {
     try {
       // Reverse geocode to get area name
-      const geoResponse = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
-      const geoData = await geoResponse.json();
-      const area = geoData.address.suburb || geoData.address.neighbourhood || geoData.address.city || "Your Area";
+      const geoResponse = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`,
+        {
+          headers: {
+            'Accept-Language': 'en-US,en;q=0.9',
+          }
+        }
+      );
+      
+      let area = "Your Area";
+      if (geoResponse.ok) {
+        const geoData = await geoResponse.json();
+        if (geoData && geoData.address) {
+          area = geoData.address.suburb || 
+                 geoData.address.neighbourhood || 
+                 geoData.address.village ||
+                 geoData.address.city_district ||
+                 geoData.address.city || 
+                 "Your Area";
+        }
+      }
       setLocationName(area);
 
       const query = `
-        [out:json];
+        [out:json][timeout:25];
         (
-          node["amenity"="hospital"](around:5000,${lat},${lon});
-          node["amenity"="clinic"](around:5000,${lat},${lon});
-          node["amenity"="doctors"](around:5000,${lat},${lon});
+          node["amenity"~"hospital|clinic|doctors"](around:5000,${lat},${lon});
+          way["amenity"~"hospital|clinic|doctors"](around:5000,${lat},${lon});
         );
-        out body;
+        out center;
       `;
 
-      const response = await fetch("https://overpass-api.de/api/interpreter", {
-        method: "POST",
-        body: query
-      });
+      // Mirror fallbacks for Overpass API
+      const mirrors = [
+        "https://overpass-api.de/api/interpreter",
+        "https://overpass.kumi.systems/api/interpreter",
+        "https://overpass.osm.ch/api/interpreter"
+      ];
 
-      const data = await response.json();
+      let data = null;
+      let lastError = null;
+
+      for (const mirror of mirrors) {
+        try {
+          console.log(`Fetching facilities from mirror: ${mirror}`);
+          const response = await fetch(mirror, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: `data=${encodeURIComponent(query)}`
+          });
+
+          if (response.ok) {
+            data = await response.json();
+            if (data && data.elements) break;
+          } else {
+            console.warn(`Mirror ${mirror} failed with status: ${response.status}`);
+            lastError = `Status ${response.status}`;
+          }
+        } catch (e) {
+          console.warn(`Mirror ${mirror} connection failed:`, e);
+          lastError = e.message;
+        }
+      }
       
+      if (!data || !data.elements) {
+        throw new Error(lastError || "All mirrors failed to respond.");
+      }
+
       const processed = data.elements
-        .map(el => ({
-          id: el.id,
-          name: el.tags.name || "Medical Facility",
-          type: el.tags.amenity,
-          distance: getDistance(lat, lon, el.lat, el.lon),
-          lat: el.lat,
-          lon: el.lon
-        }))
+        .map(el => {
+          const name = el.tags.name || el.tags["name:en"] || "Medical Facility";
+          const type = el.tags.amenity;
+          const elementLat = el.lat || (el.center ? el.center.lat : null);
+          const elementLon = el.lon || (el.center ? el.center.lon : null);
+          
+          if (!elementLat || !elementLon) return null;
+
+          return {
+            id: el.id,
+            name,
+            type,
+            distance: getDistance(lat, lon, elementLat, elementLon),
+            lat: elementLat,
+            lon: elementLon
+          };
+        })
+        .filter(Boolean)
         .sort((a, b) => parseFloat(a.distance) - parseFloat(b.distance))
         .slice(0, 5);
 
-      setFacilities(processed);
+      if (processed.length === 0) {
+        setError("No facilities found within 5km of this location.");
+      } else {
+        setFacilities(processed);
+      }
     } catch (err) {
-      console.error(err);
-      setError("Failed to fetch nearby facilities. Please check your internet.");
+      console.error("Facility search error detail:", err);
+      setError("Unable to connect to mapping services. Please check your internet or try again in a few seconds.");
     } finally {
       setLoading(false);
     }
