@@ -20,9 +20,5 @@ export default function nextConfig(phase) {
         },
       ],
     },
-    env: {
-      VITE_GROQ_API_KEY: process.env.VITE_GROQ_API_KEY,
-      GROQ_API_KEY: process.env.GROQ_API_KEY,
-    },
   };
 }

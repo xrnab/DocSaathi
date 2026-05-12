@@ -1,3 +1,4 @@
+import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
 const SYSTEM_PROMPT = `You are a medical assistant for rural healthcare. When a user asks about a medicine or symptom, respond with this EXACT structure (using these labels):
@@ -24,7 +25,12 @@ const SUPPORTED_LANGUAGES = new Map([
 
 export async function POST(req) {
   try {
-    const apiKey = process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY;
+    const { userId } = await auth();
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const apiKey = process.env.GROQ_API_KEY;
     if (!apiKey) {
       console.error("Missing GROQ_API_KEY in server environment");
       return NextResponse.json(

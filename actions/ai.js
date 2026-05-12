@@ -1,9 +1,13 @@
-"use server";
+import { auth } from "@clerk/nextjs/server";
 
 export async function analyzeSymptoms(params) {
+  const { userId } = await auth();
+  if (!userId) {
+    return { success: false, error: "You must be signed in to use the AI analysis." };
+  }
   const { symptoms, language, patientType, duration } = params;
   
-  const apiKey = process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY;
+  const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) {
     throw new Error("Medical Analysis Engine (Groq) is not configured on the server.");
   }
