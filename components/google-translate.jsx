@@ -7,6 +7,9 @@ const GoogleTranslate = () => {
     // Check if the script is already loaded
     if (window.googleTranslateElementInit) return;
 
+    // Pre-select 'pa' (Punjabi) as the default target language
+    document.cookie = "googtrans=/en/pa; path=/;";
+
     window.googleTranslateElementInit = () => {
       new window.google.translate.TranslateElement(
         {

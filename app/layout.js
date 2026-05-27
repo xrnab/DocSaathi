@@ -8,6 +8,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { OfflineIndicator } from "@/components/offline-indicator";
 import { PageProgress } from "@/components/page-progress";
 import { Suspense } from "react";
+import { PwaInstallBanner } from "@/components/pwa-install-banner";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -24,6 +25,12 @@ export default function RootLayout({ children }) {
       <html lang="en" suppressHydrationWarning>
         <head>
           <link rel="icon" href="/logo.png" sizes="any" />
+          <link rel="manifest" href="/manifest.json" />
+          <meta name="theme-color" content="#0ea5e9" />
+          <meta name="apple-mobile-web-app-capable" content="yes" />
+          <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+          <meta name="apple-mobile-web-app-title" content="DocSaathi" />
+          <link rel="apple-touch-icon" href="/logo.png" />
           <script
             dangerouslySetInnerHTML={{
               __html: `
@@ -61,6 +68,7 @@ export default function RootLayout({ children }) {
             <main className="min-h-screen pt-24">{children}</main>
             <Toaster richColors />
             <OfflineIndicator />
+            <PwaInstallBanner />
 
             <footer className="bg-muted/50 py-12">
               <div className="container mx-auto px-4 text-center text-muted-foreground">

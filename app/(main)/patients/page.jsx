@@ -21,6 +21,7 @@ import {
 import Link from "next/link";
 import { format } from "date-fns";
 import { PageHeader } from "@/components/page-header";
+import Image from "next/image";
 
 export default async function PatientDashboard() {
   const user = await getCurrentUser();
@@ -58,10 +59,13 @@ export default async function PatientDashboard() {
           <Card className="border-sky-100 dark:border-sky-900 shadow-sm bg-card overflow-hidden">
             <div className="bg-sky-500 h-2 w-full" />
             <CardHeader className="text-center pb-2">
-              <div className="mx-auto w-24 h-24 rounded-full border-4 border-background shadow-md overflow-hidden mb-4">
-                <img 
+              <div className="mx-auto w-24 h-24 rounded-full border-4 border-background shadow-md overflow-hidden mb-4 relative">
+                <Image 
                   src={user.imageUrl || "/placeholder-user.png"} 
-                  alt={user.name} 
+                  alt={user.name || "User profile"} 
+                  width={96}
+                  height={96}
+                  loading="lazy"
                   className="w-full h-full object-cover"
                 />
               </div>

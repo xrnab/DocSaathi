@@ -46,12 +46,25 @@ export async function getPatientAppointments() {
           },
         },
       },
-      orderBy: {
-        startTime: "asc",
-      },
     });
 
-    return { appointments };
+    // Custom sorting: SCHEDULED appointments at the top, sorted by startTime asc (nearest first).
+    // Non-SCHEDULED appointments at the bottom, sorted by startTime desc (most recent first).
+    const sortedAppointments = [...appointments].sort((a, b) => {
+      if (a.status === "SCHEDULED" && b.status !== "SCHEDULED") return -1;
+      if (a.status !== "SCHEDULED" && b.status === "SCHEDULED") return 1;
+      
+      const timeA = new Date(a.startTime).getTime();
+      const timeB = new Date(b.startTime).getTime();
+      
+      if (a.status === "SCHEDULED") {
+        return timeA - timeB; // Ascending for upcoming
+      } else {
+        return timeB - timeA; // Descending for past
+      }
+    });
+
+    return { appointments: sortedAppointments };
   } catch (error) {
     console.error("Failed to get patient appointments:", error);
     return { error: "Failed to fetch appointments" };

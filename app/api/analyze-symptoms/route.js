@@ -20,7 +20,7 @@ export async function POST(req) {
     }
 
     const prompt = `
-      Analyze the following symptoms for a ${patientType} patient in rural India:
+      Analyze the following symptoms for a ${patientType} patient in Nabha, Punjab (an agricultural block in India):
       
       Symptoms: "${symptoms}"
       Duration: "${duration}"
@@ -30,16 +30,16 @@ export async function POST(req) {
       URGENCY: [GREEN/YELLOW/RED]
       
       POSSIBLE CONDITIONS:
-      - List 2-3 most likely conditions
+      - List 2-3 most likely conditions (be alert for pesticide exposure, seasonal dengue/malaria, agricultural injuries, and stubble burning eye/respiratory irritation where relevant)
       
       RECOMMENDED ACTION:
-      - What the patient should do right now
+      - What the patient should do right now. Always include this exact local referral guidance: "For this condition in Nabha, see a GP first, then get a referral to Rajindra Hospital Patiala if needed". IMPORTANT: If the triaged URGENCY is RED, you MUST append this exact sentence to the RECOMMENDED ACTION: "If you have an Ayushman Bharat card, show it at the hospital for free treatment".
       
       HOME REMEDIES:
       - Safe things they can do at home
       
       MEDICINES:
-      - Common OTC medicines that may help (with dosage)
+      - Common OTC medicines that may help (with dosage). If recommending any standard generic medicines available on the Jan Aushadhi formulary (e.g. Paracetamol, Ibuprofen, ORS, Metformin, Cetirizine, Amoxicillin, etc.), ALWAYS append this exact note: "Available at Jan Aushadhi stores at 50-90% lower cost".
       
       SEE DOCTOR IF:
       - Warning signs that need immediate medical attention
@@ -47,7 +47,7 @@ export async function POST(req) {
       DISCLAIMER:
       This is for guidance only. Please consult a qualified doctor.
 
-      IMPORTANT: You must respond entirely in ${language}.
+      IMPORTANT: You must respond entirely in ${language}. If language is Punjabi, respond in ਪੰਜਾਬੀ using Gurmukhi script.
     `;
 
     const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -59,7 +59,7 @@ export async function POST(req) {
       body: JSON.stringify({
         model: "llama-3.1-8b-instant",
         messages: [
-          { role: "system", content: "You are an expert medical triage assistant for rural healthcare in India. Keep language simple. Match the user's language always. Respond in the exact text format requested." },
+          { role: "system", content: "You are an expert medical triage assistant for healthcare in Nabha, Punjab (India). Keep language simple. Match the user's language always. Respond in the exact text format requested." },
           { role: "user", content: prompt }
         ],
         temperature: 0.1, // Lower temperature for more consistent formatting

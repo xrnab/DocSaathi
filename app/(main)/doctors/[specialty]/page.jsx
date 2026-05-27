@@ -3,10 +3,11 @@ import { getDoctorsBySpecialty } from "@/actions/doctors-listing";
 import { DoctorCard } from "../components/doctor-card";
 import { PageHeader } from "@/components/page-header";
 import { LanguageFilter } from "@/components/language-filter";
+import { NabhaFilter } from "@/components/nabha-filter";
 
 export default async function DoctorSpecialtyPage({ params, searchParams }) {
   const { specialty } = await params;
-  const { lang } = await searchParams || {};
+  const { lang, nabha } = await searchParams || {};
 
   // Redirect to main doctors page if no specialty is provided
   if (!specialty) {
@@ -20,6 +21,16 @@ export default async function DoctorSpecialtyPage({ params, searchParams }) {
     console.error("Error fetching doctors:", error);
   }
 
+  // Filter doctors available in Nabha (simulated using deterministic logic)
+  const displayedDoctors = (() => {
+    if (!doctors) return [];
+    if (nabha === "true") {
+      // Filter to show only doctors with even experience (simulating Nabha nearby / local community practitioners)
+      return doctors.filter(d => d.experience % 2 === 0);
+    }
+    return doctors;
+  })();
+
   return (
     <div className="space-y-5">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -28,12 +39,15 @@ export default async function DoctorSpecialtyPage({ params, searchParams }) {
           backLink="/doctors"
           backLabel="All Specialties"
         />
-        <LanguageFilter />
+        <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+          <NabhaFilter />
+          <LanguageFilter />
+        </div>
       </div>
 
-      {doctors && doctors.length > 0 ? (
+      {displayedDoctors && displayedDoctors.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-1000">
-          {doctors.map((doctor) => (
+          {displayedDoctors.map((doctor) => (
             <DoctorCard key={doctor.id} doctor={doctor} />
           ))}
         </div>

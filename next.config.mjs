@@ -13,6 +13,7 @@ export default function nextConfig(phase) {
       serverComponentsHmrCache: false,
     },
     images: {
+      formats: ['image/avif', 'image/webp'],
       remotePatterns: [
         {
           protocol: "https",

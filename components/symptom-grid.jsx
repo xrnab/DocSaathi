@@ -20,6 +20,13 @@ const ALL_SYMPTOMS = [
   { id: "breathlessness", label: "Breathlessness", icon: "😮💨" },
   { id: "nausea", label: "Nausea", icon: "🤮" },
   { id: "back_pain", label: "Back Pain", icon: "🔙" },
+  // Rural-relevant symptoms
+  { id: "pesticide_exposure", label: "Pesticide Exposure", icon: "🧪" },
+  { id: "snake_scorpion_bite", label: "Snake/Scorpion Bite", icon: "🐍" },
+  { id: "heat_stroke", label: "Heat Stroke", icon: "☀️" },
+  { id: "eye_irritation", label: "Eye Irritation (Stubble Burning)", icon: "👁️" },
+  { id: "muscle_cramps", label: "Muscle Cramps (Farm Labor)", icon: "💪" },
+  { id: "waterborne_illness", label: "Waterborne Illness", icon: "💧" },
 ];
 
 export function SymptomGrid({ onChange, initialSelected = [] }) {

@@ -2,6 +2,7 @@
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { ShieldAlert } from "lucide-react";
 
 export default function MedicineCard({
@@ -28,12 +29,17 @@ export default function MedicineCard({
     <Card className="mt-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-sm overflow-hidden">
       <CardContent className="p-4 space-y-4">
         <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <h3 className="text-base font-bold text-slate-900 dark:text-slate-50 tracking-tight">
-              {medicineName || "Medicine"}
-            </h3>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="text-base font-bold text-slate-900 dark:text-slate-50 tracking-tight">
+                {medicineName || "Medicine"}
+              </h3>
+              <Badge className="bg-emerald-600 hover:bg-emerald-700 text-white border-0 text-[9px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-xl shadow-sm">
+                Generic Available
+              </Badge>
+            </div>
             {usedFor ? (
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
                 <span className="font-medium text-slate-700 dark:text-slate-300">Used for:</span> {usedFor}
               </p>
             ) : null}
@@ -104,6 +110,33 @@ export default function MedicineCard({
             </div>
           </div>
         ) : null}
+
+        <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-end">
+          <Button 
+            asChild
+            variant="ghost" 
+            size="sm" 
+            className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 font-bold text-xs flex items-center gap-1.5 h-8 px-3 rounded-xl cursor-pointer"
+          >
+            <a
+              href={`https://wa.me/?text=${encodeURIComponent(
+                `💊 *Medicine Info / ਦਵਾਈ ਦੀ ਜਾਣਕਾਰੀ:*\n` +
+                `*Name / ਨਾਮ:* ${medicineName || "Medicine"}\n` +
+                (usedFor ? `*Treats / ਇਲਾਜ:* ${usedFor}\n\n` : "\n") +
+                `*ਪੰਜਾਬੀ (Punjabi):*\n` +
+                `ਖੁਰਾਕ (Dosage): ${dosageAdult ? `ਵੱਡਿਆਂ ਲਈ: ${dosageAdult}` : ""}${dosageChild ? `, ਬੱਚਿਆਂ ਲਈ: ${dosageChild}` : ""}\n` +
+                `ਚੇਤਾਵਨੀ (Warning): ਇਹ ਦਵਾਈ ਜਨ ਔਸ਼ਧੀ ਕੇਂਦਰਾਂ 'ਤੇ 50-90% ਘੱਟ ਕੀਮਤ 'ਤੇ ਮਿਲਦੀ ਹੈ। ਵਰਤੋਂ ਤੋਂ ਪਹਿਲਾਂ ਡਾਕਟਰ ਨਾਲ ਸਲਾਹ ਕਰੋ।\n\n` +
+                `*हिंदी (Hindi):*\n` +
+                `खुराक (Dosage): ${dosageAdult ? `वयस्कों के लिए: ${dosageAdult}` : ""}${dosageChild ? `, बच्चों के लिए: ${dosageChild}` : ""}\n` +
+                `चेतावनी (Warning): यह दवा जन औषधि केंद्रों पर 50-90% कम कीमत पर उपलब्ध है। उपयोग से पहले डॉक्टर से सलाह लें।`
+              )}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Share Medicine Info
+            </a>
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );

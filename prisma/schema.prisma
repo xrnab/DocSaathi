@@ -33,6 +33,7 @@ model User {
   allergies      String? @db.Text
   medications    String? @db.Text
   isProfileComplete Boolean @default(false)
+  village           String? // Patient's village/town (optional, e.g. for Nabha regional mapping)
 
   // Doctor-specific fields
   specialty          String?

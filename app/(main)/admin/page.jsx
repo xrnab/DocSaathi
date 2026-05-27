@@ -4,6 +4,7 @@ import { VerifiedDoctors } from "./components/verified-doctors";
 import { PendingPayouts } from "./components/pending-payouts";
 import { VerifiedPatients } from "./components/verified-patients";
 import { UserManagement } from "./components/user-management";
+import { NabhaImpact } from "./components/nabha-impact";
 import {
   getPendingDoctors,
   getVerifiedDoctors,
@@ -11,6 +12,7 @@ import {
   getPatients,
   getAllUsers,
   verifyOwner,
+  getNabhaImpactStats,
 } from "@/actions/admin";
 
 export default async function AdminPage() {
@@ -23,12 +25,14 @@ export default async function AdminPage() {
     pendingPayoutsData,
     patientsData,
     allUsersData,
+    nabhaStatsData,
   ] = await Promise.all([
     getPendingDoctors(),
     getVerifiedDoctors(),
     getPendingPayouts(),
     getPatients(),
     isOwner ? getAllUsers() : Promise.resolve({ users: [] }),
+    getNabhaImpactStats(),
   ]);
 
   return (
@@ -47,6 +51,10 @@ export default async function AdminPage() {
 
       <TabsContent value="payouts" className="border-none p-0">
         <PendingPayouts payouts={pendingPayoutsData.payouts || []} />
+      </TabsContent>
+
+      <TabsContent value="nabha" className="border-none p-0">
+        <NabhaImpact stats={nabhaStatsData} />
       </TabsContent>
 
       {isOwner && (

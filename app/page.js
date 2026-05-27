@@ -5,13 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import Pricing from "@/components/pricing";
-import { creditBenefits, features, testimonials } from "@/lib/data";
+import { creditBenefits, features, testimonials, seasonalDiseases } from "@/lib/data";
 import { SignedIn, SignedOut } from "@clerk/nextjs";
 import { getUserRole } from "@/actions/records";
 
 import SymptomChecker from "@/components/symptom-checker";
 import { HomeAiAssistantButton } from "@/components/home-ai-assistant-button";
 import NearbyDoctors from "@/components/nearby-doctors";
+import { OfflineEmergencyCard } from "@/components/offline-emergency-card";
 
 export default async function Home() {
   const userRole = await getUserRole();
@@ -33,8 +34,8 @@ export default async function Home() {
                 Healthcare made simple
               </Badge>
               <h1 className="text-4xl md:text-5xl lg:text-7xl font-extrabold text-foreground leading-tight animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-100 tracking-tight py-2">
-                Connect with doctors <br />
-                <span className="gradient-title">anytime, anywhere</span>
+                Nabha da Saathi <br />
+                <span className="gradient-title">Healthcare at your fingertips</span>
               </h1>
               <p className="text-muted-foreground text-lg md:text-xl max-w-lg animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-200">
                 Book appointments, consult via video, and manage your healthcare
@@ -127,6 +128,33 @@ export default async function Home() {
               {/* Interactive Nearby Doctor Widget */}
               <NearbyDoctors />
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Nabha Impact Statistics Banner */}
+      <section className="relative z-10 -mt-10 px-4 max-w-5xl mx-auto">
+        <div className="bg-gradient-to-r from-sky-500/10 via-blue-600/5 to-emerald-500/10 backdrop-blur-xl border border-sky-500/20 rounded-[2.5rem] p-6 md:p-8 shadow-xl shadow-sky-950/5">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 divide-y md:divide-y-0 md:divide-x divide-sky-500/20 text-center items-center">
+            
+            <div className="space-y-1.5 p-4 first:pt-0 md:first:pt-4">
+              <div className="text-3xl md:text-4xl font-black text-sky-600 dark:text-sky-400">45+</div>
+              <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Surrounding Villages Covered</p>
+              <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 leading-normal">Providing direct digital access to remote agricultural hubs</p>
+            </div>
+
+            <div className="space-y-1.5 p-4">
+              <div className="text-3xl md:text-4xl font-black text-emerald-600 dark:text-emerald-400">12+</div>
+              <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Doctors in Nabha District</p>
+              <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 leading-normal">Local specialists and GPs ready for immediate telemedicine</p>
+            </div>
+
+            <div className="space-y-1.5 p-4 last:pb-0 md:last:pb-4">
+              <div className="text-3xl md:text-4xl font-black text-amber-600 dark:text-amber-400">42 km</div>
+              <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Nearest Hospital (Patiala)</p>
+              <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 leading-normal">Saving rural families critical hours in transport and triaging</p>
+            </div>
+
           </div>
         </div>
       </section>
@@ -232,6 +260,72 @@ export default async function Home() {
               );
             })}
           </div>
+        </div>
+      </section>
+
+      {/* Quick Report: Common in Nabha this season */}
+      <section className="py-20 bg-background relative overflow-hidden">
+        {/* Subtle background gradient to make section feel premium */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-amber-500/5 dark:bg-amber-500/10 blur-[100px] rounded-full pointer-events-none" />
+
+        <div className="container mx-auto px-4 relative z-10">
+          <div className="text-center mb-16">
+            <Badge
+              variant="outline"
+              className="bg-amber-500/10 border-amber-500/30 px-4 py-1 text-amber-600 dark:text-amber-400 text-sm font-semibold mb-4 backdrop-blur-sm"
+            >
+              ⚠️ Local Health Advisory
+            </Badge>
+            <h2 className="text-3xl md:text-5xl font-extrabold text-foreground mb-4">
+              Common in Nabha <span className="gradient-title">This Season</span>
+            </h2>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+              Stay informed with real-time seasonal health reports for our agricultural district. Updated: May 2026.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {seasonalDiseases.map((disease) => (
+              <Card key={disease.id} className="bg-card/30 backdrop-blur-xl border border-sky-500/10 hover:border-sky-500/30 transition-all duration-300 rounded-[2rem] overflow-hidden group hover:shadow-xl hover:shadow-sky-500/5">
+                <CardHeader className="pb-2">
+                  <div className="flex justify-between items-start gap-2">
+                    <Badge variant="outline" className={`${disease.statusColor} font-black uppercase text-[9px] tracking-wider py-1 px-2.5 rounded-full border`}>
+                      {disease.riskLevel}
+                    </Badge>
+                    <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest bg-slate-100 dark:bg-slate-900 px-2.5 py-1 rounded-full">Monthly Update</span>
+                  </div>
+                  <CardTitle className="text-2xl font-black text-foreground mt-4 group-hover:text-sky-500 transition-colors">
+                    {disease.title}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4 pt-2">
+                  <div className="space-y-1.5">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Key Symptoms</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {disease.symptoms.map((symptom, idx) => (
+                        <span key={idx} className="text-xs bg-slate-100 dark:bg-slate-900 px-2.5 py-1 rounded-xl text-slate-600 dark:text-slate-400 font-semibold">
+                          {symptom}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="space-y-1 pt-2 border-t border-slate-100 dark:border-slate-800">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Prevention Plan</p>
+                    <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
+                      {disease.prevention}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Offline Emergency Card Section */}
+      <section className="pb-20 bg-background relative z-10">
+        <div className="container mx-auto px-4 max-w-4xl">
+          <OfflineEmergencyCard />
         </div>
       </section>
 

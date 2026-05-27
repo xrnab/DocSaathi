@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Script from "next/script";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   Loader2,
   Video,
@@ -28,6 +29,7 @@ export default function VideoCall({
   const [isVideoEnabled, setIsVideoEnabled] = useState(true);
   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
   const [hardwareUnavailable, setHardwareUnavailable] = useState(false);
+  const [hasJoinedCall, setHasJoinedCall] = useState(false);
 
   const sessionRef = useRef(null);
   const publisherRef = useRef(null);
@@ -348,16 +350,62 @@ export default function VideoCall({
     );
   }
 
+  if (!hasJoinedCall) {
+    return (
+      <div className="container mx-auto px-4 py-12 max-w-md animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <Card className="border border-sky-100 dark:border-sky-900/30 shadow-2xl rounded-3xl bg-white dark:bg-slate-950 overflow-hidden">
+          <div className="bg-sky-50/50 dark:bg-sky-900/10 p-6 text-center border-b border-sky-100 dark:border-sky-900/20">
+            <div className="w-16 h-16 bg-sky-100 dark:bg-sky-900/40 rounded-3xl flex items-center justify-center mx-auto mb-4 border border-sky-200 dark:border-sky-800/30 text-sky-600 dark:text-sky-400">
+              <Video className="h-8 w-8" />
+            </div>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white leading-tight">Virtual Consultation</h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Ready to join your secure video session?</p>
+          </div>
+          <CardContent className="p-6 space-y-6">
+            <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 space-y-3">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-slate-500">Session Status</span>
+                <Badge className="bg-emerald-500/10 text-emerald-600 border-0 font-bold">READY</Badge>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-slate-500">Encryption</span>
+                <span className="text-slate-700 dark:text-slate-300 font-semibold flex items-center gap-1">🛡️ AES-256 E2EE</span>
+              </div>
+            </div>
+            
+            <div className="space-y-3">
+              <Button 
+                onClick={() => setHasJoinedCall(true)}
+                className="w-full h-12 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white rounded-2xl font-bold shadow-lg shadow-sky-500/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2 text-sm"
+              >
+                <Video className="h-4 w-4" /> Join Secure Call
+              </Button>
+              <Button 
+                variant="outline"
+                onClick={() => router.push(backPath)}
+                className="w-full h-12 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 rounded-2xl font-bold"
+              >
+                Cancel
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <>
-      <Script
-        src="https://unpkg.com/@vonage/client-sdk-video@2.30.0/dist/js/opentok.js"
-        onLoad={handleScriptLoad}
-        onError={() => {
-          toast.error("Failed to load video call script");
-          setIsLoading(false);
-        }}
-      />
+      {hasJoinedCall && (
+        <Script
+          src="https://unpkg.com/@vonage/client-sdk-video@2.30.0/dist/js/opentok.js"
+          onLoad={handleScriptLoad}
+          onError={() => {
+            toast.error("Failed to load video call script");
+            setIsLoading(false);
+          }}
+        />
+      )}
 
       <div className="container mx-auto px-4 py-8">
         <div className="text-center mb-6">

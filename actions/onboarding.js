@@ -101,6 +101,7 @@ export async function updatePatientMedicalProfile(formData) {
   const medicalHistory = formData.get("medicalHistory");
   const allergies = formData.get("allergies");
   const medications = formData.get("medications");
+  const village = formData.get("village");
 
   try {
     await db.user.update({
@@ -115,6 +116,7 @@ export async function updatePatientMedicalProfile(formData) {
         medicalHistory,
         allergies,
         medications,
+        village,
         isProfileComplete: true,
       },
     });

@@ -1,7 +1,7 @@
 "use client";
 
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertCircle, Users, CreditCard, UserCog, Heart } from "lucide-react";
+import { AlertCircle, Users, CreditCard, UserCog, Heart, Activity } from "lucide-react";
 import { useSearchParams, useRouter } from "next/navigation";
 
 export function AdminTabs({ isOwner, children }) {
@@ -49,6 +49,13 @@ export function AdminTabs({ isOwner, children }) {
         >
           <CreditCard className="h-4 w-4 mr-1.5 md:mr-2 shrink-0" />
           <span>Payouts</span>
+        </TabsTrigger>
+        <TabsTrigger
+          value="nabha"
+          className="flex-shrink-0 md:flex-1 md:flex md:items-center md:justify-start md:px-4 md:py-3 w-auto md:w-full px-3 text-sm whitespace-nowrap text-emerald-600 dark:text-emerald-400 font-bold"
+        >
+          <Activity className="h-4 w-4 mr-1.5 md:mr-2 shrink-0" />
+          <span>Nabha Impact</span>
         </TabsTrigger>
         {isOwner && (
           <TabsTrigger

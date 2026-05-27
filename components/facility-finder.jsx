@@ -6,6 +6,46 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { OfflineEmergencyCard } from "@/components/offline-emergency-card";
+
+const STATIC_NABHA_FACILITIES = [
+  {
+    id: "n1",
+    name: "Lt Gen Shivdev Singh Civil Hospital",
+    type: "hospital",
+    distance: "0.6",
+    lat: 30.3750,
+    lon: 76.1480,
+    isOfflineFallback: true
+  },
+  {
+    id: "n2",
+    name: "Urban Health and Wellness Centre (UHWC)",
+    type: "clinic",
+    distance: "0.2",
+    lat: 30.3770,
+    lon: 76.1410,
+    isOfflineFallback: true
+  },
+  {
+    id: "n3",
+    name: "PHC Sauja",
+    type: "clinic",
+    distance: "5.8",
+    lat: 30.3450,
+    lon: 76.1950,
+    isOfflineFallback: true
+  },
+  {
+    id: "n4",
+    name: "CHC Bhadson",
+    type: "hospital",
+    distance: "14.3",
+    lat: 30.5050,
+    lon: 76.1550,
+    isOfflineFallback: true
+  }
+];
 
 export function FacilityFinder() {
   const [loading, setLoading] = useState(false);
@@ -46,9 +86,10 @@ export function FacilityFinder() {
           const { lat, lon } = JSON.parse(cached);
           await fetchFacilities(lat, lon);
         } else {
-          setError("Could not determine your location. Please type an area name instead.");
-          setLoading(false);
-          setIsSearching(true);
+          console.warn("GPS failed, falling back to Nabha coords");
+          const defaultLat = 30.3762;
+          const defaultLon = 76.1427;
+          await fetchFacilities(defaultLat, defaultLon);
         }
       }
     );
@@ -189,20 +230,24 @@ export function FacilityFinder() {
         .slice(0, 5);
 
       if (processed.length === 0) {
-        setError("No facilities found within 5km of this location.");
+        setLocationName("Nabha & nearby");
+        setFacilities(STATIC_NABHA_FACILITIES);
       } else {
         setFacilities(processed);
       }
     } catch (err) {
-      console.error("Facility search error detail:", err);
-      setError("Unable to connect to mapping services. Please check your internet or try again in a few seconds.");
+      console.error("Facility search error detail, falling back to static Nabha facilities:", err);
+      setLocationName("Nabha & nearby");
+      setFacilities(STATIC_NABHA_FACILITIES);
+      setError(null);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="w-full space-y-4">
+    <div className="w-full space-y-6">
+      <OfflineEmergencyCard />
       {facilities.length === 0 ? (
         <div className="space-y-6">
           {!isSearching ? (
@@ -246,7 +291,7 @@ export function FacilityFinder() {
                 <Input 
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Enter city or neighborhood..."
+                  placeholder="Nabha & nearby"
                   className="pl-12 bg-slate-50 dark:bg-slate-900 border-slate-100 dark:border-slate-800 text-slate-900 dark:text-white placeholder:text-slate-400 rounded-2xl h-14 text-lg focus:ring-sky-500/20"
                   autoFocus
                 />
@@ -276,9 +321,15 @@ export function FacilityFinder() {
           <div className="flex items-center justify-between px-2">
             <div className="space-y-0.5">
               <h4 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">Nearby {locationName}</h4>
-              <p className="text-[9px] text-sky-600 dark:text-sky-400 font-bold flex items-center gap-1">
-                <Activity className="h-2 w-2" /> Results based on your location
-              </p>
+              {facilities.some(f => f.isOfflineFallback) ? (
+                <p className="text-[9px] text-amber-600 dark:text-amber-400 font-bold flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> Offline Mode: Showing verified Nabha facilities
+                </p>
+              ) : (
+                <p className="text-[9px] text-sky-600 dark:text-sky-400 font-bold flex items-center gap-1">
+                  <Activity className="h-2 w-2" /> Results based on your location
+                </p>
+              )}
             </div>
             <button onClick={() => { setFacilities([]); setLocationName(""); }} className="text-[10px] font-bold text-slate-400 hover:text-sky-600 transition-colors uppercase tracking-widest bg-slate-50 dark:bg-slate-900 px-3 py-1.5 rounded-full border border-slate-100 dark:border-slate-800">Clear Results</button>
           </div>

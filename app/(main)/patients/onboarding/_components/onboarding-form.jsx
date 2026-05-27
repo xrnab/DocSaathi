@@ -26,6 +26,7 @@ const medicalSchema = z.object({
   medicalHistory: z.string().optional(),
   allergies: z.string().optional(),
   medications: z.string().optional(),
+  village: z.string().optional(),
 });
 
 export default function OnboardingForm({ user }) {
@@ -49,6 +50,7 @@ export default function OnboardingForm({ user }) {
       medicalHistory: user?.medicalHistory || "",
       allergies: user?.allergies || "",
       medications: user?.medications || "",
+      village: user?.village || "",
     },
   });
 
@@ -88,6 +90,17 @@ export default function OnboardingForm({ user }) {
                 className="bg-background border-border"
               />
               {errors.name && <p className="text-xs text-red-500">{errors.name.message}</p>}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="village">Village / Town (Optional)</Label>
+              <Input
+                id="village"
+                placeholder="e.g. Sauja, Bhadson, Nabha"
+                {...register("village")}
+                className="bg-background border-border"
+              />
+              {errors.village && <p className="text-xs text-red-500">{errors.village.message}</p>}
             </div>
 
             <div className="space-y-2">

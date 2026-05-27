@@ -16,6 +16,7 @@ import { updateUserRole } from "@/actions/admin";
 import useFetch from "@/hooks/use-fetch";
 import { toast } from "sonner";
 import { formatName } from "@/lib/utils";
+import Image from "next/image";
 
 export function UserManagement({ users }) {
   const [searchTerm, setSearchTerm] = useState("");
@@ -90,7 +91,14 @@ export function UserManagement({ users }) {
                       <div className="flex items-center gap-3">
                         <div className="h-9 w-9 rounded-full bg-muted border border-border overflow-hidden shrink-0">
                           {user.imageUrl ? (
-                            <img src={user.imageUrl} alt={user.name} className="h-full w-full object-cover" />
+                            <Image 
+                              src={user.imageUrl} 
+                              alt={user.name || "User photo"} 
+                              width={36}
+                              height={36}
+                              loading="lazy"
+                              className="h-full w-full object-cover" 
+                            />
                           ) : (
                             <div className="h-full w-full flex items-center justify-center text-muted-foreground font-bold">
                               {user.name?.[0]?.toUpperCase() || "?"}

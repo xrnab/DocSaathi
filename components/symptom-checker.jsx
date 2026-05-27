@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import { toast } from "sonner";
 import { 
   Activity, 
   Search, 
@@ -13,7 +14,9 @@ import {
   Brain, 
   Heart,
   ChevronRight,
-  Loader2
+  Loader2,
+  Mic,
+  MicOff
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -41,19 +44,112 @@ const ALL_SYMPTOMS_LOOKUP = [
   { id: "breathlessness", label: "Breathlessness" },
   { id: "nausea", label: "Nausea" },
   { id: "back_pain", label: "Back Pain" },
+  // Rural-relevant symptoms
+  { id: "pesticide_exposure", label: "Pesticide Exposure" },
+  { id: "snake_scorpion_bite", label: "Snake/Scorpion Bite" },
+  { id: "heat_stroke", label: "Heat Stroke" },
+  { id: "eye_irritation", label: "Eye Irritation (Stubble Burning)" },
+  { id: "muscle_cramps", label: "Muscle Cramps (Farm Labor)" },
+  { id: "waterborne_illness", label: "Waterborne Illness" },
 ];
 
 export default function SymptomChecker() {
   const [selectedSymptoms, setSelectedSymptoms] = useState([]);
   const [customSymptom, setCustomSymptom] = useState("");
-  const [language, setLanguage] = useState("English");
+  const [language, setLanguage] = useState("Punjabi");
+  const [isListening, setIsListening] = useState(false);
+  const [showTooltip, setShowTooltip] = useState(false);
+  const recognitionRef = useRef(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const hasSeen = localStorage.getItem("has_seen_voice_tooltip");
+      if (!hasSeen) {
+        setShowTooltip(true);
+      }
+    }
+  }, []);
+
+  const dismissTooltip = () => {
+    setShowTooltip(false);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("has_seen_voice_tooltip", "true");
+    }
+  };
+
+  const toggleListening = () => {
+    if (isListening) {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+      setIsListening(false);
+      return;
+    }
+
+    const SpeechRecognition = typeof window !== "undefined" ? (window.SpeechRecognition || window.webkitSpeechRecognition) : null;
+    if (!SpeechRecognition) {
+      toast.error("Speech recognition is not supported in this browser. Please use Google Chrome or Microsoft Edge.");
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = false;
+
+      if (language === "Punjabi") {
+        recognition.lang = "pa-IN";
+      } else if (language === "Hindi") {
+        recognition.lang = "hi-IN";
+      } else if (language === "English") {
+        recognition.lang = "en-IN";
+      } else {
+        recognition.lang = "pa-IN";
+      }
+
+      recognition.onstart = () => {
+        setIsListening(true);
+        toast.info(`Voice search activated. Speak in ${language}...`);
+      };
+
+      recognition.onerror = (event) => {
+        console.error("Speech recognition error:", event.error);
+        setIsListening(false);
+        if (event.error === "not-allowed") {
+          toast.error("Microphone access denied. Please check browser permissions.");
+        } else {
+          toast.error("Could not capture speech. Please try again.");
+        }
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+      };
+
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        if (transcript) {
+          setCustomSymptom(prev => prev ? prev + " " + transcript : transcript);
+          toast.success("Voice symptoms added!");
+          dismissTooltip();
+        }
+      };
+
+      recognitionRef.current = recognition;
+      recognition.start();
+    } catch (err) {
+      console.error("Speech recognition start failed:", err);
+      setIsListening(false);
+      toast.error("Failed to start voice capture.");
+    }
+  };
   const [duration, setDuration] = useState("Today");
   const [patientType, setPatientType] = useState("Adult");
   const [report, setReport] = useState(null);
   const [error, setError] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
-  const LANGUAGES = ["English", "Hindi", "Bengali", "Tamil"];
+  const LANGUAGES = ["Punjabi", "English", "Hindi", "Bengali", "Tamil"];
   const DURATIONS = ["Today", "2-3 days", "1 week", "More than 1 week"];
   const PATIENT_TYPES = ["Adult", "Child", "Elderly", "Pregnant"];
 
@@ -149,10 +245,51 @@ export default function SymptomChecker() {
                     <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300" />
                     <Input 
                       placeholder="Describe any other symptoms or pain..." 
-                      className="pl-14 h-16 text-lg rounded-2xl border-2 border-slate-50 focus-visible:ring-sky-600 bg-slate-50/50 dark:bg-slate-800/30"
+                      className="pl-14 pr-16 h-16 text-lg rounded-2xl border-2 border-slate-50 focus-visible:ring-sky-600 bg-slate-50/50 dark:bg-slate-800/30"
                       value={customSymptom}
                       onChange={(e) => setCustomSymptom(e.target.value)}
                     />
+                    
+                    {/* Voice Input Button */}
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center">
+                      {showTooltip && (
+                        <div className="absolute bottom-full right-0 mb-3 w-72 bg-sky-600 dark:bg-sky-700 text-white text-xs font-bold px-4 py-3 rounded-2xl shadow-2xl animate-in fade-in slide-in-from-bottom-2 duration-300 z-30">
+                          <div className="relative flex items-start gap-2">
+                            <span>🎙️ Tap mic and speak your symptoms in Punjabi or Hindi</span>
+                            <button 
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                dismissTooltip();
+                              }}
+                              className="ml-auto text-white/70 hover:text-white font-extrabold text-sm leading-none shrink-0"
+                            >
+                              ✕
+                            </button>
+                            <div className="absolute top-full right-4 -translate-y-1.5 w-3 h-3 bg-sky-600 dark:bg-sky-700 rotate-45" />
+                          </div>
+                        </div>
+                      )}
+                      
+                      <button
+                        type="button"
+                        onClick={toggleListening}
+                        className={cn(
+                          "p-3 rounded-xl transition-all duration-300 flex items-center justify-center cursor-pointer",
+                          isListening 
+                            ? "bg-red-500 text-white animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.6)]" 
+                            : "bg-sky-50 hover:bg-sky-100 text-sky-600 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-sky-400"
+                        )}
+                        title="Voice Input (Punjabi / Hindi)"
+                      >
+                        {isListening ? (
+                          <MicOff className="h-5 w-5 animate-bounce" />
+                        ) : (
+                          <Mic className="h-5 w-5" />
+                        )}
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -345,13 +482,31 @@ export default function SymptomChecker() {
                               ))}
                             </div>
                             <div className="mt-16 pt-10 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-6">
-                              <Button 
-                                onClick={reset} 
-                                className="h-16 px-10 rounded-2xl font-black text-slate-800 dark:text-white hover:scale-105 active:scale-95 transition-all shadow-xl"
-                              >
-                                Start New Assessment
-                              </Button>
-                              <div className="text-right">
+                              <div className="flex flex-wrap gap-4 w-full sm:w-auto">
+                                <Button 
+                                  onClick={reset} 
+                                  className="h-16 px-8 rounded-2xl font-black text-slate-800 dark:text-white hover:scale-105 active:scale-95 transition-all shadow-xl"
+                                >
+                                  Start New Assessment
+                                </Button>
+                                <Button 
+                                  asChild
+                                  className="h-16 px-8 rounded-2xl font-black bg-emerald-600 hover:bg-emerald-700 text-white hover:scale-105 active:scale-95 transition-all shadow-xl flex items-center gap-2 cursor-pointer"
+                                >
+                                  <a 
+                                    href={`https://wa.me/?text=${encodeURIComponent(
+                                      `DocSaathi Triage Assessment Report:\n\n` + 
+                                      (typeof report === 'string' ? report.substring(0, 700) : '') + 
+                                      `\n\nConsult a doctor immediately. Get care at: ${typeof window !== 'undefined' ? window.location.origin : ''}`
+                                    )}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    Share on WhatsApp
+                                  </a>
+                                </Button>
+                              </div>
+                              <div className="text-right shrink-0">
                                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">DocSaathi Medical</p>
                                 <p className="text-[8px] text-slate-300">Confidential AI Report</p>
                               </div>

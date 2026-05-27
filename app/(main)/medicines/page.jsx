@@ -23,6 +23,19 @@ const HealthMap = dynamic(() => import("@/components/map"), {
   )
 });
 
+const NABHA_JAN_AUSHADHI = {
+  id: "nabha_jan_aushadhi",
+  name: "PM Bhartiya Jan Aushadhi Kendra (Civil Hospital Nabha)",
+  address: "Inside Lt Gen Shivdev Singh Civil Hospital, Nabha, Patiala, Punjab - 147201",
+  distance: 0.0,
+  lat: 30.3762,
+  lng: 76.1427,
+  phone: "1800-180-8080",
+  hours: "09:00 AM - 05:00 PM (Sunday Closed)",
+  status: "Government Scheme Store",
+  isJanAushadhi: true
+};
+
 export default function MedicinesDashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [locationQuery, setLocationQuery] = useState("");
@@ -31,6 +44,46 @@ export default function MedicinesDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [userLocation, setUserLocation] = useState(null);
   const [errorMsg, setErrorMsg] = useState("");
+  const [filterType, setFilterType] = useState("all");
+
+  const displayedPharmacies = (() => {
+    let list = [...pharmacies];
+
+    let janAushadhiStore = { ...NABHA_JAN_AUSHADHI };
+    if (userLocation) {
+      const lat1 = userLocation.lat;
+      const lon1 = userLocation.lng;
+      const lat2 = 30.3762;
+      const lon2 = 76.1427;
+      const R = 6371; // km
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      const d = R * c;
+      janAushadhiStore.distance = Number(d.toFixed(1));
+    }
+
+    const matchesSearch = !searchQuery || 
+      janAushadhiStore.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      janAushadhiStore.address.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const isWithinRadius = !userLocation || janAushadhiStore.distance <= parseFloat(radius);
+
+    if (matchesSearch && isWithinRadius) {
+      list = [janAushadhiStore, ...list.filter(p => p.id !== janAushadhiStore.id)];
+    } else if (filterType === "jan-aushadhi") {
+      list = [janAushadhiStore];
+    }
+
+    if (filterType === "jan-aushadhi") {
+      return list.filter(p => p.isJanAushadhi || p.name.toLowerCase().includes("jan aushadhi"));
+    }
+
+    return list;
+  })();
 
   const fetchPharmacies = async (lat, lng, rad, keyword) => {
     setIsLoading(true);
@@ -63,13 +116,21 @@ export default function MedicinesDashboard() {
           fetchPharmacies(latitude, longitude, radius, searchQuery);
         },
         (err) => {
-          setErrorMsg("Location access denied. Please type a city/village name instead.");
-          setIsLoading(false);
+          console.warn("Geolocation failed/denied. Falling back to Nabha coords:", err);
+          const defaultLat = 30.3762;
+          const defaultLng = 76.1427;
+          setUserLocation({ lat: defaultLat, lng: defaultLng });
+          setLocationQuery("Nabha");
+          fetchPharmacies(defaultLat, defaultLng, radius, searchQuery);
         }
       );
     } else {
-      setErrorMsg("Geolocation not supported. Please type a city/village name.");
-      setIsLoading(false);
+      console.warn("Geolocation not supported. Falling back to Nabha coords.");
+      const defaultLat = 30.3762;
+      const defaultLng = 76.1427;
+      setUserLocation({ lat: defaultLat, lng: defaultLng });
+      setLocationQuery("Nabha");
+      fetchPharmacies(defaultLat, defaultLng, radius, searchQuery);
     }
   };
 
@@ -116,6 +177,8 @@ export default function MedicinesDashboard() {
         return <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-400 hover:bg-emerald-200 border-emerald-200">24/7 Available</Badge>;
       case "Home Delivery":
         return <Badge className="bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-400 hover:bg-purple-200 border-purple-200">Home Delivery</Badge>;
+      case "Government Scheme Store":
+        return <Badge className="bg-emerald-600 hover:bg-emerald-700 text-white border-0 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-xl shadow-sm">Govt Scheme</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -197,6 +260,31 @@ export default function MedicinesDashboard() {
             </CardContent>
           </Card>
 
+          {/* Category Filter Tabs */}
+          <div className="flex gap-2 p-1.5 bg-slate-100 dark:bg-slate-900/60 rounded-2xl w-fit border border-slate-200/40 dark:border-slate-800/40 animate-in fade-in slide-in-from-top-2 duration-300">
+            <button
+              onClick={() => setFilterType("all")}
+              className={`px-5 py-2.5 text-xs font-black uppercase tracking-wider rounded-xl transition-all duration-300 ${
+                filterType === "all"
+                  ? "bg-white dark:bg-slate-800 text-sky-600 dark:text-sky-400 shadow-md"
+                  : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+              }`}
+            >
+              All Pharmacies
+            </button>
+            <button
+              onClick={() => setFilterType("jan-aushadhi")}
+              className={`px-5 py-2.5 text-xs font-black uppercase tracking-wider rounded-xl transition-all duration-300 flex items-center gap-1.5 ${
+                filterType === "jan-aushadhi"
+                  ? "bg-emerald-600 text-white shadow-md shadow-emerald-500/10"
+                  : "text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400"
+              }`}
+            >
+              <Pill className="h-3.5 w-3.5 animate-bounce" />
+              Jan Aushadhi (Govt)
+            </button>
+          </div>
+
           <div className="space-y-4 relative min-h-[300px]">
             {isLoading ? (
               <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm z-10 rounded-2xl">
@@ -205,8 +293,8 @@ export default function MedicinesDashboard() {
               </div>
             ) : null}
 
-            {!isLoading && pharmacies.length > 0 ? (
-              pharmacies.map((pharmacy, index) => (
+            {!isLoading && displayedPharmacies.length > 0 ? (
+              displayedPharmacies.map((pharmacy, index) => (
                 <Card 
                   key={pharmacy.id} 
                   className="overflow-hidden hover:shadow-md transition-all duration-300 border-sky-100 dark:border-sky-900 rounded-2xl animate-in fade-in slide-in-from-bottom-4"
@@ -291,7 +379,7 @@ export default function MedicinesDashboard() {
 
         {/* Right Column: Interactive Map */}
         <div className="lg:col-span-2 h-[400px] lg:h-[calc(100vh-12rem)] sticky top-24 rounded-3xl overflow-hidden border-4 border-white dark:border-slate-800 shadow-2xl shadow-sky-900/10">
-          <HealthMap userLocation={userLocation} items={pharmacies} type="Pharmacy" />
+          <HealthMap userLocation={userLocation} items={displayedPharmacies} type="Pharmacy" />
         </div>
       </div>
 

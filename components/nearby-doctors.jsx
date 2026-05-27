@@ -60,12 +60,25 @@ export default function NearbyDoctors() {
         setIsDetecting(false);
         setShowList(true);
       },
-      (error) => {
-        console.error(error);
+      async (error) => {
+        console.warn("Geolocation failed/denied. Falling back to Nabha coords:", error);
+        const fallbackLat = 30.3762;
+        const fallbackLng = 76.1427;
+        const userCoords = { lat: fallbackLat, lng: fallbackLng };
+        setCoords(userCoords);
+        setLocation("Nabha");
+        
+        try {
+          const { facilities: realFacilities, error: fetchErr } = await getNearbyHealthFacilities(fallbackLat, fallbackLng, 5, type);
+          if (fetchErr) throw new Error(fetchErr);
+          setFacilities(realFacilities || []);
+        } catch (e) {
+          console.error(e);
+        }
         setIsDetecting(false);
-        alert("Location access denied. Please enable GPS.");
+        setShowList(true);
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
     );
   };
 
@@ -104,6 +117,17 @@ export default function NearbyDoctors() {
           </div>
         ) : (
           <div className="divide-y divide-slate-100 dark:divide-slate-800">
+            {/* Nabha District Doctors Banner */}
+            <div className="bg-gradient-to-r from-amber-500 to-orange-500 dark:from-amber-600 dark:to-orange-600 text-white px-4 py-2.5 flex items-center justify-between text-[11px] font-bold shadow-inner">
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-white animate-pulse"></span>
+                Nabha District Doctors Active
+              </span>
+              <Link href="/doctors" className="bg-white/20 hover:bg-white/30 text-white rounded-lg px-2.5 py-1 text-[9px] font-black uppercase tracking-wider transition-all flex items-center gap-0.5">
+                View List <ArrowRight className="h-3 w-3" />
+              </Link>
+            </div>
+
             <div className="p-4 bg-sky-50/30 dark:bg-sky-900/10 flex items-center justify-between">
               <div>
                 <p className="text-[10px] font-bold text-sky-600 dark:text-sky-400 uppercase tracking-widest">Scanning Area</p>

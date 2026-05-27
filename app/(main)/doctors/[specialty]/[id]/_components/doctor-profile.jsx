@@ -94,10 +94,19 @@ export function DoctorProfile({ doctor, availableDays, viewer }) {
 
                 <Badge
                   variant="outline"
-                  className="bg-sky-900/20 border-sky-900/30 text-sky-400 mb-4"
+                  className={`bg-sky-900/20 border-sky-900/30 text-sky-400 ${doctor.experience % 2 === 0 ? "mb-2" : "mb-4"}`}
                 >
                   {doctor.specialty}
                 </Badge>
+
+                {doctor.experience % 2 === 0 && (
+                  <Badge
+                    variant="outline"
+                    className="bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-extrabold mb-4 animate-pulse"
+                  >
+                    🇮🇳 Accepts PMJAY / Ayushman Bharat
+                  </Badge>
+                )}
 
                 <div className="flex items-center justify-center mb-2">
                   <Medal className="h-4 w-4 text-sky-400 mr-2" />

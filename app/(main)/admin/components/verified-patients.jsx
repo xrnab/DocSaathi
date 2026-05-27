@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { format } from "date-fns";
 import { Heart, Mail, Calendar, Droplets, Search } from "lucide-react";
 import { formatName } from "@/lib/utils";
+import Image from "next/image";
 import { Input } from "@/components/ui/input";
 
 export function VerifiedPatients({ patients }) {
@@ -68,7 +69,14 @@ export function VerifiedPatients({ patients }) {
                       <div className="flex items-center gap-3">
                         <div className="h-10 w-10 rounded-full bg-sky-100 dark:bg-sky-900/20 flex items-center justify-center border border-sky-200 dark:border-sky-800 shrink-0 overflow-hidden">
                           {patient.imageUrl ? (
-                            <img src={patient.imageUrl} alt={patient.name} className="h-full w-full object-cover" />
+                            <Image 
+                              src={patient.imageUrl} 
+                              alt={patient.name || "Patient photo"} 
+                              width={40}
+                              height={40}
+                              loading="lazy"
+                              className="h-full w-full object-cover" 
+                            />
                           ) : (
                             <Heart className="h-5 w-5 text-sky-500" />
                           )}

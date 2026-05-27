@@ -5,9 +5,18 @@ import { User, Paperclip, Send, Mic, Video, Phone, CheckCheck, SignalHigh, WifiO
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import Link from "next/link";
 
 export default function TelemedicineChatPage({ params }) {
   const [isOffline, setIsOffline] = useState(false);
+  const [appointmentId, setAppointmentId] = useState("");
+
+  useEffect(() => {
+    Promise.resolve(params).then(p => {
+      if (p?.id) setAppointmentId(p.id);
+    });
+  }, [params]);
+
   const [messages, setMessages] = useState([
     { id: 1, sender: "doctor", text: "Hello! How can I help you today?", time: "10:00 AM", status: "read" },
   ]);
@@ -82,9 +91,29 @@ export default function TelemedicineChatPage({ params }) {
           <Button variant="ghost" size="icon" className="h-9 w-9 text-sky-600 dark:text-sky-400 hover:text-sky-700 hover:bg-sky-100 dark:hover:bg-sky-900/50 rounded-full">
             <Phone className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-9 w-9 text-sky-600 dark:text-sky-400 hover:text-sky-700 hover:bg-sky-100 dark:hover:bg-sky-900/50 rounded-full">
-            <Video className="h-4 w-4" />
-          </Button>
+          {messages.length > 0 && (
+            <Button asChild variant="outline" className="h-9 border-emerald-500 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 rounded-full px-3 py-1 font-bold text-xs flex items-center gap-1.5 cursor-pointer">
+              <a 
+                href={`https://wa.me/?text=${encodeURIComponent(
+                  `DocSaathi Appointment Summary with Dr. Sarah Jenkins:\n\n` + 
+                  messages.map(m => `[${m.sender === "doctor" ? "Doctor" : "Patient"}] ${m.text}`).join("\n") +
+                  `\n\nView prescription details securely at: ${typeof window !== "undefined" ? window.location.href : ""}`
+                )}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Share Summary
+              </a>
+            </Button>
+          )}
+          {appointmentId && (
+            <Button asChild variant="ghost" className="h-9 text-sky-600 dark:text-sky-400 hover:text-sky-700 hover:bg-sky-100 dark:hover:bg-sky-900/50 rounded-full px-3 py-1 font-bold text-xs flex items-center gap-1.5">
+              <Link href={`/video-call?appointmentId=${appointmentId}&from=appointments`}>
+                <Video className="h-4 w-4" />
+                Join Call
+              </Link>
+            </Button>
+          )}
         </div>
       </div>
 

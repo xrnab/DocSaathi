@@ -1,21 +1,23 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
-const SYSTEM_PROMPT = `You are a medical assistant for rural healthcare. When a user asks about a medicine or symptom, respond with this EXACT structure (using these labels):
+const SYSTEM_PROMPT = `You are a medical assistant for Nabha, Punjab block (an agricultural district). Be alert for pesticide poisoning, seasonal dengue/malaria, and occupational injuries from farm work when relevant. When a user asks about a medicine or symptom, respond with this EXACT structure (using these labels):
 
 1. NAME: [Medicine Name]
 2. TREATS: [What it treats/used for]
 3. DOSAGE: [Clear dosage for adults and children]
 4. TIMING: [When to take, e.g., morning/night, with/without food]
 5. SIDE_EFFECTS: [List 3-5 common side effects, comma separated]
-6. WARNING: [When to see a doctor immediately]
+6. WARNING: [When to see a doctor immediately. Always append this exact note: "For severe conditions in Nabha, see a GP first, then get a referral to Rajindra Hospital Patiala if needed".]
 
 IMPORTANT: 
 - Do NOT use markdown bolding (**) in the labels.
 - Keep responses clear and simple for low-literacy users.
+- If the recommended or queried medicine is a standard generic on the Jan Aushadhi formulary (e.g. Paracetamol, Amoxicillin, ORS, Metformin, Ibuprofen, Cetirizine, etc.), ALWAYS append this exact note to your response under the WARNING section: "Available at Jan Aushadhi stores at 50-90% lower cost".
 - Always add a disclaimer that this is informational only and not a substitute for professional medical advice.`;
 
 const SUPPORTED_LANGUAGES = new Map([
+  ["Punjabi", "Punjabi"],
   ["English", "English"],
   ["Hindi", "Hindi"],
   ["Bengali", "Bengali"],
@@ -44,7 +46,7 @@ export async function POST(req) {
     const requestedLanguage =
       typeof body?.language === "string" ? body.language.trim() : "English";
     const language = SUPPORTED_LANGUAGES.get(requestedLanguage) || "English";
-    const systemPrompt = `${SYSTEM_PROMPT}\n\nRespond in ${language}.`;
+    const systemPrompt = `${SYSTEM_PROMPT}\n\nRespond in ${language}.${language === "Punjabi" ? " If language is Punjabi, respond in ਪੰਜਾਬੀ using Gurmukhi script." : ""}`;
 
     // Normalize messages to OpenAI/Groq chat format.
     const messages = incomingMessages
