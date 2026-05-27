@@ -14,9 +14,12 @@ import {
   Brain, 
   Heart,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
   Loader2,
   Mic,
-  MicOff
+  MicOff,
+  X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -148,6 +151,7 @@ export default function SymptomChecker() {
   const [report, setReport] = useState(null);
   const [error, setError] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isSymptomsOpen, setIsSymptomsOpen] = useState(false);
 
   const LANGUAGES = ["Punjabi", "English", "Hindi", "Bengali", "Tamil"];
   const DURATIONS = ["Today", "2-3 days", "1 week", "More than 1 week"];
@@ -197,65 +201,78 @@ export default function SymptomChecker() {
   };
 
   return (
-    <section id="symptom-checker" className="py-24 bg-sky-50/50 dark:bg-sky-950/10">
+    <section id="symptom-checker" className="py-16 sm:py-24 bg-sky-50/50 dark:bg-sky-950/10">
       <div className="container mx-auto px-4">
         <div className="max-w-4xl mx-auto">
           {/* Header */}
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-12">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-8 sm:mb-12">
             <div>
-              <h2 className="text-3xl md:text-5xl font-black text-sky-600 tracking-tight text-center md:text-left">
+              <h2 className="text-2xl sm:text-3xl md:text-5xl font-black text-sky-600 tracking-tight text-center md:text-left">
                 Symptom Checker
               </h2>
-              <p className="text-slate-500 font-medium mt-2 text-center md:text-left">
+              <p className="text-sm sm:text-base text-slate-500 font-medium mt-2 text-center md:text-left">
                 Get an instant health assessment and triage advice.
               </p>
             </div>
           </div>
 
-          <Card className="border-none bg-white dark:bg-slate-900 shadow-2xl shadow-sky-900/5 rounded-[2.5rem] overflow-hidden">
+          <Card className="border-none bg-white dark:bg-slate-900 shadow-2xl shadow-sky-900/5 rounded-[1.5rem] sm:rounded-[2.5rem] overflow-hidden">
             {!report ? (
-              <div className="p-6 sm:p-10">
-                {/* Instruction */}
-                <div className="mb-8 flex items-center gap-3">
-                  <div className="p-3 bg-sky-50 dark:bg-sky-900/20 rounded-2xl">
-                    <Activity className="h-6 w-6 text-sky-600" />
-                  </div>
-                  <h3 className="text-xl font-bold text-slate-800 dark:text-slate-200">
-                    What are your symptoms?
-                  </h3>
-                </div>
+              <div className="p-4 sm:p-10">
+                {/* Dropdown for Symptoms */}
+                <div className="mb-8 sm:mb-10">
+                  <button 
+                    type="button"
+                    onClick={() => setIsSymptomsOpen(!isSymptomsOpen)}
+                    className="w-full flex items-center justify-between p-4 sm:p-5 bg-sky-50/50 dark:bg-sky-900/10 rounded-xl sm:rounded-2xl border border-sky-100 dark:border-sky-800/50 hover:bg-sky-100/50 dark:hover:bg-sky-900/20 transition-all group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-sky-100 dark:bg-sky-800 rounded-lg group-hover:scale-110 transition-transform">
+                        <Activity className="h-5 w-5 text-sky-600 dark:text-sky-400" />
+                      </div>
+                      <div className="text-left">
+                        <h3 className="text-base sm:text-lg font-bold text-slate-800 dark:text-slate-200 leading-none">
+                          {selectedSymptoms.length > 0 ? `${selectedSymptoms.length} Symptoms Selected` : "What are your symptoms?"}
+                        </h3>
+                        <p className="text-[10px] sm:text-xs text-slate-500 mt-1">Select from common health issues</p>
+                      </div>
+                    </div>
+                    {isSymptomsOpen ? <ChevronUp className="h-5 w-5 text-slate-400" /> : <ChevronDown className="h-5 w-5 text-slate-400" />}
+                  </button>
 
-                {/* SymptomGrid */}
-                <div className="mb-10">
-                  <SymptomGrid 
-                    initialSelected={selectedSymptoms}
-                    onChange={(labels) => {
-                      const newIds = labels.map(label => 
-                        ALL_SYMPTOMS_LOOKUP.find(s => s.label === label)?.id
-                      ).filter(Boolean);
-                      setSelectedSymptoms(newIds);
-                    }} 
-                  />
+                  {isSymptomsOpen && (
+                    <div className="mt-4 p-4 bg-slate-50/30 dark:bg-slate-900/30 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 animate-in slide-in-from-top-2 duration-300">
+                      <SymptomGrid 
+                        initialSelected={selectedSymptoms}
+                        onChange={(labels) => {
+                          const newIds = labels.map(label => 
+                            ALL_SYMPTOMS_LOOKUP.find(s => s.label === label)?.id
+                          ).filter(Boolean);
+                          setSelectedSymptoms(newIds);
+                        }} 
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {/* Custom Input */}
-                <div className="space-y-4 mb-10">
-                  <h4 className="text-sm font-bold text-slate-400 uppercase tracking-widest ml-1">Other Details</h4>
+                <div className="space-y-4 mb-8 sm:mb-10">
+                  <h4 className="text-[10px] sm:text-sm font-bold text-slate-400 uppercase tracking-widest ml-1">Other Details</h4>
                   <div className="relative">
-                    <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300" />
+                    <Search className="absolute left-4 sm:left-5 top-1/2 -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-slate-300" />
                     <Input 
-                      placeholder="Describe any other symptoms or pain..." 
-                      className="pl-14 pr-16 h-16 text-lg rounded-2xl border-2 border-slate-50 focus-visible:ring-sky-600 bg-slate-50/50 dark:bg-slate-800/30"
+                      placeholder="Describe symptoms..." 
+                      className="pl-10 sm:pl-14 pr-12 sm:pr-16 h-12 sm:h-16 text-sm sm:text-lg rounded-xl sm:rounded-2xl border-2 border-slate-50 focus-visible:ring-sky-600 bg-slate-50/50 dark:bg-slate-800/30"
                       value={customSymptom}
                       onChange={(e) => setCustomSymptom(e.target.value)}
                     />
                     
                     {/* Voice Input Button */}
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center">
+                    <div className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 flex items-center">
                       {showTooltip && (
-                        <div className="absolute bottom-full right-0 mb-3 w-72 bg-sky-600 dark:bg-sky-700 text-white text-xs font-bold px-4 py-3 rounded-2xl shadow-2xl animate-in fade-in slide-in-from-bottom-2 duration-300 z-30">
+                        <div className="absolute bottom-full right-0 mb-3 w-64 sm:w-72 bg-sky-600 dark:bg-sky-700 text-white text-[10px] sm:text-xs font-bold px-3 py-2 sm:px-4 sm:py-3 rounded-xl sm:rounded-2xl shadow-2xl animate-in fade-in slide-in-from-bottom-2 duration-300 z-30">
                           <div className="relative flex items-start gap-2">
-                            <span>🎙️ Tap mic and speak your symptoms in Punjabi or Hindi</span>
+                            <span>🎙️ Tap and speak in Punjabi or Hindi</span>
                             <button 
                               type="button"
                               onClick={(e) => {
@@ -263,7 +280,7 @@ export default function SymptomChecker() {
                                 e.stopPropagation();
                                 dismissTooltip();
                               }}
-                              className="ml-auto text-white/70 hover:text-white font-extrabold text-sm leading-none shrink-0"
+                              className="ml-auto text-white/70 hover:text-white font-extrabold text-xs sm:text-sm leading-none shrink-0"
                             >
                               ✕
                             </button>
@@ -276,7 +293,7 @@ export default function SymptomChecker() {
                         type="button"
                         onClick={toggleListening}
                         className={cn(
-                          "p-3 rounded-xl transition-all duration-300 flex items-center justify-center cursor-pointer",
+                          "p-2 sm:p-3 rounded-lg sm:rounded-xl transition-all duration-300 flex items-center justify-center cursor-pointer",
                           isListening 
                             ? "bg-red-500 text-white animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.6)]" 
                             : "bg-sky-50 hover:bg-sky-100 text-sky-600 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-sky-400"
@@ -284,9 +301,9 @@ export default function SymptomChecker() {
                         title="Voice Input (Punjabi / Hindi)"
                       >
                         {isListening ? (
-                          <MicOff className="h-5 w-5 animate-bounce" />
+                          <MicOff className="h-4 w-4 sm:h-5 sm:w-5 animate-bounce" />
                         ) : (
-                          <Mic className="h-5 w-5" />
+                          <Mic className="h-4 w-4 sm:h-5 sm:w-5" />
                         )}
                       </button>
                     </div>
@@ -295,17 +312,17 @@ export default function SymptomChecker() {
 
                 {/* Selected Symptoms Tags */}
                 {selectedSymptoms.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mb-10">
+                  <div className="flex flex-wrap gap-2 mb-8 sm:mb-10">
                     {selectedSymptoms.map((id) => {
                       const symptom = ALL_SYMPTOMS_LOOKUP.find(s => s.id === id);
                       return (
                         <Badge 
                           key={id} 
-                          className="bg-sky-50 text-sky-600 border-sky-100 px-4 py-2 rounded-xl flex items-center gap-2 transition-all hover:scale-105"
+                          className="bg-sky-50 text-sky-600 border-sky-100 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg sm:rounded-xl flex items-center gap-1.5 sm:gap-2 transition-all hover:scale-105"
                         >
-                          {symptom?.label}
+                          <span className="text-[10px] sm:text-sm">{symptom?.label}</span>
                           <button onClick={() => removeSymptom(id)} className="text-sky-600/50 hover:text-red-500">
-                            <AlertCircle className="h-4 w-4 rotate-45" />
+                            <AlertCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 rotate-45" />
                           </button>
                         </Badge>
                       );
@@ -313,17 +330,17 @@ export default function SymptomChecker() {
                   </div>
                 )}
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10 border-t border-slate-50 pt-10">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 mb-8 sm:mb-10 border-t border-slate-50 pt-8 sm:pt-10">
                   {/* Duration Selector */}
                   <div className="space-y-4">
-                    <h4 className="text-sm font-bold text-slate-400 uppercase tracking-widest ml-1">Duration</h4>
+                    <h4 className="text-[10px] sm:text-sm font-bold text-slate-400 uppercase tracking-widest ml-1">Duration</h4>
                     <div className="grid grid-cols-2 gap-2">
                       {DURATIONS.map((d) => (
                         <button
                           key={d}
                           onClick={() => setDuration(d)}
                           className={cn(
-                            "p-3 rounded-xl text-xs font-bold border-2 transition-all",
+                            "p-2.5 sm:p-3 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold border-2 transition-all",
                             duration === d 
                               ? "border-sky-600 bg-sky-50 text-sky-600" 
                               : "border-slate-50 text-slate-400 hover:border-sky-100"
@@ -337,14 +354,14 @@ export default function SymptomChecker() {
 
                   {/* Patient Type Selector */}
                   <div className="space-y-4">
-                    <h4 className="text-sm font-bold text-slate-400 uppercase tracking-widest ml-1">Patient Type</h4>
+                    <h4 className="text-[10px] sm:text-sm font-bold text-slate-400 uppercase tracking-widest ml-1">Patient Type</h4>
                     <div className="grid grid-cols-2 gap-2">
                       {PATIENT_TYPES.map((type) => (
                         <button
                           key={type}
                           onClick={() => setPatientType(type)}
                           className={cn(
-                            "p-3 rounded-xl text-xs font-bold border-2 transition-all",
+                            "p-2.5 sm:p-3 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold border-2 transition-all",
                             patientType === type 
                               ? "border-sky-600 bg-sky-50 text-sky-600" 
                               : "border-slate-50 text-slate-400 hover:border-sky-100"
@@ -362,17 +379,17 @@ export default function SymptomChecker() {
                   <Button 
                     onClick={handleAnalyze} 
                     disabled={(selectedSymptoms.length === 0 && !customSymptom.trim()) || isAnalyzing}
-                    className="w-full h-14 sm:h-16 bg-sky-600 hover:bg-sky-700 text-white rounded-2xl text-lg sm:text-xl font-black shadow-xl shadow-sky-500/20 transition-all active:scale-95 disabled:grayscale"
+                    className="w-full h-14 sm:h-16 bg-sky-600 hover:bg-sky-700 text-white rounded-xl sm:rounded-2xl text-base sm:text-xl font-black shadow-xl shadow-sky-500/20 transition-all active:scale-95 disabled:grayscale"
                   >
                     {isAnalyzing ? (
-                      <div className="flex items-center gap-3">
-                        <Loader2 className="h-6 w-6 animate-spin" />
-                        <span>Analyzing Symptoms...</span>
+                      <div className="flex items-center gap-2 sm:gap-3">
+                        <Loader2 className="h-5 w-5 sm:h-6 sm:w-6 animate-spin" />
+                        <span className="text-sm sm:text-base">Analyzing Symptoms...</span>
                       </div>
                     ) : (
-                      <div className="flex items-center gap-3">
-                        <span>Check My Symptoms</span>
-                        <ArrowRight className="h-6 w-6" />
+                      <div className="flex items-center gap-2 sm:gap-3">
+                        <span className="text-sm sm:text-base">Check My Symptoms</span>
+                        <ArrowRight className="h-5 w-5 sm:h-6 sm:w-6" />
                       </div>
                     )}
                   </Button>
@@ -383,20 +400,20 @@ export default function SymptomChecker() {
               <div className="animate-in fade-in zoom-in-95 duration-1000">
                 {/* Error Box */}
                 {error && (
-                  <div className="m-8 p-6 bg-red-50 border-red-500/20 rounded-3xl flex items-center gap-4 animate-in slide-in-from-top-4">
-                    <div className="h-10 w-10 bg-red-500 rounded-2xl flex items-center justify-center shadow-lg shadow-red-500/30">
-                      <AlertCircle className="h-5 w-5 text-white" />
+                  <div className="m-4 sm:m-8 p-4 sm:p-6 bg-red-50 border-red-500/20 rounded-2xl sm:rounded-3xl flex items-center gap-3 sm:gap-4 animate-in slide-in-from-top-4">
+                    <div className="h-8 w-8 sm:h-10 sm:w-10 bg-red-500 rounded-lg sm:rounded-2xl flex items-center justify-center shadow-lg shadow-red-500/30 shrink-0">
+                      <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                     </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-bold text-red-500">{error}</p>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs sm:text-sm font-bold text-red-500 truncate">{error}</p>
                     </div>
-                    <Button variant="ghost" size="sm" onClick={() => setError(null)} className="text-red-400 hover:bg-red-500/10">Dismiss</Button>
+                    <Button variant="ghost" size="sm" onClick={() => setError(null)} className="text-red-400 hover:bg-red-500/10 shrink-0 h-8 text-[10px] sm:text-xs">Dismiss</Button>
                   </div>
                 )}
 
                 {/* Medical Report */}
                 {report && (
-                  <div className="p-8 sm:p-14">
+                  <div className="p-4 sm:p-14">
                     {(() => {
                         const fullReport = typeof report === 'string' ? report : "";
                         const urgencyMatch = fullReport.match(/URGENCY:\s*(\w+)/i);
@@ -420,29 +437,29 @@ export default function SymptomChecker() {
                         return (
                           <>
                             <div className={cn(
-                              "rounded-[3rem] p-8 sm:p-12 border-2 transition-all duration-1000",
+                              "rounded-[1.5rem] sm:rounded-[3rem] p-4 sm:p-12 border transition-all duration-1000",
                               theme.bg,
                               theme.border
                             )}>
-                              <div className="flex flex-col md:flex-row md:items-center gap-6 mb-10 pb-10 border-b border-slate-200/50 dark:border-slate-800/50">
+                              <div className="flex flex-col md:flex-row md:items-center gap-4 sm:gap-6 mb-6 sm:mb-10 pb-6 sm:pb-10 border-b border-slate-200/50 dark:border-slate-800/50">
                                 <div className={cn(
-                                  "w-20 h-20 rounded-3xl flex items-center justify-center shrink-0 shadow-xl transition-all duration-500",
+                                  "w-14 h-14 sm:w-20 sm:h-20 rounded-xl sm:rounded-3xl flex items-center justify-center shrink-0 shadow-xl transition-all duration-500 mx-auto md:mx-0",
                                   isError ? "bg-slate-300 dark:bg-slate-700" : isRed ? "bg-red-500" : isYellow ? "bg-amber-500" : isGreen ? "bg-emerald-500" : "bg-sky-500"
                                 )}>
                                   {isError ? (
-                                    <X className="h-10 w-10 text-white" />
+                                    <X className="h-8 w-8 sm:h-10 sm:w-10 text-white" />
                                   ) : (
-                                    <CheckCircle2 className="h-10 w-10 text-white" />
+                                    <CheckCircle2 className="h-8 w-8 sm:h-10 sm:w-10 text-white" />
                                   )}
                                 </div>
-                                <div className="flex-1">
+                                <div className="flex-1 text-center md:text-left">
                                   <Badge className={cn(
-                                    "text-[11px] font-black uppercase py-0.5 px-3 border-0 rounded-lg",
+                                    "text-[9px] sm:text-[11px] font-black uppercase py-0.5 px-2 sm:px-3 border-0 rounded-lg",
                                     isError ? "bg-slate-500 text-white" : isRed ? "bg-red-500 text-white" : isYellow ? "bg-amber-500 text-white" : isGreen ? "bg-emerald-500 text-white" : "bg-sky-500 text-white"
                                   )}>
                                     {isError ? "Analysis Error" : isRed ? "Critical Urgency" : isYellow ? "Urgent Care" : isGreen ? "Standard Triage" : "Status Unknown"}
                                   </Badge>
-                                  <h2 className={cn("text-2xl sm:text-3xl font-black mt-3 leading-tight tracking-tight", theme.title)}>
+                                  <h2 className={cn("text-lg sm:text-2xl md:text-3xl font-black mt-2 sm:mt-3 leading-tight tracking-tight", theme.title)}>
                                     {isError 
                                       ? "System Analysis Failed" 
                                       : isRed 
@@ -459,39 +476,39 @@ export default function SymptomChecker() {
                                 </div>
                               </div>
 
-                              <div className="flex items-center justify-between mb-8 opacity-60">
-                                <p className={cn("text-[11px] font-black uppercase tracking-[0.4em]", theme.title)}>
+                              <div className="flex items-center justify-between mb-4 sm:mb-8 opacity-60">
+                                <p className={cn("text-[9px] sm:text-[11px] font-black uppercase tracking-[0.2em] sm:tracking-[0.4em]", theme.title)}>
                                   Detailed Medical Report
                                 </p>
                               </div>
                             <div className="space-y-2">
                               {report.split("\n").map((line, i) => (
-                                <p key={i} className="text-base sm:text-lg leading-relaxed text-slate-700 dark:text-slate-300" style={{
+                                <p key={i} className="text-sm sm:text-base md:text-lg leading-relaxed text-slate-700 dark:text-slate-300" style={{
                                   fontWeight: line.includes(":") && line === line.toUpperCase() 
                                     ? "900" : "450",
                                   color: line.toUpperCase().includes("URGENCY") ? theme.accent :
                                          line.toUpperCase().includes("WARNING") ? "#ef4444" :
                                          line.toUpperCase().includes("DISCLAIMER") ? "#94a3b8" :
                                          "inherit",
-                                  marginBottom: line.includes(":") && line === line.toUpperCase() ? "20px" : "6px",
-                                  marginTop: line.includes(":") && line === line.toUpperCase() ? "24px" : "0px",
-                                  letterSpacing: line.includes(":") && line === line.toUpperCase() ? "-0.02em" : "normal"
+                                  marginBottom: line.includes(":") && line === line.toUpperCase() ? "12px" : "4px",
+                                  marginTop: line.includes(":") && line === line.toUpperCase() ? "16px" : "0px",
+                                  letterSpacing: line.includes(":") && line === line.toUpperCase() ? "-0.01em" : "normal"
                                 }}>
                                   {line}
                                 </p>
                               ))}
                             </div>
-                            <div className="mt-16 pt-10 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-6">
-                              <div className="flex flex-wrap gap-4 w-full sm:w-auto">
+                            <div className="mt-8 sm:mt-16 pt-6 sm:pt-10 border-t border-slate-200 dark:border-slate-800 flex flex-col lg:flex-row items-center justify-between gap-6">
+                              <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 w-full lg:w-auto">
                                 <Button 
                                   onClick={reset} 
-                                  className="h-16 px-8 rounded-2xl font-black text-slate-800 dark:text-white hover:scale-105 active:scale-95 transition-all shadow-xl"
+                                  className="h-12 sm:h-16 px-6 sm:px-8 rounded-xl sm:rounded-2xl font-black text-slate-800 dark:text-white hover:scale-105 active:scale-95 transition-all shadow-xl text-xs sm:text-base"
                                 >
                                   Start New Assessment
                                 </Button>
                                 <Button 
                                   asChild
-                                  className="h-16 px-8 rounded-2xl font-black bg-emerald-600 hover:bg-emerald-700 text-white hover:scale-105 active:scale-95 transition-all shadow-xl flex items-center gap-2 cursor-pointer"
+                                  className="h-12 sm:h-16 px-6 sm:px-8 rounded-xl sm:rounded-2xl font-black bg-emerald-600 hover:bg-emerald-700 text-white hover:scale-105 active:scale-95 transition-all shadow-xl flex items-center gap-2 cursor-pointer text-xs sm:text-base"
                                 >
                                   <a 
                                     href={`https://wa.me/?text=${encodeURIComponent(
@@ -506,15 +523,15 @@ export default function SymptomChecker() {
                                   </a>
                                 </Button>
                               </div>
-                              <div className="text-right shrink-0">
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">DocSaathi Medical</p>
-                                <p className="text-[8px] text-slate-300">Confidential AI Report</p>
+                              <div className="text-center lg:text-right shrink-0">
+                                <p className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5 sm:mb-1">DocSaathi Medical</p>
+                                <p className="text-[7px] sm:text-[8px] text-slate-300 uppercase">Confidential AI Report</p>
                               </div>
                             </div>
                           </div>
                           
                           {(isRed || isYellow) && (
-                            <div className="mt-12 animate-in slide-in-from-bottom-8 duration-1000">
+                            <div className="mt-8 sm:mt-12 animate-in slide-in-from-bottom-8 duration-1000">
                               <FacilityFinder />
                             </div>
                           )}

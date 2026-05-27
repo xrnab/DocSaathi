@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import Pricing from "@/components/pricing";
 import { creditBenefits, features, testimonials, seasonalDiseases } from "@/lib/data";
-import { SignedIn, SignedOut } from "@clerk/nextjs";
+import { Show } from "@clerk/nextjs";
 import { getUserRole } from "@/actions/records";
 
 import SymptomChecker from "@/components/symptom-checker";
@@ -19,142 +19,96 @@ export default async function Home() {
   return (
     <div className="bg-background">
       <HomeAiAssistantButton />
-      {/* Hero Section */}
-      <section className="relative overflow-hidden py-32 flex items-center justify-center min-h-[90vh]">
-        {/* Glow effect */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-500/10 dark:bg-sky-500/20 blur-[120px] rounded-full pointer-events-none" />
+      {/* Refactored Hero Section into a Card Layout */}
+      <section className="container mx-auto px-4 pt-4 sm:pt-6 pb-6 flex flex-col items-center">
+        <Card className="w-full relative overflow-hidden border-none shadow-2xl rounded-[2.5rem] sm:rounded-[4rem] bg-slate-950 min-h-[60vh] sm:min-h-[50vh] lg:min-h-[42vh] flex flex-col">
+          {/* Background Image with Overlay */}
+          <div className="absolute inset-0 z-0">
+            <Image
+              src="/card-layout-img.png"
+              alt="Healthcare in Nabha"
+              fill
+              priority
+              className="object-cover object-right opacity-50 sm:opacity-60"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/90 to-transparent lg:block hidden" />
+            <div className="absolute inset-0 bg-slate-950/80 lg:hidden block" />
+          </div>
 
-        <div className="container mx-auto px-4 relative z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div className="space-y-8">
-              <Badge
-                variant="outline"
-                className="bg-sky-500/10 border-sky-500/30 px-4 py-2 text-sky-600 dark:text-sky-400 text-sm font-medium backdrop-blur-sm"
-              >
-                Healthcare made simple
-              </Badge>
-              <h1 className="text-4xl md:text-5xl lg:text-7xl font-extrabold text-foreground leading-tight animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-100 tracking-tight py-2">
-                Nabha da Saathi <br />
-                <span className="gradient-title">Healthcare at your fingertips</span>
-              </h1>
-              <p className="text-muted-foreground text-lg md:text-xl max-w-lg animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-200">
-                Book appointments, consult via video, and manage your healthcare
-                journey all in one highly secure platform.
-              </p>
-              {/* Action Buttons Grid for responsiveness */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4 w-full max-w-2xl mx-auto lg:mx-0">
-                <Button
-                  asChild
-                  size="lg"
-                  className="bg-gradient-to-r from-blue-600 to-sky-500 text-white hover:from-blue-700 hover:to-sky-600 shadow-lg shadow-sky-500/20 text-md sm:text-lg h-12 sm:h-14 px-4 sm:px-8 rounded-full transition-all hover:scale-[1.02] sm:col-span-2 lg:col-span-1"
-                >
-                  <Link href="/onboarding" className="flex items-center justify-center">
-                    Get Started <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
-                  </Link>
-                </Button>
-                <Button
-                  asChild
+          <CardContent className="relative z-10 flex-1 flex flex-col justify-center p-6 sm:p-10 md:p-14 pt-20 sm:pt-16 md:pt-20">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center w-full">
+              <div className="space-y-4 sm:space-y-4 text-center lg:text-left max-w-2xl mx-auto lg:mx-0">
+                <Badge
                   variant="outline"
-                  size="lg"
-                  className="border-sky-500/30 hover:bg-sky-500/10 hover:text-sky-600 dark:hover:text-sky-300 bg-background/50 backdrop-blur-sm text-md sm:text-lg h-12 sm:h-14 px-4 sm:px-8 rounded-full transition-all w-full flex items-center justify-center"
+                  className="bg-sky-500/20 border-sky-400/30 px-3 py-1 text-sky-300 text-[10px] sm:text-xs font-medium backdrop-blur-md"
                 >
-                  <Link href="/doctors" className="w-full h-full flex items-center justify-center">
-                    <Stethoscope className="mr-2 h-4 w-4 sm:h-5 sm:w-5" /> Find Doctors
-                  </Link>
-                </Button>
-                {/* NEW: Symptom Checker */}
-                <Button
-                  asChild
-                  variant="secondary"
-                  size="lg"
-                  className="bg-sky-100 hover:bg-sky-200 text-sky-700 dark:bg-sky-900/40 dark:hover:bg-sky-800/60 dark:text-sky-300 text-md sm:text-lg h-12 sm:h-14 px-4 sm:px-8 rounded-full transition-all w-full flex items-center justify-center"
-                >
-                  <Link href="#symptom-checker" className="w-full h-full flex items-center justify-center">
-                    <Activity className="mr-2 h-4 w-4 sm:h-5 sm:w-5" /> Symptom Checker
-                  </Link>
-                </Button>
-                {/* NEW: Medicine Finder */}
-                <Button
-                  asChild
-                  variant="outline"
-                  size="lg"
-                  className="border-sky-500/30 hover:bg-sky-500/10 hover:text-sky-600 dark:hover:text-sky-300 bg-background/50 backdrop-blur-sm text-md sm:text-lg h-12 sm:h-14 px-4 sm:px-8 rounded-full transition-all w-full flex items-center justify-center"
-                >
-                  <Link href="/medicines" className="w-full h-full flex items-center justify-center">
-                    <Pill className="mr-2 h-4 w-4 sm:h-5 sm:w-5" /> Pharmacy Locator
-                  </Link>
-                </Button>
-                <Button
-                  asChild
-                  variant="outline"
-                  size="lg"
-                  className="border-sky-500/30 hover:bg-sky-500/10 hover:text-sky-600 dark:hover:text-sky-300 bg-background/50 backdrop-blur-sm text-md sm:text-lg h-12 sm:h-14 px-4 sm:px-8 rounded-full transition-all w-full flex items-center justify-center"
-                >
-                  <Link href="/facilities" className="w-full h-full flex items-center justify-center">
-                    <Hospital className="mr-2 h-4 w-4 sm:h-5 sm:w-5 text-red-500" /> Hospitals & Clinics
-                  </Link>
-                </Button>
-                {/* NEW: Patient Records (Dynamic based on Role) */}
-                <Button
-                  asChild
-                  variant="outline"
-                  size="lg"
-                  className="border-sky-500/30 hover:bg-sky-500/10 hover:text-sky-600 dark:hover:text-sky-300 bg-background/50 backdrop-blur-sm text-md sm:text-lg h-12 sm:h-14 px-4 sm:px-8 rounded-full transition-all w-full flex items-center justify-center"
-                >
-                  {userRole === "DOCTOR" || userRole === "ADMIN" || userRole === "OWNER" ? (
-                    <Link href="/doctor/patients" className="w-full h-full flex items-center justify-center">
-                      <FileText className="mr-2 h-4 w-4 sm:h-5 sm:w-5" /> Patient Records
+                  Healthcare made simple
+                </Badge>
+                <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white leading-tight tracking-tight py-1">
+                  Nabha da Saathi <br className="hidden sm:block" />
+                  <span className="bg-clip-text text-transparent bg-gradient-to-r from-sky-400 to-blue-400">
+                    Healthcare at your fingertips
+                  </span>
+                </h1>
+                <p className="text-slate-300 text-sm sm:text-base md:text-base max-w-md mx-auto lg:mx-0 font-medium leading-relaxed">
+                  Book appointments, consult via video, and manage your health journey in one secure platform.
+                </p>
+                
+                {/* Action Buttons Grid */}
+                <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 sm:gap-3 pt-2">
+                  <Button
+                    asChild
+                    size="lg"
+                    className="bg-sky-600 hover:bg-sky-700 text-white shadow-lg shadow-sky-500/20 h-10 sm:h-11 px-6 sm:px-7 rounded-full text-xs sm:text-sm font-bold transition-transform hover:scale-105"
+                  >
+                    <Link href="/onboarding" className="flex items-center justify-center">
+                      Get Started <ArrowRight className="ml-2 h-4 w-4" />
                     </Link>
-                  ) : (
-                    <Link href="/records" className="w-full h-full flex items-center justify-center">
-                      <FileText className="mr-2 h-4 w-4 sm:h-5 sm:w-5" /> Health Records
+                  </Button>
+                  <Button
+                    asChild
+                    variant="outline"
+                    className="border-white/20 bg-white/10 backdrop-blur-md text-white hover:bg-white/20 h-10 sm:h-11 px-6 sm:px-7 rounded-full text-xs sm:text-sm font-bold transition-transform hover:scale-105"
+                  >
+                    <Link href="/doctors" className="flex items-center justify-center">
+                      <Stethoscope className="mr-2 h-4 w-4" /> Doctors
                     </Link>
-                  )}
-                </Button>
+                  </Button>
+                </div>
+              </div>
+
+              {/* Interactive Component Placement */}
+              <div className="hidden lg:block relative h-full min-h-[200px]">
+                 <NearbyDoctors />
               </div>
             </div>
+          </CardContent>
+        </Card>
 
-            <div className="relative h-[400px] lg:h-[600px] rounded-3xl overflow-hidden shadow-2xl shadow-sky-900/20 border border-border bg-card/30 backdrop-blur-sm">
-              <Image
-                src="/hero-duo.png"
-                alt="Indian Medical Professionals Duo"
-                fill
-                priority
-                className="object-cover"
-              />
-              {/* Subtle inner glow for image container */}
-              <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent pointer-events-none" />
-
-              {/* Interactive Nearby Doctor Widget */}
-              <NearbyDoctors />
+        {/* Impact Statistics Below Hero Card */}
+        <div className="w-full mt-6 sm:mt-8 px-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 items-center max-w-6xl mx-auto">
+            <div className="text-center md:text-left space-y-2 p-4 rounded-2xl bg-sky-500/5 border border-sky-500/10 backdrop-blur-sm">
+              <div className="text-3xl sm:text-4xl font-black text-sky-600 dark:text-sky-400">45+</div>
+              <div>
+                <p className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-widest">Surrounding Villages Covered</p>
+                <p className="text-[11px] sm:text-xs text-slate-500 leading-tight mt-1">Providing direct digital access to remote agricultural hubs</p>
+              </div>
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Nabha Impact Statistics Banner */}
-      <section className="relative z-10 -mt-10 px-4 max-w-5xl mx-auto">
-        <div className="bg-gradient-to-r from-sky-500/10 via-blue-600/5 to-emerald-500/10 backdrop-blur-xl border border-sky-500/20 rounded-[2.5rem] p-6 md:p-8 shadow-xl shadow-sky-950/5">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 divide-y md:divide-y-0 md:divide-x divide-sky-500/20 text-center items-center">
-            
-            <div className="space-y-1.5 p-4 first:pt-0 md:first:pt-4">
-              <div className="text-3xl md:text-4xl font-black text-sky-600 dark:text-sky-400">45+</div>
-              <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Surrounding Villages Covered</p>
-              <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 leading-normal">Providing direct digital access to remote agricultural hubs</p>
+            <div className="text-center md:text-left space-y-2 p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/10 backdrop-blur-sm">
+              <div className="text-3xl sm:text-4xl font-black text-emerald-600 dark:text-emerald-400">12+</div>
+              <div>
+                <p className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-widest">Doctors in Nabha District</p>
+                <p className="text-[11px] sm:text-xs text-slate-500 leading-tight mt-1">Local specialists and GPs ready for immediate telemedicine</p>
+              </div>
             </div>
-
-            <div className="space-y-1.5 p-4">
-              <div className="text-3xl md:text-4xl font-black text-emerald-600 dark:text-emerald-400">12+</div>
-              <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Doctors in Nabha District</p>
-              <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 leading-normal">Local specialists and GPs ready for immediate telemedicine</p>
+            <div className="text-center md:text-left space-y-2 p-4 rounded-2xl bg-amber-500/5 border border-amber-500/10 backdrop-blur-sm">
+              <div className="text-3xl sm:text-4xl font-black text-amber-600 dark:text-amber-400">42 km</div>
+              <div>
+                <p className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-widest">Nearest Hospital (Patiala)</p>
+                <p className="text-[11px] sm:text-xs text-slate-500 leading-tight mt-1">Saving rural families critical hours in transport and triaging</p>
+              </div>
             </div>
-
-            <div className="space-y-1.5 p-4 last:pb-0 md:last:pb-4">
-              <div className="text-3xl md:text-4xl font-black text-amber-600 dark:text-amber-400">42 km</div>
-              <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Nearest Hospital (Patiala)</p>
-              <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 leading-normal">Saving rural families critical hours in transport and triaging</p>
-            </div>
-
           </div>
         </div>
       </section>
@@ -462,7 +416,7 @@ export default async function Home() {
                   healthcare the way it should be.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4">
-                  <SignedOut>
+                  <Show when="signed-out">
                     <Button
                       asChild
                       size="lg"
@@ -470,8 +424,8 @@ export default async function Home() {
                     >
                       <Link href="/sign-up">Sign Up Now</Link>
                     </Button>
-                  </SignedOut>
-                  <SignedIn>
+                  </Show>
+                  <Show when="signed-in">
                     <Button
                       asChild
                       size="lg"
@@ -479,7 +433,7 @@ export default async function Home() {
                     >
                       <Link href="/doctors">Find Doctors</Link>
                     </Button>
-                  </SignedIn>
+                  </Show>
                   <Button
                     asChild
                     variant="outline"

@@ -407,87 +407,86 @@ export default function VideoCall({
         />
       )}
 
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-center mb-6">
-          <h1 className="text-3xl font-bold text-foreground mb-2">
-            Video Consultation
+      <div className="container mx-auto px-4 py-4 sm:py-8 h-[calc(100vh-80px)] flex flex-col">
+        <div className="text-center mb-4 sm:mb-6 shrink-0">
+          <h1 className="text-xl sm:text-3xl font-bold text-foreground mb-1">
+            Consultation
           </h1>
-          <p className="text-muted-foreground">
-            {isConnected
-              ? "Connected"
-              : isLoading
-              ? "Connecting..."
-              : "Connection failed"}
-          </p>
+          <Badge variant="outline" className={cn(
+            "text-[10px] font-bold uppercase",
+            isConnected ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" : "bg-amber-500/10 text-amber-600 border-amber-500/20"
+          )}>
+            {isConnected ? "Connected" : isLoading ? "Connecting..." : "Reconnecting"}
+          </Badge>
         </div>
 
         {isLoading && !scriptLoaded ? (
-          <div className="flex flex-col items-center justify-center py-12">
-            <Loader2 className="h-12 w-12 text-sky-500 dark:text-sky-400 animate-spin mb-4" />
-            <p className="text-foreground text-lg">
-              Loading video call components...
+          <div className="flex flex-col items-center justify-center flex-1">
+            <Loader2 className="h-10 w-10 sm:h-12 sm:w-12 text-sky-500 dark:text-sky-400 animate-spin mb-4" />
+            <p className="text-foreground text-base sm:text-lg">
+              Preparing session...
             </p>
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className="flex-1 flex flex-col gap-4 sm:gap-6 min-h-0 relative">
             {hardwareUnavailable && (
-              <Card className="border border-red-200/60 dark:border-red-900/30">
-                <CardContent className="py-4">
-                  <div className="text-sm text-muted-foreground">
-                    Camera/microphone is currently unavailable. Close any other
-                    app/tab using them, then click retry.
+              <Card className="border border-red-200/60 dark:border-red-900/30 z-20">
+                <CardContent className="py-3 sm:py-4">
+                  <div className="text-xs sm:text-sm text-muted-foreground">
+                    Hardware error. Please ensure camera/mic permissions.
                   </div>
-                  <div className="mt-3 flex gap-3">
+                  <div className="mt-2 sm:mt-3 flex gap-2">
                     <Button
+                      size="sm"
                       onClick={() => {
                         setIsLoading(true);
                         initializeSession();
                       }}
-                      className="bg-sky-600 hover:bg-sky-700"
+                      className="bg-sky-600 hover:bg-sky-700 h-8 text-xs"
                     >
                       Retry
                     </Button>
-                    <Button variant="outline" onClick={endCall}>
+                    <Button size="sm" variant="outline" onClick={endCall} className="h-8 text-xs">
                       Back
                     </Button>
                   </div>
                 </CardContent>
               </Card>
             )}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Publisher (Your video) */}
-              <div className="border border-sky-200 dark:border-sky-900/20 rounded-lg overflow-hidden">
-                <div className="bg-sky-50 dark:bg-sky-900/10 px-3 py-2 text-sky-500 dark:text-sky-400 text-sm font-medium">
-                  You
+
+            <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 min-h-0 relative">
+              {/* Subscriber (Other person's video) - PRIMARY on Mobile */}
+              <div className="relative border border-sky-200 dark:border-sky-900/20 rounded-2xl sm:rounded-3xl overflow-hidden bg-slate-900 shadow-2xl flex-1 md:flex-none h-full">
+                <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-10">
+                   <Badge className="bg-black/40 backdrop-blur-md border-0 text-[9px] sm:text-xs text-white">Other Participant</Badge>
                 </div>
                 <div
-                  id="publisher"
-                  className="w-full h-[300px] md:h-[400px] bg-muted/30"
+                  id="subscriber"
+                  className="w-full h-full"
                 >
-                  {!scriptLoaded && (
-                    <div className="flex items-center justify-center h-full">
-                      <div className="bg-muted/20 rounded-full p-8">
-                        <User className="h-12 w-12 text-sky-500 dark:text-sky-400" />
+                  {(!isConnected || !scriptLoaded) && (
+                    <div className="flex flex-col items-center justify-center h-full gap-3">
+                      <div className="bg-slate-800 rounded-full p-6 sm:p-8 border border-slate-700 animate-pulse">
+                        <User className="h-10 w-10 sm:h-14 sm:w-14 text-slate-500" />
                       </div>
+                      <p className="text-[10px] sm:text-xs text-slate-500 font-medium tracking-wide">Waiting for participant...</p>
                     </div>
                   )}
                 </div>
               </div>
 
-              {/* Subscriber (Other person's video) */}
-              <div className="border border-sky-200 dark:border-sky-900/20 rounded-lg overflow-hidden">
-                <div className="bg-sky-50 dark:bg-sky-900/10 px-3 py-2 text-sky-500 dark:text-sky-400 text-sm font-medium">
-                  Other Participant
+              {/* Publisher (Your video) - PIP on Mobile, Side-by-side on MD+ */}
+              <div className="absolute bottom-4 right-4 w-28 sm:w-40 aspect-[3/4] md:relative md:bottom-0 md:right-0 md:w-full md:aspect-auto border-2 border-white/20 md:border md:border-sky-900/20 rounded-xl sm:rounded-3xl overflow-hidden bg-slate-950 shadow-2xl z-20 transition-all duration-500">
+                 <div className="absolute top-2 left-2 z-10 md:block hidden">
+                   <Badge className="bg-black/40 backdrop-blur-md border-0 text-[10px] text-white">You</Badge>
                 </div>
                 <div
-                  id="subscriber"
-                  className="w-full h-[300px] md:h-[400px] bg-muted/30"
+                  id="publisher"
+                  className="w-full h-full object-cover"
                 >
-                  {(!isConnected || !scriptLoaded) && (
+                  {!scriptLoaded && (
                     <div className="flex items-center justify-center h-full">
-                      <div className="bg-muted/20 rounded-full p-8">
-                        <User className="h-12 w-12 text-sky-500 dark:text-sky-400" />
-                      </div>
+                      <User className="h-6 w-6 sm:h-10 sm:w-10 text-slate-600" />
                     </div>
                   )}
                 </div>
@@ -495,54 +494,45 @@ export default function VideoCall({
             </div>
 
             {/* Video controls */}
-            <div className="flex justify-center space-x-4">
+            <div className="flex justify-center space-x-3 sm:space-x-6 py-4 sm:py-6 shrink-0">
               <Button
                 variant="outline"
-                size="lg"
+                size="icon"
                 onClick={toggleVideo}
-                className={`rounded-full p-4 h-14 w-14 ${
+                className={cn(
+                  "rounded-full h-12 w-12 sm:h-16 sm:w-16 border-2 transition-all active:scale-90",
                   isVideoEnabled
-                    ? "border-sky-300 dark:border-sky-900/30"
-                    : "bg-red-900/20 border-red-900/30 text-red-400"
-                }`}
+                    ? "bg-white/10 border-white/20 text-white hover:bg-white/20"
+                    : "bg-red-500/20 border-red-500 text-red-500 hover:bg-red-500/30"
+                )}
                 disabled={!publisherRef.current}
               >
-                {isVideoEnabled ? <Video /> : <VideoOff />}
+                {isVideoEnabled ? <Video className="h-5 w-5 sm:h-6 sm:w-6" /> : <VideoOff className="h-5 w-5 sm:h-6 sm:w-6" />}
               </Button>
 
               <Button
                 variant="outline"
-                size="lg"
+                size="icon"
                 onClick={toggleAudio}
-                className={`rounded-full p-4 h-14 w-14 ${
+                className={cn(
+                  "rounded-full h-12 w-12 sm:h-16 sm:w-16 border-2 transition-all active:scale-90",
                   isAudioEnabled
-                    ? "border-sky-300 dark:border-sky-900/30"
-                    : "bg-red-900/20 border-red-900/30 text-red-400"
-                }`}
+                    ? "bg-white/10 border-white/20 text-white hover:bg-white/20"
+                    : "bg-red-500/20 border-red-500 text-red-500 hover:bg-red-500/30"
+                )}
                 disabled={!publisherRef.current}
               >
-                {isAudioEnabled ? <Mic /> : <MicOff />}
+                {isAudioEnabled ? <Mic className="h-5 w-5 sm:h-6 sm:w-6" /> : <MicOff className="h-5 w-5 sm:h-6 sm:w-6" />}
               </Button>
 
               <Button
                 variant="destructive"
-                size="lg"
+                size="icon"
                 onClick={endCall}
-                className="rounded-full p-4 h-14 w-14 bg-red-600 hover:bg-red-700"
+                className="rounded-full h-12 w-12 sm:h-16 sm:w-16 bg-red-600 hover:bg-red-700 shadow-xl shadow-red-900/40 active:scale-90 transition-all"
               >
-                <PhoneOff />
+                <PhoneOff className="h-5 w-5 sm:h-6 sm:w-6" />
               </Button>
-            </div>
-
-            <div className="text-center">
-              <p className="text-muted-foreground text-sm">
-                {isVideoEnabled ? "Camera on" : "Camera off"} •
-                {isAudioEnabled ? " Microphone on" : " Microphone off"}
-              </p>
-              <p className="text-muted-foreground text-sm mt-1">
-                When you're finished with your consultation, click the red
-                button to end the call
-              </p>
             </div>
           </div>
         )}

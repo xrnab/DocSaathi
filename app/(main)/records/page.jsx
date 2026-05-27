@@ -44,54 +44,47 @@ export default async function PatientRecordScreen({ searchParams }) {
       </div>
 
       {/* Patient Profile Header Card */}
-      <Card className="border-sky-200 dark:border-sky-800 bg-card shadow-md rounded-3xl overflow-hidden relative">
-        <div className="absolute top-0 left-0 w-2 h-full bg-sky-500"></div>
-        <CardContent className="p-6 sm:p-8">
-          <div className="flex flex-col md:flex-row gap-6 md:items-center">
-            <Avatar className="h-24 w-24 border-4 border-sky-100 dark:border-sky-900 shadow-sm">
+      <Card className="border-sky-200 dark:border-sky-800 bg-card shadow-md rounded-2xl sm:rounded-3xl overflow-hidden relative">
+        <div className="absolute top-0 left-0 w-1.5 sm:w-2 h-full bg-sky-500"></div>
+        <CardContent className="p-4 sm:p-6 md:p-8">
+          <div className="flex flex-col md:flex-row gap-4 sm:gap-6 md:items-center">
+            <Avatar className="h-16 w-16 sm:h-24 sm:w-24 border-2 sm:border-4 border-sky-100 dark:border-sky-900 shadow-sm mx-auto md:mx-0">
               {patient.imageUrl && <AvatarImage src={patient.imageUrl} alt={patient.name} />}
-              <AvatarFallback className="bg-gradient-to-br from-sky-400 to-blue-600 text-white text-2xl font-bold">
+              <AvatarFallback className="bg-gradient-to-br from-sky-400 to-blue-600 text-white text-xl sm:text-2xl font-bold">
                 {patient.name ? patient.name.split(' ').map(n => n[0]).join('').substring(0, 2) : "PT"}
               </AvatarFallback>
             </Avatar>
             
-            <div className="flex-1 space-y-3">
+            <div className="flex-1 space-y-3 text-center md:text-left">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <h2 className="text-3xl font-bold text-foreground tracking-tight">{patient.name || "Patient"}</h2>
-                <Badge variant="outline" className="w-fit text-sky-600 dark:text-sky-400 border-sky-200 dark:border-sky-800 bg-sky-50/30">
+                <h2 className="text-xl sm:text-3xl font-bold text-foreground tracking-tight">{patient.name || "Patient"}</h2>
+                <Badge variant="outline" className="w-fit mx-auto sm:mx-0 text-sky-600 dark:text-sky-400 border-sky-200 dark:border-sky-800 bg-sky-50/30 text-[10px]">
                   ID: {patient.id.split('-')[0].toUpperCase()}
                 </Badge>
               </div>
               
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 text-sm">
-                <div className="flex items-center gap-1.5 bg-muted/40 px-3 py-2 rounded-xl border border-border/50">
-                  <User className="h-4 w-4 text-sky-500" />
-                  <span className="text-muted-foreground">Age:</span>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 text-[11px] sm:text-sm">
+                <div className="flex items-center gap-1.5 bg-muted/40 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl border border-border/50">
+                  <User className="h-3.5 w-3.5 text-sky-500" />
+                  <span className="text-muted-foreground hidden xs:inline">Age:</span>
                   <span className="font-bold text-foreground">{age}</span>
                 </div>
-                <div className="flex items-center gap-1.5 bg-muted/40 px-3 py-2 rounded-xl border border-border/50">
-                  <Activity className="h-4 w-4 text-sky-500" />
-                  <span className="text-muted-foreground">Gender:</span>
-                  <span className="font-bold text-foreground capitalize">{patient.gender || "—"}</span>
+                <div className="flex items-center gap-1.5 bg-muted/40 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl border border-border/50">
+                  <Activity className="h-3.5 w-3.5 text-sky-500" />
+                  <span className="text-muted-foreground hidden xs:inline">Sex:</span>
+                  <span className="font-bold text-foreground capitalize truncate">{patient.gender || "—"}</span>
                 </div>
-                <div className="flex items-center gap-1.5 bg-red-50 dark:bg-red-900/10 px-3 py-2 rounded-xl text-red-700 dark:text-red-400 border border-red-100 dark:border-red-900/30">
-                  <Droplet className="h-4 w-4" />
-                  <span className="text-red-600/70 dark:text-red-400/70">Blood:</span>
+                <div className="flex items-center gap-1.5 bg-red-50 dark:bg-red-900/10 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-red-700 dark:text-red-400 border border-red-100 dark:border-red-900/30">
+                  <Droplet className="h-3.5 w-3.5" />
                   <span className="font-bold">{patient.bloodType || "—"}</span>
                 </div>
-                <div className="flex items-center gap-1.5 bg-muted/40 px-3 py-2 rounded-xl border border-border/50">
-                  <div className="flex items-center gap-1">
-                    <span className="text-sky-500 font-bold">↑</span>
-                    <span className="text-muted-foreground">H:</span>
-                    <span className="font-bold text-foreground">{patient.height ? `${patient.height} cm` : "—"}</span>
-                  </div>
+                <div className="flex items-center gap-1.5 bg-muted/40 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl border border-border/50">
+                   <span className="text-muted-foreground">H:</span>
+                   <span className="font-bold text-foreground">{patient.height ? `${patient.height}cm` : "—"}</span>
                 </div>
-                <div className="flex items-center gap-1.5 bg-muted/40 px-3 py-2 rounded-xl border border-border/50">
-                  <div className="flex items-center gap-1">
-                    <span className="text-sky-500 font-bold">⚖</span>
-                    <span className="text-muted-foreground">W:</span>
-                    <span className="font-bold text-foreground">{patient.weight ? `${patient.weight} kg` : "—"}</span>
-                  </div>
+                <div className="flex items-center gap-1.5 bg-muted/40 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl border border-border/50">
+                   <span className="text-muted-foreground">W:</span>
+                   <span className="font-bold text-foreground">{patient.weight ? `${patient.weight}kg` : "—"}</span>
                 </div>
               </div>
             </div>
@@ -101,18 +94,18 @@ export default async function PatientRecordScreen({ searchParams }) {
 
       {/* Medical Profile Sections (Summary) */}
       {(patient.medicalHistory || patient.allergies || patient.medications) && (
-        <Card className="border-sky-100 dark:border-sky-900/50 shadow-sm rounded-2xl">
-          <CardContent className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="space-y-1.5">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Medical History</h4>
-              <p className="text-sm text-foreground line-clamp-3">{patient.medicalHistory || "None recorded"}</p>
+        <Card className="border-sky-100 dark:border-sky-900/50 shadow-sm rounded-xl sm:rounded-2xl">
+          <CardContent className="p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
+            <div className="space-y-1">
+              <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">History</h4>
+              <p className="text-sm text-foreground line-clamp-3">{patient.medicalHistory || "None"}</p>
             </div>
-            <div className="space-y-1.5">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-red-500/80">Allergies</h4>
-              <p className="text-sm text-foreground line-clamp-3">{patient.allergies || "None known"}</p>
+            <div className="space-y-1">
+              <h4 className="text-[10px] font-bold uppercase tracking-wider text-red-500/80">Allergies</h4>
+              <p className="text-sm text-foreground line-clamp-3">{patient.allergies || "None"}</p>
             </div>
-            <div className="space-y-1.5">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-amber-600/80">Current Medications</h4>
+            <div className="space-y-1">
+              <h4 className="text-[10px] font-bold uppercase tracking-wider text-amber-600/80">Meds</h4>
               <p className="text-sm text-foreground line-clamp-3">{patient.medications || "None"}</p>
             </div>
           </CardContent>
@@ -124,27 +117,27 @@ export default async function PatientRecordScreen({ searchParams }) {
         <div className="lg:col-span-1 space-y-6">
           
           {/* Current Prescriptions */}
-          <Card className="border-sky-100 dark:border-sky-900 shadow-sm rounded-2xl h-fit">
-            <CardHeader className="bg-sky-50/50 dark:bg-sky-900/10 border-b border-sky-100 dark:border-sky-900 pb-4">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Pill className="h-5 w-5 text-sky-500" />
-                Active Prescriptions
+          <Card className="border-sky-100 dark:border-sky-900 shadow-sm rounded-xl sm:rounded-2xl h-fit">
+            <CardHeader className="bg-sky-50/50 dark:bg-sky-900/10 border-b border-sky-100 dark:border-sky-900 pb-3 sm:pb-4 py-3 sm:py-4">
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                <Pill className="h-4 w-4 sm:h-5 w-5 text-sky-500" />
+                Prescriptions
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               {prescriptions.length === 0 ? (
                 <div className="p-6 text-center text-muted-foreground text-sm">
-                  No active prescriptions recorded.
+                  No records.
                 </div>
               ) : (
                 <div className="divide-y divide-border">
                   {prescriptions.filter(p => p.active).map(med => (
-                    <div key={med.id} className="p-4 hover:bg-muted/30 transition-colors">
-                      <h4 className="font-semibold text-foreground flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2">
-                        <span className="break-words w-full sm:w-auto">{med.name}</span>
-                        <span className="text-xs font-normal text-muted-foreground bg-muted px-2 py-0.5 rounded-full self-start sm:self-auto shrink-0">{med.duration}</span>
-                      </h4>
-                      <p className="text-sm text-sky-600 dark:text-sky-400 font-medium mt-1">{med.dosage} • {med.frequency}</p>
+                    <div key={med.id} className="p-3 sm:p-4 hover:bg-muted/30 transition-colors">
+                      <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-1">
+                        <h4 className="font-semibold text-sm sm:text-base text-foreground break-words">{med.name}</h4>
+                        <Badge variant="secondary" className="text-[9px] w-fit">{med.duration}</Badge>
+                      </div>
+                      <p className="text-xs sm:text-sm text-sky-600 dark:text-sky-400 font-medium mt-1">{med.dosage} • {med.frequency}</p>
                     </div>
                   ))}
                 </div>
@@ -153,28 +146,28 @@ export default async function PatientRecordScreen({ searchParams }) {
           </Card>
 
           {/* Vaccination History */}
-          <Card className="border-sky-100 dark:border-sky-900 shadow-sm rounded-2xl h-fit">
-            <CardHeader className="bg-sky-50/50 dark:bg-sky-900/10 border-b border-sky-100 dark:border-sky-900 pb-4">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <ShieldCheck className="h-5 w-5 text-sky-500" />
+          <Card className="border-sky-100 dark:border-sky-900 shadow-sm rounded-xl sm:rounded-2xl h-fit">
+            <CardHeader className="bg-sky-50/50 dark:bg-sky-900/10 border-b border-sky-100 dark:border-sky-900 pb-3 sm:pb-4 py-3 sm:py-4">
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                <ShieldCheck className="h-4 w-4 sm:h-5 w-5 text-sky-500" />
                 Vaccinations
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               {vaccinations.length === 0 ? (
                 <div className="p-6 text-center text-muted-foreground text-sm">
-                  No vaccination history recorded.
+                  No history.
                 </div>
               ) : (
                 <div className="divide-y divide-border">
                   {vaccinations.map(vax => (
-                    <div key={vax.id} className="p-4">
-                      <h4 className="font-medium text-foreground">{vax.name}</h4>
+                    <div key={vax.id} className="p-3 sm:p-4">
+                      <h4 className="font-medium text-sm text-foreground">{vax.name}</h4>
                       <div className="flex justify-between items-center mt-1">
-                        <p className="text-xs text-muted-foreground flex items-center gap-1">
-                          <Calendar className="h-3 w-3" /> {format(new Date(vax.date), "MMM d, yyyy")}
+                        <p className="text-[10px] sm:text-xs text-muted-foreground flex items-center gap-1">
+                          <Calendar className="h-3 w-3" /> {format(new Date(vax.date), "MMM d, yy")}
                         </p>
-                        <span className="text-xs text-muted-foreground">{vax.provider}</span>
+                        <span className="text-[10px] sm:text-xs text-muted-foreground truncate max-w-[100px]">{vax.provider}</span>
                       </div>
                     </div>
                   ))}
@@ -187,50 +180,46 @@ export default async function PatientRecordScreen({ searchParams }) {
 
         {/* Right Column: Past Visits */}
         <div className="lg:col-span-2">
-          <Card className="border-sky-100 dark:border-sky-900 shadow-sm rounded-2xl h-full">
-            <CardHeader className="bg-sky-50/50 dark:bg-sky-900/10 border-b border-sky-100 dark:border-sky-900 pb-4">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Activity className="h-5 w-5 text-sky-500" />
-                Clinical History & Visits
+          <Card className="border-sky-100 dark:border-sky-900 shadow-sm rounded-xl sm:rounded-2xl h-full overflow-hidden">
+            <CardHeader className="bg-sky-50/50 dark:bg-sky-900/10 border-b border-sky-100 dark:border-sky-900 pb-3 sm:pb-4 py-3 sm:py-4">
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                <Activity className="h-4 w-4 sm:h-5 w-5 text-sky-500" />
+                Clinical Visits
               </CardTitle>
-              <CardDescription>Chronological record of your consultations</CardDescription>
             </CardHeader>
-            <CardContent className="p-6">
+            <CardContent className="p-4 sm:p-6 lg:p-8">
               {visits.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <div className="w-16 h-16 bg-sky-50 dark:bg-sky-900/20 rounded-full flex items-center justify-center mb-4">
-                    <FileText className="h-8 w-8 text-sky-400" />
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 bg-sky-50 dark:bg-sky-900/20 rounded-full flex items-center justify-center mb-4">
+                    <FileText className="h-6 w-6 sm:h-8 sm:w-8 text-sky-400" />
                   </div>
-                  <h3 className="text-lg font-semibold text-foreground">No visits found</h3>
-                  <p className="text-muted-foreground mt-1 max-w-sm">
-                    You haven't had any consultations yet. Your appointment history will appear here.
-                  </p>
+                  <h3 className="text-base sm:text-lg font-semibold text-foreground">No visits found</h3>
                 </div>
               ) : (
-                <div className="space-y-8 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-sky-200 dark:before:via-sky-800 before:to-transparent">
+                <div className="space-y-6 sm:space-y-8 relative before:absolute before:inset-0 before:ml-4 sm:before:ml-5 md:before:mx-auto before:-translate-x-px before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-sky-200 dark:before:via-sky-800 before:to-transparent">
                   {visits.map((visit) => (
-                    <div key={visit.id} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
+                    <div key={visit.id} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group">
                       {/* Icon */}
-                      <div className="flex items-center justify-center w-10 h-10 rounded-full border-4 border-background bg-sky-100 dark:bg-sky-900 text-sky-600 dark:text-sky-400 shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow-sm z-10">
-                        <FileText className="h-4 w-4" />
+                      <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 sm:border-4 border-background bg-sky-100 dark:bg-sky-900 text-sky-600 dark:text-sky-400 shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow-sm z-10">
+                        <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                       </div>
                       {/* Card */}
-                      <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-xl border border-border bg-card shadow-sm hover:border-sky-300 dark:hover:border-sky-700 transition-colors">
+                      <div className="w-[calc(100%-3rem)] sm:w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-3 sm:p-4 rounded-xl border border-border bg-card shadow-sm hover:border-sky-300 dark:hover:border-sky-700 transition-colors">
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-xs font-semibold text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-900/30 px-2 py-1 rounded-md">
-                            {format(new Date(visit.startTime), "MMM d, yyyy h:mm a")}
+                          <span className="text-[10px] sm:text-xs font-semibold text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-900/30 px-1.5 py-0.5 rounded-md">
+                            {format(new Date(visit.startTime), "MMM d, yy")}
                           </span>
-                          <Badge variant={visit.status === "COMPLETED" ? "default" : "secondary"} className="text-[10px]">
+                          <Badge variant={visit.status === "COMPLETED" ? "default" : "secondary"} className="text-[8px] sm:text-[9px]">
                             {visit.status}
                           </Badge>
                         </div>
-                        <h4 className="font-bold text-foreground text-base mb-1">{visit.patientDescription || "General Consultation"}</h4>
-                        <p className="text-sm font-medium text-foreground mb-2 flex items-center gap-1.5">
-                          <User className="h-3.5 w-3.5 text-muted-foreground" /> {visit.doctor?.name || "Doctor"}
+                        <h4 className="font-bold text-foreground text-sm sm:text-base mb-1 truncate">{visit.patientDescription || "Consultation"}</h4>
+                        <p className="text-xs sm:text-sm font-medium text-foreground mb-2 flex items-center gap-1.5">
+                          <User className="h-3 w-3 text-muted-foreground" /> {visit.doctor?.name || "Doctor"}
                         </p>
                         <Separator className="my-2" />
-                        <p className="text-sm text-muted-foreground leading-relaxed">
-                          {visit.notes || "No clinical notes provided yet."}
+                        <p className="text-[11px] sm:text-sm text-muted-foreground leading-relaxed line-clamp-3 sm:line-clamp-none">
+                          {visit.notes || "No notes yet."}
                         </p>
                       </div>
                     </div>

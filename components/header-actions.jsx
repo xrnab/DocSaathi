@@ -10,7 +10,7 @@ import {
   User,
 } from "lucide-react";
 import Link from "next/link";
-import { SignedIn, SignedOut, SignInButton, useUser } from "@clerk/nextjs";
+import { Show, SignInButton, useUser } from "@clerk/nextjs";
 import { ThemeAwareUserButton } from "./clerk-elements";
 import { Badge } from "./ui/badge";
 import {
@@ -29,30 +29,27 @@ export function HeaderActions({ dbUser }) {
   }, []);
   
   // Use DB user if available, otherwise fall back to Clerk user data
-  // This helps bridge the gap immediately after sign-in
   const role = dbUser?.role || "UNASSIGNED";
   const isProfileComplete = dbUser?.isProfileComplete;
   const credits = dbUser?.credits;
 
   if (!mounted || !isLoaded) {
-    return <div className="h-9 w-20 bg-muted animate-pulse rounded-full" />;
+    return <div className="h-8 w-8 sm:h-9 sm:w-20 bg-muted animate-pulse rounded-full" />;
   }
 
   return (
     <>
-      <SignedIn>
+      <Show when="signed-in">
         {/* Admin/Owner Links */}
         {(role === "ADMIN" || role === "OWNER") && (
           <Link href="/admin">
             <Button
               variant="outline"
-              className="hidden md:inline-flex items-center gap-2 border-sky-200 dark:border-sky-800 bg-sky-50/50 dark:bg-sky-900/20"
+              size="icon"
+              className="md:w-auto md:px-4 items-center gap-2 border-sky-200 dark:border-sky-800 bg-sky-50/50 dark:bg-sky-900/20 rounded-full h-8 w-8 sm:h-9 sm:w-9"
             >
               <ShieldCheck className="h-4 w-4 text-sky-500" />
-              Admin Dashboard
-            </Button>
-            <Button variant="ghost" className="md:hidden w-10 h-10 p-0 text-sky-500">
-              <ShieldCheck className="h-4 w-4" />
+              <span className="hidden md:inline">Admin Dashboard</span>
             </Button>
           </Link>
         )}
@@ -63,10 +60,11 @@ export function HeaderActions({ dbUser }) {
             <DropdownMenuTrigger asChild>
               <Button
                 variant="outline"
-                className="hidden md:inline-flex items-center gap-2"
+                size="icon"
+                className="md:w-auto md:px-4 items-center gap-2 rounded-full h-8 w-8 sm:h-9 sm:w-9"
               >
                 <Stethoscope className="h-4 w-4" />
-                Doctor Dashboard
+                <span className="hidden md:inline">Doctor Dashboard</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
@@ -83,11 +81,6 @@ export function HeaderActions({ dbUser }) {
                 </Link>
               </DropdownMenuItem>
             </DropdownMenuContent>
-            <Button variant="ghost" asChild className="md:hidden w-10 h-10 p-0">
-              <Link href="/doctor">
-                <Stethoscope className="h-4 w-4" />
-              </Link>
-            </Button>
           </DropdownMenu>
         )}
 
@@ -96,13 +89,11 @@ export function HeaderActions({ dbUser }) {
           <Link href={isProfileComplete ? "/patients" : "/patients/onboarding"}>
             <Button
               variant="outline"
-              className={`hidden md:inline-flex items-center gap-2 ${!isProfileComplete ? "border-amber-200 bg-amber-50 dark:bg-amber-900/10 text-amber-600 animate-pulse" : ""}`}
+              size="icon"
+              className={`md:w-auto md:px-4 items-center gap-2 rounded-full h-8 w-8 sm:h-9 sm:w-9 ${!isProfileComplete ? "border-amber-200 bg-amber-50 dark:bg-amber-900/10 text-amber-600 animate-pulse" : ""}`}
             >
               <Calendar className="h-4 w-4" />
-              {isProfileComplete ? "Patient Dashboard" : "Complete Profile"}
-            </Button>
-            <Button variant="ghost" className="md:hidden w-10 h-10 p-0">
-              <Calendar className="h-4 w-4" />
+              <span className="hidden md:inline">{isProfileComplete ? "Patient Dashboard" : "Complete Profile"}</span>
             </Button>
           </Link>
         )}
@@ -112,59 +103,57 @@ export function HeaderActions({ dbUser }) {
           <Link href="/onboarding">
             <Button
               variant="outline"
-              className="hidden md:inline-flex items-center gap-2"
+              size="icon"
+              className="md:w-auto md:px-4 items-center gap-2 rounded-full h-8 w-8 sm:h-9 sm:w-9"
             >
               <User className="h-4 w-4" />
-              Complete Profile
-            </Button>
-            <Button variant="ghost" className="md:hidden w-10 h-10 p-0">
-              <User className="h-4 w-4" />
+              <span className="hidden md:inline">Complete Profile</span>
             </Button>
           </Link>
         )}
-      </SignedIn>
+      </Show>
 
+      {/* Credits/Pricing - Circular Blue Button */}
       {(role !== "ADMIN" && role !== "OWNER") && (
         <Link href={!dbUser || role === "PATIENT" ? "/pricing" : "/doctor"}>
-          <Badge
+          <Button
             variant="outline"
-            className="h-9 bg-sky-100 dark:bg-sky-900/20 border-sky-300 dark:border-sky-700/30 px-3 py-1 flex items-center gap-2"
+            size="icon"
+            className="md:w-auto md:px-3 bg-sky-500 hover:bg-sky-600 border-none text-white rounded-full h-8 w-8 sm:h-9 sm:w-auto gap-2 shadow-lg shadow-sky-500/20"
           >
-            <CreditCard className="h-3.5 w-3.5 text-sky-600 dark:text-sky-400" />
-            <span className="text-sky-600 dark:text-sky-400 font-medium">
-              {dbUser && role !== "ADMIN" && role !== "OWNER" ? (
-                <>
-                  {credits}{" "}
-                  <span className="hidden md:inline">
-                    {role === "PATIENT" ? "Credits" : "Earned Credits"}
-                  </span>
-                </>
-              ) : (
-                <>Pricing</>
-              )}
-            </span>
-          </Badge>
+            <CreditCard className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
+            {dbUser && role !== "ADMIN" && role !== "OWNER" ? (
+              <span className="hidden md:inline text-xs font-bold">
+                {credits} Credits
+              </span>
+            ) : (
+              <span className="hidden md:inline text-xs font-bold">Pricing</span>
+            )}
+          </Button>
         </Link>
       )}
 
-      <SignedOut>
+      <Show when="signed-out">
         <SignInButton mode="modal">
-          <Button variant="secondary" className="font-semibold px-6 shadow-sm">Sign In</Button>
+          <Button variant="secondary" size="sm" className="font-semibold px-2 sm:px-4 shadow-sm h-8 sm:h-9 text-xs rounded-full">
+            <User className="h-4 w-4 md:hidden" />
+            <span className="hidden md:inline">Sign In</span>
+          </Button>
         </SignInButton>
-      </SignedOut>
+      </Show>
 
-      <SignedIn>
+      <Show when="signed-in">
         <ThemeAwareUserButton
           appearance={{
             elements: {
-              avatarBox: "w-10 h-10",
+              avatarBox: "w-8 h-8 sm:w-9 sm:h-9",
               userButtonPopoverCard: "shadow-xl",
               userPreviewMainIdentifier: "font-semibold",
             },
           }}
           afterSignOutUrl="/"
         />
-      </SignedIn>
+      </Show>
     </>
   );
 }

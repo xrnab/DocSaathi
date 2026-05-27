@@ -1,14 +1,16 @@
 "use client";
 
 import { useEffect } from 'react';
+import { Languages } from 'lucide-react';
 
 const GoogleTranslate = () => {
   useEffect(() => {
     // Check if the script is already loaded
     if (window.googleTranslateElementInit) return;
 
-    // Pre-select 'pa' (Punjabi) as the default target language
-    document.cookie = "googtrans=/en/pa; path=/;";
+    // Set default target to English by clearing any auto-translate cookies
+    document.cookie = "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    document.cookie = "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=." + window.location.hostname;
 
     window.googleTranslateElementInit = () => {
       new window.google.translate.TranslateElement(
@@ -32,43 +34,36 @@ const GoogleTranslate = () => {
   }, []);
 
   return (
-    <div className="flex items-center mx-1">
-      <div id="google_translate_element" className="google-translate-container"></div>
+    <div className="flex items-center mx-0.5 relative group">
+      {/* Visual Icon */}
+      <div className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 bg-slate-800/50 hover:bg-slate-700/50 border border-white/10 rounded-full transition-colors">
+        <Languages className="h-4 w-4 sm:h-4.5 sm:w-4.5 text-white" />
+      </div>
+
+      {/* Hidden Google Translate Trigger */}
+      <div id="google_translate_element" className="google-translate-container absolute inset-0 opacity-0 cursor-pointer overflow-hidden"></div>
+      
       <style jsx global>{`
         .google-translate-container {
-          min-height: 32px;
-          display: flex;
-          align-items: center;
+          width: 100% !important;
+          height: 100% !important;
+          z-index: 1;
         }
         .goog-te-gadget-simple {
           background-color: transparent !important;
-          border: 1px solid rgba(14, 165, 233, 0.1) !important;
-          padding: 2px 6px !important;
-          border-radius: 12px !important;
+          border: none !important;
+          padding: 0 !important;
+          width: 100% !important;
+          height: 100% !important;
           display: flex !important;
           align-items: center !important;
-          transition: all 0.2s ease !important;
+          justify-content: center !important;
           cursor: pointer !important;
-        }
-        .goog-te-gadget-simple:hover {
-          background-color: rgba(14, 165, 233, 0.05) !important;
-          border-color: rgba(14, 165, 233, 0.3) !important;
         }
         .goog-te-gadget-simple img {
           display: none !important;
         }
         .goog-te-gadget-simple span {
-          color: #64748b !important;
-          font-size: 11px !important;
-          font-weight: 700 !important;
-          text-transform: uppercase !important;
-          letter-spacing: 0.05em !important;
-        }
-        .dark .goog-te-gadget-simple span {
-          color: #94a3b8 !important;
-        }
-        .goog-te-menu-value span:nth-child(3),
-        .goog-te-menu-value span:nth-child(5) {
           display: none !important;
         }
         iframe.goog-te-banner-frame {
@@ -78,7 +73,6 @@ const GoogleTranslate = () => {
         body {
           top: 0 !important;
         }
-        /* Handle the gap created by Google Translate bar */
         .goog-te-banner-frame.skiptranslate {
           display: none !important;
         }

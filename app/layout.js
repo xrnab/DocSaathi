@@ -65,7 +65,7 @@ export default function RootLayout({ children }) {
             }>
               <Header />
             </Suspense>
-            <main className="min-h-screen pt-24">{children}</main>
+            <main className="min-h-screen">{children}</main>
             <Toaster richColors />
             <OfflineIndicator />
             <PwaInstallBanner />
