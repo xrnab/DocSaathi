@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { MapPin, ArrowRight, User, Star, Loader2, Hospital, Navigation, Map as MapIcon } from "lucide-react";
+import { MapPin, ArrowRight, User, Star, Loader2, Hospital, Navigation, Map as MapIcon, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
@@ -123,9 +123,18 @@ export default function NearbyDoctors() {
                 <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-white animate-pulse"></span>
                 Local Doctors Active
               </span>
-              <Link href="/doctors" className="bg-white/20 hover:bg-white/30 text-white rounded-lg px-2 sm:px-2.5 py-1 text-[8px] sm:text-[9px] font-black uppercase tracking-wider transition-all flex items-center gap-0.5">
-                View All <ArrowRight className="h-3 w-3" />
-              </Link>
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <Link href="/doctors" className="bg-white/20 hover:bg-white/30 text-white rounded-lg px-2 sm:px-2.5 py-1 text-[8px] sm:text-[9px] font-black uppercase tracking-wider transition-all flex items-center gap-0.5">
+                  View All <ArrowRight className="h-3 w-3" />
+                </Link>
+                <button 
+                  onClick={() => setShowList(false)}
+                  className="p-1 rounded-lg hover:bg-white/20 text-white transition-all focus:outline-none shrink-0"
+                  aria-label="Close panel"
+                >
+                  <X className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                </button>
+              </div>
             </div>
 
             <div className="p-3 sm:p-4 bg-sky-50/30 dark:bg-sky-900/10 flex items-center justify-between gap-2">
