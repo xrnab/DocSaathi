@@ -16,7 +16,10 @@ const STATUS_STYLES = {
 };
 
 export default async function VideoCallPage({ searchParams }) {
-  const { appointmentId, from } = await searchParams;
+  // Gracefully support both Promise-based and plain Object searchParams across Next.js versions
+  const resolvedParams = searchParams && typeof searchParams.then === "function" ? await searchParams : searchParams;
+  const appointmentId = resolvedParams?.appointmentId;
+  const from = resolvedParams?.from;
   const backPath = BACK_PATHS[from] || "/appointments";
 
   if (!appointmentId || Array.isArray(appointmentId)) {
