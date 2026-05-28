@@ -20,16 +20,22 @@ export function OfflineEmergencyCard() {
         onClick={() => setIsOpen(!isOpen)}
         className="w-full p-5 flex items-center justify-between gap-4 font-sans select-none"
       >
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
           <div className="p-3 bg-red-500/10 rounded-2xl text-red-500 shrink-0 animate-pulse">
             <HeartPulse className="h-6 w-6" />
           </div>
-          <div className="text-left min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <h4 className="font-extrabold text-slate-900 dark:text-white text-base leading-none">Nabha Block Emergency Directory</h4>
-              <Badge className="bg-red-500 text-white border-0 text-[8px] font-black tracking-widest py-0.5 px-2 uppercase rounded-full">OFFLINE SECURE</Badge>
+          <div className="text-left min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+              <h4 className="font-extrabold text-slate-900 dark:text-white text-sm sm:text-base leading-tight break-words">
+                Nabha Block Emergency Directory
+              </h4>
+              <Badge className="bg-red-500 text-white border-0 text-[8px] font-black tracking-widest py-0.5 px-2 uppercase rounded-full shrink-0">
+                OFFLINE SECURE
+              </Badge>
             </div>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5 truncate">Dial critical Nabha hospital, local PHC, and ambulance helplines instantly</p>
+            <p className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-normal line-clamp-1 sm:line-clamp-none">
+              Dial critical Nabha hospital, local PHC, and ambulance helplines instantly
+            </p>
           </div>
         </div>
         <div className="p-2 hover:bg-red-500/10 rounded-full transition-all text-red-500">

@@ -399,20 +399,20 @@ export default function SymptomChecker() {
                 <div className="space-y-4 mb-10">
                   <h4 className="text-sm font-bold text-slate-400 uppercase tracking-widest ml-1">Other Details</h4>
                   <div className="relative">
-                    <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300" />
+                    <Search className="absolute left-4 sm:left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-350 dark:text-slate-500" />
                     <Input 
                       placeholder="Describe any other symptoms or pain..." 
-                      className="pl-14 pr-16 h-16 text-lg rounded-2xl border-2 border-slate-50 focus-visible:ring-sky-600 bg-slate-50/50 dark:bg-slate-800/30"
+                      className="pl-11 sm:pl-14 pr-12 sm:pr-16 h-14 sm:h-16 text-sm sm:text-base md:text-lg rounded-2xl border-2 border-slate-105 dark:border-slate-800 focus-visible:ring-sky-600 bg-slate-50/50 dark:bg-slate-850/30 text-slate-900 dark:text-white"
                       value={customSymptom}
                       onChange={(e) => setCustomSymptom(e.target.value)}
                       suppressHydrationWarning={true}
                     />
                     
                     {/* Voice Input Button */}
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center">
+                    <div className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 flex items-center">
                       {showTooltip && (
-                        <div className="absolute bottom-full right-0 mb-3 w-72 bg-sky-600 dark:bg-sky-700 text-white text-xs font-bold px-4 py-3 rounded-2xl shadow-2xl animate-in fade-in slide-in-from-bottom-2 duration-300 z-30">
-                          <div className="relative flex items-start gap-2">
+                        <div className="absolute bottom-full right-0 mb-3 w-[250px] sm:w-72 bg-sky-600 dark:bg-sky-700 text-white text-xs font-bold px-3.5 py-3 rounded-2xl shadow-2xl animate-in fade-in slide-in-from-bottom-2 duration-300 z-30">
+                          <div className="relative flex items-start gap-1.5 leading-normal">
                             <span>🎙️ Tap mic and speak your symptoms in Punjabi or Hindi</span>
                             <button 
                               type="button"
@@ -421,11 +421,11 @@ export default function SymptomChecker() {
                                 e.stopPropagation();
                                 dismissTooltip();
                               }}
-                              className="ml-auto text-white/70 hover:text-white font-extrabold text-sm leading-none shrink-0"
+                              className="ml-auto text-white/80 hover:text-white font-extrabold text-sm leading-none shrink-0"
                             >
                               ✕
                             </button>
-                            <div className="absolute top-full right-4 -translate-y-1.5 w-3 h-3 bg-sky-600 dark:bg-sky-700 rotate-45" />
+                            <div className="absolute top-full right-3 sm:right-4 -translate-y-1.5 w-3 h-3 bg-sky-600 dark:bg-sky-700 rotate-45" />
                           </div>
                         </div>
                       )}
@@ -434,7 +434,7 @@ export default function SymptomChecker() {
                         type="button"
                         onClick={toggleListening}
                         className={cn(
-                          "p-3 rounded-xl transition-all duration-300 flex items-center justify-center cursor-pointer",
+                          "p-2.5 sm:p-3 rounded-xl transition-all duration-300 flex items-center justify-center cursor-pointer",
                           isListening 
                             ? "bg-red-500 text-white animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.6)]" 
                             : "bg-sky-50 hover:bg-sky-100 text-sky-600 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-sky-400"
@@ -442,9 +442,9 @@ export default function SymptomChecker() {
                         title="Voice Input (Punjabi / Hindi)"
                       >
                         {isListening ? (
-                          <MicOff className="h-5 w-5 animate-bounce" />
+                          <MicOff className="h-4.5 w-4.5 sm:h-5 sm:w-5" />
                         ) : (
-                          <Mic className="h-5 w-5" />
+                          <Mic className="h-4.5 w-4.5 sm:h-5 sm:w-5" />
                         )}
                       </button>
                     </div>
