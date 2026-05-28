@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { getVideoCallSession } from "@/actions/appointments";
+import { getVideoCallSession } from "@/lib/video";
 import VideoCall from "./video-call-ui";
 
 const BACK_PATHS = {
