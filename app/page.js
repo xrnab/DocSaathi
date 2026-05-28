@@ -13,6 +13,9 @@ import SymptomChecker from "@/components/symptom-checker";
 import { HomeAiAssistantButton } from "@/components/home-ai-assistant-button";
 import NearbyDoctors from "@/components/nearby-doctors";
 import { OfflineEmergencyCard } from "@/components/offline-emergency-card";
+import { ImpactStatistics } from "@/components/impact-statistics";
+import { FeatureGrid } from "@/components/feature-grid";
+import { SeasonalReportGrid } from "@/components/seasonal-report-grid";
 
 export default async function Home() {
   const userRole = await getUserRole();
@@ -20,7 +23,7 @@ export default async function Home() {
     <div className="bg-background">
       <HomeAiAssistantButton />
       {/* Refactored Hero Section into a Card Layout */}
-      <section className="container mx-auto px-4 pt-1 sm:pt-2 pb-6 flex flex-col items-center">
+      <section className="container mx-auto px-4 pt-3 sm:pt-4 pb-6 flex flex-col items-center">
         <Card className="w-full relative overflow-hidden border-none shadow-2xl rounded-[2.5rem] sm:rounded-[4rem] bg-slate-950 min-h-[60vh] sm:min-h-[40vh] lg:min-h-[35vh] flex flex-col">
           {/* Background Image with Overlay */}
           <div className="absolute inset-0 z-0">
@@ -86,31 +89,7 @@ export default async function Home() {
         </Card>
 
         {/* Impact Statistics Below Hero Card */}
-        <div className="w-full mt-6 sm:mt-8 px-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 items-center max-w-6xl mx-auto">
-            <div className="text-center md:text-left space-y-2 p-4 rounded-2xl bg-sky-500/5 border border-sky-500/10 backdrop-blur-sm">
-              <div className="text-3xl sm:text-4xl font-black text-sky-600 dark:text-sky-400">45+</div>
-              <div>
-                <p className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-widest">Surrounding Villages Covered</p>
-                <p className="text-[11px] sm:text-xs text-slate-500 leading-tight mt-1">Providing direct digital access to remote agricultural hubs</p>
-              </div>
-            </div>
-            <div className="text-center md:text-left space-y-2 p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/10 backdrop-blur-sm">
-              <div className="text-3xl sm:text-4xl font-black text-emerald-600 dark:text-emerald-400">12+</div>
-              <div>
-                <p className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-widest">Doctors in Nabha District</p>
-                <p className="text-[11px] sm:text-xs text-slate-500 leading-tight mt-1">Local specialists and GPs ready for immediate telemedicine</p>
-              </div>
-            </div>
-            <div className="text-center md:text-left space-y-2 p-4 rounded-2xl bg-amber-500/5 border border-amber-500/10 backdrop-blur-sm">
-              <div className="text-3xl sm:text-4xl font-black text-amber-600 dark:text-amber-400">42 km</div>
-              <div>
-                <p className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-widest">Nearest Hospital (Patiala)</p>
-                <p className="text-[11px] sm:text-xs text-slate-500 leading-tight mt-1">Saving rural families critical hours in transport and triaging</p>
-              </div>
-            </div>
-          </div>
-        </div>
+        <ImpactStatistics />
       </section>
 
       {/* Features Section */}
@@ -125,95 +104,7 @@ export default async function Home() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {features.map((feature, index) => {
-              let href = feature.href;
-              let title = feature.title;
-              let description = feature.description;
-              
-              // Dynamic link and content for Admin/Owner
-              if (userRole === "ADMIN" || userRole === "OWNER") {
-                if (title === "Create Your Profile") {
-                  title = "Manage Users";
-                  description = "Control user roles and manage account settings for all platform members.";
-                  href = "/admin?tab=users";
-                } else if (title === "Book Appointments") {
-                  title = "Pending Verifications";
-                  description = "Review and verify new doctor registrations to ensure platform quality.";
-                  href = "/admin?tab=pending";
-                } else if (title === "Video Consultation") {
-                  title = "Monitor Payouts";
-                  description = "Track and process doctor earnings and platform financial transactions.";
-                  href = "/admin?tab=payouts";
-                } else if (title === "Consultation Credits") {
-                  title = "Platform Analytics";
-                  description = "View detailed reports on consultations, revenue, and platform growth.";
-                  href = "/admin";
-                } else if (title === "Verified Doctors") {
-                  title = "Doctor Management";
-                  description = "Manage verified healthcare providers and update their status.";
-                  href = "/admin?tab=doctors";
-                } else if (title === "Medical Documentation") {
-                  title = "Patient Records";
-                  description = "Access comprehensive medical documentation and history across the platform.";
-                  href = "/doctor/patients";
-                }
-              } else if (userRole === "DOCTOR") {
-                if (title === "Create Your Profile") {
-                  title = "Professional Profile";
-                  description = "Manage your medical credentials, specialty, and consultation availability.";
-                  href = "/doctor/profile";
-                } else if (title === "Book Appointments") {
-                  title = "My Appointments";
-                  description = "View your scheduled consultations and manage your daily healthcare calendar.";
-                  href = "/doctor";
-                } else if (title === "Video Consultation") {
-                  title = "Telemedicine Hub";
-                  description = "Launch secure video consultations and provide remote medical care to patients.";
-                  href = "/doctor";
-                } else if (title === "Consultation Credits") {
-                  title = "Earnings Overview";
-                  description = "Track your earned credits and monitor your monthly consultation revenue.";
-                  href = "/doctor";
-                } else if (title === "Verified Doctors") {
-                  title = "Find Colleagues";
-                  description = "Connect and collaborate with other verified healthcare specialists on the platform.";
-                  href = "/doctors";
-                } else if (title === "Medical Documentation") {
-                  title = "Patient Records";
-                  description = "Access and update medical records for all patients you have consulted.";
-                  href = "/doctor/patients";
-                }
-              } else {
-                // Dynamic link for Medical Documentation feature card for non-admins/non-doctors
-                if (title === "Medical Documentation") {
-                  href = "/records";
-                }
-              }
-
-              return (
-                <Link href={href || "#"} key={index} className="block group">
-                  <Card
-                    className="bg-card/30 backdrop-blur-xl border border-sky-500/10 hover:border-sky-500/30 hover:shadow-2xl hover:shadow-sky-500/10 transition-all duration-300 relative overflow-hidden h-full group"
-                  >
-                    {/* Subtle gradient hover effect inside card */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-sky-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                    <CardHeader className="pb-2">
-                      <div className="bg-sky-500/20 p-3 rounded-lg w-fit mb-4">
-                        {feature.icon}
-                      </div>
-                      <CardTitle className="text-xl font-semibold text-foreground group-hover:text-sky-500 transition-colors">
-                        {title}
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-muted-foreground">{description}</p>
-                    </CardContent>
-                  </Card>
-                </Link>
-              );
-            })}
-          </div>
+          <FeatureGrid features={features} userRole={userRole} />
         </div>
       </section>
 
@@ -238,41 +129,7 @@ export default async function Home() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {seasonalDiseases.map((disease) => (
-              <Card key={disease.id} className="bg-card/30 backdrop-blur-xl border border-sky-500/10 hover:border-sky-500/30 transition-all duration-300 rounded-[2rem] overflow-hidden group hover:shadow-xl hover:shadow-sky-500/5">
-                <CardHeader className="pb-2">
-                  <div className="flex justify-between items-start gap-2">
-                    <Badge variant="outline" className={`${disease.statusColor} font-black uppercase text-[9px] tracking-wider py-1 px-2.5 rounded-full border`}>
-                      {disease.riskLevel}
-                    </Badge>
-                    <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest bg-slate-100 dark:bg-slate-900 px-2.5 py-1 rounded-full">Monthly Update</span>
-                  </div>
-                  <CardTitle className="text-2xl font-black text-foreground mt-4 group-hover:text-sky-500 transition-colors">
-                    {disease.title}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4 pt-2">
-                  <div className="space-y-1.5">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Key Symptoms</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {disease.symptoms.map((symptom, idx) => (
-                        <span key={idx} className="text-xs bg-slate-100 dark:bg-slate-900 px-2.5 py-1 rounded-xl text-slate-600 dark:text-slate-400 font-semibold">
-                          {symptom}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="space-y-1 pt-2 border-t border-slate-100 dark:border-slate-800">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Prevention Plan</p>
-                    <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
-                      {disease.prevention}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          <SeasonalReportGrid seasonalDiseases={seasonalDiseases} />
         </div>
       </section>
 
