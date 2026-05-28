@@ -13,8 +13,8 @@ import {
   Activity,
 } from "lucide-react";
 import Link from "next/link";
-import { Show, SignInButton, useUser } from "@clerk/nextjs";
-import { ThemeAwareUserButton } from "./clerk-elements";
+import { SignInButton, useUser } from "@clerk/nextjs";
+import { ThemeAwareUserButton, Show } from "./clerk-elements";
 import { Badge } from "./ui/badge";
 import {
   DropdownMenu,

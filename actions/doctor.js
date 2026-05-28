@@ -41,18 +41,12 @@ export async function setAvailabilitySlots(formData) {
       throw new Error("Start time must be before end time");
     }
 
-    // Check if there is an identical existing slot to avoid duplication
-    const duplicateSlot = await db.availability.findFirst({
+    // Delete any existing availability slots for this doctor so only one active slot remains
+    await db.availability.deleteMany({
       where: {
         doctorId: doctor.id,
-        startTime: new Date(startTime),
-        endTime: new Date(endTime),
       },
     });
-
-    if (duplicateSlot) {
-      throw new Error("This availability slot already exists");
-    }
 
     // Create new availability slot
     const newSlot = await db.availability.create({

@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import Pricing from "@/components/pricing";
 import { creditBenefits, features, testimonials, seasonalDiseases } from "@/lib/data";
-import { Show } from "@clerk/nextjs";
+import { Show } from "@/components/clerk-elements";
 import { getUserRole } from "@/actions/records";
 
 import SymptomChecker from "@/components/symptom-checker";

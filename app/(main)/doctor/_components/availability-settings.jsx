@@ -17,9 +17,11 @@ import { format } from "date-fns";
 import { setAvailabilitySlots } from "@/actions/doctor";
 import useFetch from "@/hooks/use-fetch";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 export function AvailabilitySettings({ slots }) {
   const [showForm, setShowForm] = useState(false);
+  const router = useRouter();
 
   const { loading, fn: submitSlots, data } = useFetch(setAvailabilitySlots);
 
@@ -59,8 +61,9 @@ export function AvailabilitySettings({ slots }) {
       setShowForm(false);
       reset();
       toast.success("Availability slots updated successfully");
+      router.refresh();
     }
-  }, [data]);
+  }, [data, router, reset]);
 
   const formatTimeString = (dateString) => {
     try { return format(new Date(dateString), "h:mm a"); }

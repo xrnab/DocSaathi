@@ -1,6 +1,6 @@
 "use client";
 
-import { UserButton, SignIn, SignUp, UserProfile, PricingTable } from "@clerk/nextjs";
+import { UserButton, SignIn, SignUp, UserProfile, PricingTable, useAuth } from "@clerk/nextjs";
 import { useTheme } from "next-themes";
 import { dark } from "@clerk/themes";
 import { useEffect, useState, Component } from "react";
@@ -168,4 +168,15 @@ export function ThemeAwareUserProfile(props) {
       }} 
     />
   );
+}
+
+export function Show({ when, children }) {
+  const { isSignedIn } = useAuth();
+  if (when === "signed-in") {
+    return isSignedIn ? children : null;
+  }
+  if (when === "signed-out") {
+    return !isSignedIn ? children : null;
+  }
+  return null;
 }
