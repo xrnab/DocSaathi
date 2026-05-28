@@ -10,8 +10,10 @@ export function PwaInstallBanner() {
   const [showBanner, setShowBanner] = useState(false);
   const [visitCount, setVisitCount] = useState(1);
   const [isInstalled, setIsInstalled] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     // 1. Safe Service Worker Registration
     if (typeof window !== "undefined" && "serviceWorker" in navigator) {
       navigator.serviceWorker
@@ -118,7 +120,7 @@ export function PwaInstallBanner() {
     toast.info("Install request hidden. You can still install DocSaathi anytime from your browser menu.");
   };
 
-  if (!showBanner || isInstalled) return null;
+  if (!mounted || !showBanner || isInstalled) return null;
 
   return (
     <div className="fixed bottom-6 left-4 right-4 md:left-auto md:right-6 md:w-[420px] z-[999] animate-in slide-in-from-bottom-8 duration-500 ease-out">

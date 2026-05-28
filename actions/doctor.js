@@ -3,6 +3,7 @@
 import { db } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
+import { createNotification } from "@/actions/notifications";
 
 /**
  * Set doctor's availability slots
@@ -40,29 +41,17 @@ export async function setAvailabilitySlots(formData) {
       throw new Error("Start time must be before end time");
     }
 
-    // Check if the doctor already has slots
-    const existingSlots = await db.availability.findMany({
+    // Check if there is an identical existing slot to avoid duplication
+    const duplicateSlot = await db.availability.findFirst({
       where: {
         doctorId: doctor.id,
+        startTime: new Date(startTime),
+        endTime: new Date(endTime),
       },
     });
 
-    // If slots exist, delete them all (we're replacing them)
-    if (existingSlots.length > 0) {
-      // Don't delete slots that already have appointments
-      const slotsWithNoAppointments = existingSlots.filter(
-        (slot) => !slot.appointment
-      );
-
-      if (slotsWithNoAppointments.length > 0) {
-        await db.availability.deleteMany({
-          where: {
-            id: {
-              in: slotsWithNoAppointments.map((slot) => slot.id),
-            },
-          },
-        });
-      }
+    if (duplicateSlot) {
+      throw new Error("This availability slot already exists");
     }
 
     // Create new availability slot
@@ -283,8 +272,18 @@ export async function cancelAppointment(formData) {
     // Determine which path to revalidate based on user role
     if (user.role === "DOCTOR") {
       revalidatePath("/doctor");
+      createNotification(
+        appointment.patientId,
+        `Your appointment with Dr. ${appointment.doctor.name} has been cancelled.`,
+        "APPOINTMENT"
+      ).catch(err => console.error("Failed to notify patient:", err));
     } else if (user.role === "PATIENT") {
       revalidatePath("/appointments");
+      createNotification(
+        appointment.doctorId,
+        `The appointment with ${appointment.patient.name || "Patient"} has been cancelled.`,
+        "APPOINTMENT"
+      ).catch(err => console.error("Failed to notify doctor:", err));
     }
 
     return { success: true };
@@ -512,6 +511,14 @@ export async function rejectAppointment(formData) {
 
     revalidatePath("/doctor");
     revalidatePath("/appointments");
+
+    // Trigger notification to patient
+    createNotification(
+      appointment.patientId,
+      `Your appointment request with Dr. ${doctor.name} has been rejected.`,
+      "APPOINTMENT"
+    ).catch(err => console.error("Failed to notify patient:", err));
+
     return { success: true };
   } catch (error) {
     console.error("Failed to reject appointment:", error);
@@ -595,6 +602,14 @@ export async function markAppointmentCompleted(formData) {
 
     revalidatePath("/doctor");
     revalidatePath("/patients");
+
+    // Trigger notification to patient
+    createNotification(
+      appointment.patientId,
+      `Dr. ${doctor.name} has completed your appointment. You can view your record details.`,
+      "APPOINTMENT"
+    ).catch(err => console.error("Failed to notify patient:", err));
+
     return { success: true, appointment: updatedAppointment };
   } catch (error) {
     console.error("Failed to mark appointment as completed:", error);

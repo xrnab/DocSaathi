@@ -16,7 +16,13 @@ import {
   ChevronRight,
   Loader2,
   Mic,
-  MicOff
+  MicOff,
+  Pill,
+  Leaf,
+  Zap,
+  AlertTriangle,
+  FileText,
+  Clock
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -52,6 +58,126 @@ const ALL_SYMPTOMS_LOOKUP = [
   { id: "muscle_cramps", label: "Muscle Cramps (Farm Labor)" },
   { id: "waterborne_illness", label: "Waterborne Illness" },
 ];
+
+const SECTION_HEADERS = [
+  { key: "URGENCY", match: /^\s*\*?\*?\s*URGENCY\s*\*?\*?:?/i },
+  { key: "POSSIBLE CONDITIONS", match: /^\s*\*?\*?\s*POSSIBLE\s+CONDITIONS\s*\*?\*?:?/i },
+  { key: "RECOMMENDED ACTION", match: /^\s*\*?\*?\s*RECOMMENDED\s+ACTION\s*\*?\*?:?/i },
+  { key: "HOME REMEDIES", match: /^\s*\*?\*?\s*HOME\s+REMEDIES\s*\*?\*?:?/i },
+  { key: "MEDICINES", match: /^\s*\*?\*?\s*MEDICINES\s*\*?\*?:?/i },
+  { key: "SEE DOCTOR IF", match: /^\s*\*?\*?\s*SEE\s+DOCTOR\s+IF\s*\*?\*?:?/i },
+  { key: "DISCLAIMER", match: /^\s*\*?\*?\s*DISCLAIMER\s*\*?\*?:?/i }
+];
+
+const SECTION_THEMES = {
+  "URGENCY": {
+    icon: AlertCircle,
+    bg: "bg-rose-500/5 dark:bg-rose-500/10",
+    border: "border-rose-500/20 dark:border-rose-500/30",
+    iconBg: "bg-rose-500/10 text-rose-500",
+    text: "text-rose-700 dark:text-rose-400"
+  },
+  "POSSIBLE CONDITIONS": {
+    icon: Stethoscope,
+    bg: "bg-sky-500/5 dark:bg-sky-500/10",
+    border: "border-sky-500/20 dark:border-sky-500/30",
+    iconBg: "bg-sky-500/10 text-sky-500",
+    text: "text-sky-700 dark:text-sky-400"
+  },
+  "RECOMMENDED ACTION": {
+    icon: Zap,
+    bg: "bg-purple-500/5 dark:bg-purple-500/10",
+    border: "border-purple-500/20 dark:border-purple-500/30",
+    iconBg: "bg-purple-500/10 text-purple-500",
+    text: "text-purple-700 dark:text-purple-400"
+  },
+  "HOME REMEDIES": {
+    icon: Leaf,
+    bg: "bg-emerald-500/5 dark:bg-emerald-500/10",
+    border: "border-emerald-500/20 dark:border-emerald-500/30",
+    iconBg: "bg-emerald-500/10 text-emerald-500",
+    text: "text-emerald-700 dark:text-emerald-400"
+  },
+  "MEDICINES": {
+    icon: Pill,
+    bg: "bg-amber-500/5 dark:bg-amber-500/10",
+    border: "border-amber-500/20 dark:border-amber-500/30",
+    iconBg: "bg-amber-500/10 text-amber-500",
+    text: "text-amber-700 dark:text-amber-400"
+  },
+  "SEE DOCTOR IF": {
+    icon: AlertTriangle,
+    bg: "bg-red-500/5 dark:bg-red-500/10",
+    border: "border-red-500/20 dark:border-red-500/30",
+    iconBg: "bg-red-500/10 text-red-500",
+    text: "text-red-700 dark:text-red-400"
+  },
+  "DISCLAIMER": {
+    icon: FileText,
+    bg: "bg-slate-500/5 dark:bg-slate-500/10",
+    border: "border-slate-500/20 dark:border-slate-500/30",
+    iconBg: "bg-slate-500/10 text-slate-500",
+    text: "text-slate-700 dark:text-slate-400"
+  },
+  "DEFAULT": {
+    icon: Activity,
+    bg: "bg-slate-500/5 dark:bg-slate-500/10",
+    border: "border-slate-500/20 dark:border-slate-500/30",
+    iconBg: "bg-slate-500/10 text-slate-500",
+    text: "text-slate-700 dark:text-slate-400"
+  }
+};
+
+function parseReport(text) {
+  if (!text) return [];
+  const lines = text.split("\n");
+  const sections = [];
+  let currentSection = null;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+
+    let matchedHeader = null;
+    for (const header of SECTION_HEADERS) {
+      if (header.match.test(trimmed)) {
+        matchedHeader = header;
+        break;
+      }
+    }
+
+    if (matchedHeader) {
+      let val = "";
+      const colonIndex = trimmed.indexOf(":");
+      if (colonIndex !== -1) {
+        val = trimmed.substring(colonIndex + 1).trim();
+      } else {
+        const headerLen = trimmed.match(matchedHeader.match)[0].length;
+        val = trimmed.substring(headerLen).trim();
+      }
+      
+      val = val.replace(/^\*+\s*|\s*\*+$/g, "");
+
+      currentSection = {
+        label: matchedHeader.key,
+        content: val ? [val] : []
+      };
+      sections.push(currentSection);
+    } else {
+      if (currentSection) {
+        currentSection.content.push(trimmed);
+      } else {
+        currentSection = {
+          label: "GENERAL INFO",
+          content: [trimmed]
+        };
+        sections.push(currentSection);
+      }
+    }
+  }
+
+  return sections;
+}
 
 export default function SymptomChecker() {
   const [selectedSymptoms, setSelectedSymptoms] = useState([]);
@@ -143,11 +269,42 @@ export default function SymptomChecker() {
       toast.error("Failed to start voice capture.");
     }
   };
+  const reportRef = useRef(null);
   const [duration, setDuration] = useState("Today");
   const [patientType, setPatientType] = useState("Adult");
   const [report, setReport] = useState(null);
+
+  useEffect(() => {
+    if (report) {
+      reportRef.current?.focus();
+    }
+  }, [report]);
+
   const [error, setError] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisProgressText, setAnalysisProgressText] = useState("Reading your symptoms...");
+
+  useEffect(() => {
+    let interval;
+    if (isAnalyzing) {
+      const messages = [
+        "Reading your symptoms...",
+        "Cross-checking conditions...",
+        "Preparing your report..."
+      ];
+      let index = 0;
+      setAnalysisProgressText(messages[0]);
+      
+      interval = setInterval(() => {
+        index = (index + 1) % messages.length;
+        setAnalysisProgressText(messages[index]);
+      }, 2000);
+    }
+    
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isAnalyzing]);
 
   const LANGUAGES = ["Punjabi", "English", "Hindi", "Bengali", "Tamil"];
   const DURATIONS = ["Today", "2-3 days", "1 week", "More than 1 week"];
@@ -248,6 +405,7 @@ export default function SymptomChecker() {
                       className="pl-14 pr-16 h-16 text-lg rounded-2xl border-2 border-slate-50 focus-visible:ring-sky-600 bg-slate-50/50 dark:bg-slate-800/30"
                       value={customSymptom}
                       onChange={(e) => setCustomSymptom(e.target.value)}
+                      suppressHydrationWarning={true}
                     />
                     
                     {/* Voice Input Button */}
@@ -316,11 +474,13 @@ export default function SymptomChecker() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10 border-t border-slate-50 pt-10">
                   {/* Duration Selector */}
                   <div className="space-y-4">
-                    <h4 className="text-sm font-bold text-slate-400 uppercase tracking-widest ml-1">Duration</h4>
-                    <div className="grid grid-cols-2 gap-2">
+                    <h4 id="duration-label" className="text-sm font-bold text-slate-400 uppercase tracking-widest ml-1">Duration</h4>
+                    <div role="group" aria-labelledby="duration-label" className="grid grid-cols-2 gap-2">
                       {DURATIONS.map((d) => (
                         <button
                           key={d}
+                          type="button"
+                          aria-pressed={duration === d}
                           onClick={() => setDuration(d)}
                           className={cn(
                             "p-3 rounded-xl text-xs font-bold border-2 transition-all",
@@ -337,11 +497,13 @@ export default function SymptomChecker() {
 
                   {/* Patient Type Selector */}
                   <div className="space-y-4">
-                    <h4 className="text-sm font-bold text-slate-400 uppercase tracking-widest ml-1">Patient Type</h4>
-                    <div className="grid grid-cols-2 gap-2">
+                    <h4 id="patient-type-label" className="text-sm font-bold text-slate-400 uppercase tracking-widest ml-1">Patient Type</h4>
+                    <div role="group" aria-labelledby="patient-type-label" className="grid grid-cols-2 gap-2">
                       {PATIENT_TYPES.map((type) => (
                         <button
                           key={type}
+                          type="button"
+                          aria-pressed={patientType === type}
                           onClick={() => setPatientType(type)}
                           className={cn(
                             "p-3 rounded-xl text-xs font-bold border-2 transition-all",
@@ -359,28 +521,61 @@ export default function SymptomChecker() {
 
                 {/* Submit Button */}
                 <div className="flex flex-col items-center gap-4">
-                  <Button 
-                    onClick={handleAnalyze} 
-                    disabled={(selectedSymptoms.length === 0 && !customSymptom.trim()) || isAnalyzing}
-                    className="w-full h-14 sm:h-16 bg-sky-600 hover:bg-sky-700 text-white rounded-2xl text-lg sm:text-xl font-black shadow-xl shadow-sky-500/20 transition-all active:scale-95 disabled:grayscale"
-                  >
-                    {isAnalyzing ? (
-                      <div className="flex items-center gap-3">
-                        <Loader2 className="h-6 w-6 animate-spin" />
-                        <span>Analyzing Symptoms...</span>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-3">
-                        <span>Check My Symptoms</span>
-                        <ArrowRight className="h-6 w-6" />
+                  <div className="w-full space-y-4">
+                    <Button 
+                      onClick={handleAnalyze} 
+                      disabled={(selectedSymptoms.length === 0 && !customSymptom.trim()) || isAnalyzing}
+                      className="w-full h-14 sm:h-16 bg-sky-600 hover:bg-sky-700 text-white rounded-2xl text-lg sm:text-xl font-black shadow-xl shadow-sky-500/20 transition-all active:scale-95 disabled:grayscale"
+                    >
+                      {isAnalyzing ? (
+                        <div className="flex items-center gap-3">
+                          <Loader2 className="h-6 w-6 animate-spin" />
+                          <span>
+                            {selectedSymptoms.length > 0 
+                              ? `Analyzing ${selectedSymptoms.length} symptom${selectedSymptoms.length > 1 ? 's' : ''}...` 
+                              : "Analyzing Symptoms..."
+                            }
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-3">
+                          <span>Check My Symptoms</span>
+                          <ArrowRight className="h-6 w-6" />
+                        </div>
+                      )}
+                    </Button>
+
+                    {isAnalyzing && (
+                      <div className="w-full space-y-2.5 animate-in fade-in slide-in-from-top-2 duration-300">
+                        <div className="w-full h-1.5 bg-sky-100 dark:bg-sky-950 rounded-full overflow-hidden relative">
+                          <div className="absolute top-0 h-full bg-sky-600 rounded-full indeterminate-progress-bar" />
+                          <style jsx>{`
+                            .indeterminate-progress-bar {
+                              width: 30%;
+                              animation: indeterminate 1.5s infinite ease-in-out;
+                            }
+                            @keyframes indeterminate {
+                              0% { left: -30%; }
+                              100% { left: 100%; }
+                            }
+                          `}</style>
+                        </div>
+                        <p className="text-xs text-sky-600 dark:text-sky-400 font-bold text-center animate-pulse">
+                          {analysisProgressText}
+                        </p>
                       </div>
                     )}
-                  </Button>
+                  </div>
                 </div>
               </div>
             ) : (
               /* Result Area */
-              <div className="animate-in fade-in zoom-in-95 duration-1000">
+              <div 
+                ref={reportRef} 
+                tabIndex={-1} 
+                className="animate-in fade-in zoom-in-95 duration-1000 focus:outline-none"
+              >
+                <h2 className="sr-only">Your health assessment is ready</h2>
                 {/* Error Box */}
                 {error && (
                   <div className="m-8 p-6 bg-red-50 border-red-500/20 rounded-3xl flex items-center gap-4 animate-in slide-in-from-top-4">
@@ -412,7 +607,7 @@ export default function SymptomChecker() {
                           : isRed 
                           ? { bg: "bg-red-500/10 dark:bg-red-500/20", border: "border-red-500/30", title: "text-red-600 dark:text-red-400", accent: "#ef4444" }
                           : isYellow
-                          ? { bg: "bg-amber-500/10 dark:bg-amber-500/20", border: "border-amber-500/30", title: "text-amber-600 dark:text-amber-400", accent: "#f59e0b" }
+                          ? { bg: "bg-amber-50 dark:bg-amber-950/20", border: "border-amber-200 dark:border-amber-900/40", title: "text-amber-800 dark:text-amber-400", accent: "#b45309" }
                           : isGreen
                           ? { bg: "bg-emerald-500/10 dark:bg-emerald-500/20", border: "border-emerald-500/30", title: "text-emerald-600 dark:text-emerald-400", accent: "#10b981" }
                           : { bg: "bg-sky-500/5 dark:bg-sky-500/10", border: "border-sky-500/20", title: "text-sky-600 dark:text-sky-400", accent: "#0ea5e9" };
@@ -430,18 +625,47 @@ export default function SymptomChecker() {
                                   isError ? "bg-slate-300 dark:bg-slate-700" : isRed ? "bg-red-500" : isYellow ? "bg-amber-500" : isGreen ? "bg-emerald-500" : "bg-sky-500"
                                 )}>
                                   {isError ? (
-                                    <X className="h-10 w-10 text-white" />
+                                    <AlertCircle className="h-10 w-10 text-white" />
                                   ) : (
                                     <CheckCircle2 className="h-10 w-10 text-white" />
                                   )}
                                 </div>
                                 <div className="flex-1">
-                                  <Badge className={cn(
-                                    "text-[11px] font-black uppercase py-0.5 px-3 border-0 rounded-lg",
-                                    isError ? "bg-slate-500 text-white" : isRed ? "bg-red-500 text-white" : isYellow ? "bg-amber-500 text-white" : isGreen ? "bg-emerald-500 text-white" : "bg-sky-500 text-white"
-                                  )}>
-                                    {isError ? "Analysis Error" : isRed ? "Critical Urgency" : isYellow ? "Urgent Care" : isGreen ? "Standard Triage" : "Status Unknown"}
-                                  </Badge>
+                                  {(() => {
+                                      if (isError) {
+                                        return (
+                                          <Badge className="text-[11px] font-black uppercase py-1 px-3 border-0 rounded-lg bg-slate-500 text-white flex items-center gap-1.5 w-fit">
+                                            <AlertCircle className="h-3.5 w-3.5" /> Analysis Error
+                                          </Badge>
+                                        );
+                                      }
+                                      if (isRed) {
+                                        return (
+                                          <Badge className="text-[11px] font-black uppercase py-1 px-3 border-0 rounded-lg bg-red-500 text-white flex items-center gap-1.5 w-fit">
+                                            <AlertTriangle className="h-3.5 w-3.5" /> 🔴 Critical — Seek care now
+                                          </Badge>
+                                        );
+                                      }
+                                      if (isYellow) {
+                                        return (
+                                          <Badge className="text-[11px] font-black uppercase py-1.5 px-3 border rounded-lg bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-900/50 text-amber-700 dark:text-amber-400 flex items-center gap-1.5 w-fit shadow-sm">
+                                            <Clock className="h-3.5 w-3.5 text-amber-700 dark:text-amber-400" /> 🟡 Moderate — See doctor today
+                                          </Badge>
+                                        );
+                                      }
+                                      if (isGreen) {
+                                        return (
+                                          <Badge className="text-[11px] font-black uppercase py-1 px-3 border-0 rounded-lg bg-emerald-500 text-white flex items-center gap-1.5 w-fit">
+                                            <CheckCircle2 className="h-3.5 w-3.5" /> 🟢 Stable — Monitor at home
+                                          </Badge>
+                                        );
+                                      }
+                                      return (
+                                        <Badge className="text-[11px] font-black uppercase py-1 px-3 border-0 rounded-lg bg-sky-500 text-white flex items-center gap-1.5 w-fit">
+                                          <AlertCircle className="h-3.5 w-3.5" /> Status Unknown
+                                        </Badge>
+                                      );
+                                    })()}
                                   <h2 className={cn("text-2xl sm:text-3xl font-black mt-3 leading-tight tracking-tight", theme.title)}>
                                     {isError 
                                       ? "System Analysis Failed" 
@@ -464,22 +688,57 @@ export default function SymptomChecker() {
                                   Detailed Medical Report
                                 </p>
                               </div>
-                            <div className="space-y-2">
-                              {report.split("\n").map((line, i) => (
-                                <p key={i} className="text-base sm:text-lg leading-relaxed text-slate-700 dark:text-slate-300" style={{
-                                  fontWeight: line.includes(":") && line === line.toUpperCase() 
-                                    ? "900" : "450",
-                                  color: line.toUpperCase().includes("URGENCY") ? theme.accent :
-                                         line.toUpperCase().includes("WARNING") ? "#ef4444" :
-                                         line.toUpperCase().includes("DISCLAIMER") ? "#94a3b8" :
-                                         "inherit",
-                                  marginBottom: line.includes(":") && line === line.toUpperCase() ? "20px" : "6px",
-                                  marginTop: line.includes(":") && line === line.toUpperCase() ? "24px" : "0px",
-                                  letterSpacing: line.includes(":") && line === line.toUpperCase() ? "-0.02em" : "normal"
-                                }}>
-                                  {line}
-                                </p>
-                              ))}
+                            <div className="grid grid-cols-1 gap-6">
+                              {(() => {
+                                const parsed = parseReport(report);
+                                const filtered = parsed.filter(s => s.label !== "URGENCY");
+                                return filtered.map((s, idx) => {
+                                  const config = SECTION_THEMES[s.label] || SECTION_THEMES["DEFAULT"];
+                                  const IconComponent = config.icon;
+                                  
+                                  return (
+                                    <div 
+                                      key={idx} 
+                                      className={cn(
+                                        "p-6 sm:p-8 rounded-[2rem] border-2 transition-all duration-300 hover:shadow-lg",
+                                        config.bg,
+                                        config.border
+                                      )}
+                                    >
+                                      <div className="flex items-center gap-4 mb-5">
+                                        <div className={cn("p-3 rounded-2xl shrink-0 shadow-sm", config.iconBg)}>
+                                          <IconComponent className="h-5 w-5" />
+                                        </div>
+                                        <h4 className={cn("text-xs font-black uppercase tracking-widest leading-none", config.text)}>
+                                          {s.label}
+                                        </h4>
+                                      </div>
+                                      
+                                      <div className="space-y-2">
+                                        {s.content.map((line, lIdx) => {
+                                          const trimmed = line.trim();
+                                          if (!trimmed) return null;
+                                          if (trimmed.startsWith("-") || trimmed.startsWith("*")) {
+                                            return (
+                                              <div key={lIdx} className="flex items-start gap-3 mt-2.5 first:mt-0">
+                                                <span className={cn("mt-2.5 h-1.5 w-1.5 rounded-full shrink-0 bg-current", config.text)} />
+                                                <span className="text-slate-700 dark:text-slate-300 font-medium text-sm sm:text-base leading-relaxed">
+                                                  {trimmed.substring(1).trim()}
+                                                </span>
+                                              </div>
+                                            );
+                                          }
+                                          return (
+                                            <p key={lIdx} className="text-slate-700 dark:text-slate-300 font-medium text-sm sm:text-base leading-relaxed mt-2.5 first:mt-0">
+                                              {trimmed}
+                                            </p>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+                                  );
+                                });
+                              })()}
                             </div>
                             <div className="mt-16 pt-10 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-6">
                               <div className="flex flex-wrap gap-4 w-full sm:w-auto">

@@ -114,16 +114,18 @@ export default async function Home() {
               </div>
             </div>
 
-            <div className="relative h-[400px] lg:h-[600px] rounded-3xl overflow-hidden shadow-2xl shadow-sky-900/20 border border-border bg-card/30 backdrop-blur-sm">
-              <Image
-                src="/hero-duo.png"
-                alt="Indian Medical Professionals Duo"
-                fill
-                priority
-                className="object-cover"
-              />
-              {/* Subtle inner glow for image container */}
-              <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent pointer-events-none" />
+            <div className="relative flex flex-col gap-6 sm:block w-full">
+              <div className="relative h-[400px] lg:h-[600px] rounded-3xl overflow-hidden shadow-2xl shadow-sky-900/20 border border-border bg-card/30 backdrop-blur-sm">
+                <Image
+                  src="/hero-duo.png"
+                  alt="Indian Medical Professionals Duo"
+                  fill
+                  priority
+                  className="object-cover"
+                />
+                {/* Subtle inner glow for image container */}
+                <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent pointer-events-none" />
+              </div>
 
               {/* Interactive Nearby Doctor Widget */}
               <NearbyDoctors />

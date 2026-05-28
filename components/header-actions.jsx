@@ -8,6 +8,9 @@ import {
   ShieldCheck,
   Stethoscope,
   User,
+  Heart,
+  MessageSquare,
+  Activity,
 } from "lucide-react";
 import Link from "next/link";
 import { SignedIn, SignedOut, SignInButton, useUser } from "@clerk/nextjs";
@@ -19,6 +22,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import NotificationBell from "./notification-bell";
 
 export function HeaderActions({ dbUser }) {
   const { user: clerkUser, isLoaded } = useUser();
@@ -29,7 +33,6 @@ export function HeaderActions({ dbUser }) {
   }, []);
   
   // Use DB user if available, otherwise fall back to Clerk user data
-  // This helps bridge the gap immediately after sign-in
   const role = dbUser?.role || "UNASSIGNED";
   const isProfileComplete = dbUser?.isProfileComplete;
   const credits = dbUser?.credits;
@@ -40,19 +43,51 @@ export function HeaderActions({ dbUser }) {
 
   return (
     <>
+      {/* SMS Simulator Demo - always accessible as a feature showcase */}
+      <Link href="/sms-demo">
+        <Button
+          variant="outline"
+          className="hidden lg:inline-flex items-center gap-2 border-indigo-200 dark:border-indigo-850 bg-indigo-50/30 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 font-bold"
+        >
+          <MessageSquare className="h-4 w-4" />
+          SMS Demo
+        </Button>
+      </Link>
+
       <SignedIn>
         {/* Admin/Owner Links */}
         {(role === "ADMIN" || role === "OWNER") && (
-          <Link href="/admin">
+          <div className="flex items-center gap-2">
+            <Link href="/admin">
+              <Button
+                variant="outline"
+                className="hidden md:inline-flex items-center gap-2 border-sky-200 dark:border-sky-800 bg-sky-50/50 dark:bg-sky-900/20 font-bold"
+              >
+                <ShieldCheck className="h-4 w-4 text-sky-500" />
+                Admin Dashboard
+              </Button>
+            </Link>
+            <Link href="/admin/outbreak">
+              <Button
+                variant="outline"
+                className="hidden md:inline-flex items-center gap-2 border-rose-200 dark:border-rose-900 bg-rose-50/50 dark:bg-rose-900/20 font-bold"
+              >
+                <Activity className="h-4 w-4 text-rose-500" />
+                Outbreak Alert
+              </Button>
+            </Link>
+          </div>
+        )}
+
+        {/* ASHA Worker Dashboard Link */}
+        {role === "ASHA_WORKER" && (
+          <Link href="/asha">
             <Button
               variant="outline"
-              className="hidden md:inline-flex items-center gap-2 border-sky-200 dark:border-sky-800 bg-sky-50/50 dark:bg-sky-900/20"
+              className="hidden md:inline-flex items-center gap-2 border-sky-200 dark:border-sky-800 bg-sky-50/50 dark:bg-sky-900/20 font-bold text-sky-600 dark:text-sky-400"
             >
-              <ShieldCheck className="h-4 w-4 text-sky-500" />
-              Admin Dashboard
-            </Button>
-            <Button variant="ghost" className="md:hidden w-10 h-10 p-0 text-sky-500">
-              <ShieldCheck className="h-4 w-4" />
+              <Heart className="h-4 w-4 text-sky-500 fill-sky-500/20 animate-pulse" />
+              ASHA Dashboard
             </Button>
           </Link>
         )}
@@ -83,11 +118,6 @@ export function HeaderActions({ dbUser }) {
                 </Link>
               </DropdownMenuItem>
             </DropdownMenuContent>
-            <Button variant="ghost" asChild className="md:hidden w-10 h-10 p-0">
-              <Link href="/doctor">
-                <Stethoscope className="h-4 w-4" />
-              </Link>
-            </Button>
           </DropdownMenu>
         )}
 
@@ -100,9 +130,6 @@ export function HeaderActions({ dbUser }) {
             >
               <Calendar className="h-4 w-4" />
               {isProfileComplete ? "Patient Dashboard" : "Complete Profile"}
-            </Button>
-            <Button variant="ghost" className="md:hidden w-10 h-10 p-0">
-              <Calendar className="h-4 w-4" />
             </Button>
           </Link>
         )}
@@ -117,9 +144,6 @@ export function HeaderActions({ dbUser }) {
               <User className="h-4 w-4" />
               Complete Profile
             </Button>
-            <Button variant="ghost" className="md:hidden w-10 h-10 p-0">
-              <User className="h-4 w-4" />
-            </Button>
           </Link>
         )}
       </SignedIn>
@@ -128,14 +152,14 @@ export function HeaderActions({ dbUser }) {
         <Link href={!dbUser || role === "PATIENT" ? "/pricing" : "/doctor"}>
           <Badge
             variant="outline"
-            className="h-9 bg-sky-100 dark:bg-sky-900/20 border-sky-300 dark:border-sky-700/30 px-3 py-1 flex items-center gap-2"
+            className="hidden sm:flex h-9 bg-sky-100 dark:bg-sky-900/20 border-sky-300 dark:border-sky-700/30 px-3 py-1 items-center gap-2"
           >
             <CreditCard className="h-3.5 w-3.5 text-sky-600 dark:text-sky-400" />
             <span className="text-sky-600 dark:text-sky-400 font-medium">
               {dbUser && role !== "ADMIN" && role !== "OWNER" ? (
                 <>
                   {credits}{" "}
-                  <span className="hidden md:inline">
+                  <span className="hidden xs:inline">
                     {role === "PATIENT" ? "Credits" : "Earned Credits"}
                   </span>
                 </>
@@ -154,16 +178,19 @@ export function HeaderActions({ dbUser }) {
       </SignedOut>
 
       <SignedIn>
-        <ThemeAwareUserButton
-          appearance={{
-            elements: {
-              avatarBox: "w-10 h-10",
-              userButtonPopoverCard: "shadow-xl",
-              userPreviewMainIdentifier: "font-semibold",
-            },
-          }}
-          afterSignOutUrl="/"
-        />
+        <div className="flex items-center gap-2.5">
+          <NotificationBell userId={dbUser?.id} />
+          <ThemeAwareUserButton
+            appearance={{
+              elements: {
+                avatarBox: "w-10 h-10",
+                userButtonPopoverCard: "shadow-xl",
+                userPreviewMainIdentifier: "font-semibold",
+              },
+            }}
+            afterSignOutUrl="/"
+          />
+        </div>
       </SignedIn>
     </>
   );

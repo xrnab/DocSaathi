@@ -58,7 +58,9 @@ const statCards = [
 
 export function DoctorEarnings({ earnings, payouts = [] }) {
   const [showPayoutDialog, setShowPayoutDialog] = useState(false);
-  const [paypalEmail, setPaypalEmail] = useState("");
+  const [upiId, setUpiId] = useState("");
+  const [accountNumber, setAccountNumber] = useState("");
+  const [ifscCode, setIfscCode] = useState("");
 
   const {
     thisMonthEarnings = 0,
@@ -74,33 +76,38 @@ export function DoctorEarnings({ earnings, payouts = [] }) {
 
   const handlePayoutRequest = async (e) => {
     e.preventDefault();
-    if (!paypalEmail) { toast.error("PayPal email is required"); return; }
+    if (!upiId) { toast.error("UPI ID is required"); return; }
+    if (!upiId.includes("@")) { toast.error("UPI ID must contain '@' symbol"); return; }
     const formData = new FormData();
-    formData.append("paypalEmail", paypalEmail);
+    formData.append("upiId", upiId);
+    if (accountNumber) formData.append("accountNumber", accountNumber);
+    if (ifscCode) formData.append("ifscCode", ifscCode);
     await submitPayoutRequest(formData);
   };
 
   useEffect(() => {
     if (data?.success) {
       setShowPayoutDialog(false);
-      setPaypalEmail("");
+      setUpiId("");
+      setAccountNumber("");
+      setIfscCode("");
       toast.success("Payout request submitted successfully!");
     }
   }, [data]);
 
-  const platformFee = availableCredits * 2;
+  const platformFee = availableCredits * 200;
 
   const statValues = [
-    { value: availableCredits, sub: `$${availablePayout.toFixed(2)} available for payout` },
-    { value: `$${thisMonthEarnings.toFixed(2)}` },
+    { value: availableCredits, sub: `₹${availablePayout.toFixed(2)} available for payout` },
+    { value: `₹${thisMonthEarnings.toFixed(2)}` },
     { value: completedAppointments, sub: "completed" },
-    { value: `$${averageEarningsPerMonth.toFixed(2)}` },
+    { value: `₹${averageEarningsPerMonth.toFixed(2)}` },
   ];
 
   return (
     <div className="space-y-6">
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4" suppressHydrationWarning>
         {statCards.map((card, i) => {
           const Icon = card.icon;
           return (
@@ -155,14 +162,26 @@ export function DoctorEarnings({ earnings, payouts = [] }) {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
                   {[
                     { label: "Pending Credits", value: pendingPayout.credits },
-                    { label: "Pending Amount", value: `$${pendingPayout.netAmount.toFixed(2)}` },
-                    { label: "PayPal Email", value: pendingPayout.paypalEmail },
+                    { label: "Pending Amount", value: `₹${pendingPayout.netAmount.toFixed(2)}` },
+                    { label: "UPI ID", value: pendingPayout.upiId },
                   ].map(({ label, value }) => (
                     <div key={label} className="bg-background rounded-lg p-3 border border-border">
                       <p className="text-xs text-muted-foreground mb-0.5">{label}</p>
                       <p className="font-semibold text-foreground text-sm break-all">{value}</p>
                     </div>
                   ))}
+                  {pendingPayout.accountNumber && (
+                    <div className="bg-background rounded-lg p-3 border border-border">
+                      <p className="text-xs text-muted-foreground mb-0.5">Bank Account</p>
+                      <p className="font-semibold text-foreground text-sm break-all">{pendingPayout.accountNumber}</p>
+                    </div>
+                  )}
+                  {pendingPayout.ifscCode && (
+                    <div className="bg-background rounded-lg p-3 border border-border">
+                      <p className="text-xs text-muted-foreground mb-0.5">IFSC Code</p>
+                      <p className="font-semibold text-foreground text-sm break-all uppercase">{pendingPayout.ifscCode}</p>
+                    </div>
+                  )}
                 </div>
                 <Alert>
                   <AlertCircle className="h-4 w-4" />
@@ -176,8 +195,8 @@ export function DoctorEarnings({ earnings, payouts = [] }) {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
                   {[
                     { label: "Available Credits", value: availableCredits },
-                    { label: "Payout Amount", value: `$${availablePayout.toFixed(2)}` },
-                    { label: "Platform Fee", value: `$${platformFee.toFixed(2)}` },
+                    { label: "Payout Amount", value: `₹${availablePayout.toFixed(2)}` },
+                    { label: "Platform Fee", value: `₹${platformFee.toFixed(2)}` },
                   ].map(({ label, value }) => (
                     <div key={label} className="bg-background rounded-lg p-3 border border-border">
                       <p className="text-xs text-muted-foreground mb-0.5">{label}</p>
@@ -205,7 +224,7 @@ export function DoctorEarnings({ earnings, payouts = [] }) {
           <Alert>
             <AlertCircle className="h-4 w-4" />
             <AlertDescription className="text-sm">
-              <strong>Payout Structure:</strong> You earn $8 per credit. Platform fee is $2 per credit. Payouts are processed via PayPal.
+              <strong>Payout Structure:</strong> You earn ₹800 per credit. Platform fee is ₹200 per credit. Payouts are processed via UPI.
             </AlertDescription>
           </Alert>
 
@@ -224,9 +243,12 @@ export function DoctorEarnings({ earnings, payouts = [] }) {
                         {format(new Date(payout.createdAt), "MMM d, yyyy")}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {payout.credits} credits &bull; ${payout.netAmount.toFixed(2)}
+                        {payout.credits} credits &bull; ₹{payout.netAmount.toFixed(2)}
                       </p>
-                      <p className="text-xs text-muted-foreground">{payout.paypalEmail}</p>
+                      <p className="text-xs text-muted-foreground">UPI: {payout.upiId}</p>
+                      {payout.accountNumber && (
+                        <p className="text-xs text-muted-foreground">Bank: {payout.accountNumber} ({payout.ifscCode})</p>
+                      )}
                     </div>
                     <Badge
                       variant="outline"
@@ -261,8 +283,8 @@ export function DoctorEarnings({ earnings, payouts = [] }) {
             <div className="bg-muted/40 rounded-xl border border-border p-4 space-y-2 text-sm">
               {[
                 { label: "Available credits", value: availableCredits },
-                { label: "Gross amount", value: `$${(availableCredits * 10).toFixed(2)}` },
-                { label: "Platform fee (20%)", value: `-$${platformFee.toFixed(2)}` },
+                { label: "Gross amount", value: `₹${(availableCredits * 1000).toFixed(2)}` },
+                { label: "Platform fee", value: `-₹${platformFee.toFixed(2)}` },
               ].map(({ label, value }) => (
                 <div key={label} className="flex justify-between">
                   <span className="text-muted-foreground">{label}:</span>
@@ -271,30 +293,63 @@ export function DoctorEarnings({ earnings, payouts = [] }) {
               ))}
               <div className="border-t border-border pt-2 flex justify-between font-semibold">
                 <span className="text-foreground">Net payout:</span>
-                <span className="text-emerald-600 dark:text-emerald-400">${availablePayout.toFixed(2)}</span>
+                <span className="text-emerald-600 dark:text-emerald-400">₹{availablePayout.toFixed(2)}</span>
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="paypalEmail" className="text-foreground">PayPal Email</Label>
-              <Input
-                id="paypalEmail"
-                type="email"
-                placeholder="your-email@paypal.com"
-                value={paypalEmail}
-                onChange={(e) => setPaypalEmail(e.target.value)}
-                className="bg-background border-border focus-visible:ring-sky-500"
-                required
-              />
-              <p className="text-sm text-muted-foreground">
-                Enter the PayPal email where you want to receive the payout.
-              </p>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="upiId" className="text-foreground">UPI ID <span className="text-red-500">*</span></Label>
+                <Input
+                  id="upiId"
+                  type="text"
+                  placeholder="yourname@ybl or yourname@paytm"
+                  value={upiId}
+                  onChange={(e) => setUpiId(e.target.value)}
+                  className="bg-background border-border focus-visible:ring-sky-500"
+                  required
+                />
+                <p className="text-xs text-muted-foreground">
+                  Enter your UPI ID (VPA) where you want to receive the payout. Must contain the &apos;@&apos; symbol.
+                </p>
+              </div>
+
+              <div className="border-t border-border pt-4">
+                <p className="text-sm font-semibold text-foreground mb-3">Bank Transfer (Optional)</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="accountNumber" className="text-foreground text-xs">Bank Account Number</Label>
+                    <Input
+                      id="accountNumber"
+                      type="text"
+                      placeholder="Enter account number"
+                      value={accountNumber}
+                      onChange={(e) => setAccountNumber(e.target.value)}
+                      className="bg-background border-border focus-visible:ring-sky-500 text-xs"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="ifscCode" className="text-foreground text-xs">IFSC Code</Label>
+                    <Input
+                      id="ifscCode"
+                      type="text"
+                      placeholder="Enter IFSC code"
+                      value={ifscCode}
+                      onChange={(e) => setIfscCode(e.target.value)}
+                      className="bg-background border-border focus-visible:ring-sky-500 text-xs uppercase"
+                    />
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Optional. Fill this if you want direct bank transfer as a backup.
+                </p>
+              </div>
             </div>
 
             <Alert>
               <AlertCircle className="h-4 w-4" />
               <AlertDescription className="text-sm">
-                Once processed, {availableCredits} credits will be deducted and ${availablePayout.toFixed(2)} will be sent to your PayPal.
+                Once processed, {availableCredits} credits will be deducted and ₹{availablePayout.toFixed(2)} will be sent to your UPI address.
               </AlertDescription>
             </Alert>
 

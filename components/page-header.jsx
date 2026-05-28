@@ -29,11 +29,11 @@ export function PageHeader({
           <span>{backLabel}</span>
         </Button>
       </Link>
-      <div className="flex items-end gap-2">
+      <div className="flex items-center gap-3">
         {icon && (
           <div className="text-sky-500">
             {React.cloneElement(icon, {
-              className: "h-12 md:h-14 w-12 md:w-14 drop-shadow-[0_0_8px_rgba(14,165,233,0.3)]",
+              className: "h-8 w-8 md:h-10 md:w-10 drop-shadow-[0_0_8px_rgba(14,165,233,0.3)]",
             })}
           </div>
         )}

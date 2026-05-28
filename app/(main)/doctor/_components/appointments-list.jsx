@@ -8,7 +8,8 @@ import { Calendar, History, Clock } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import useFetch from "@/hooks/use-fetch";
 
-export default function DoctorAppointmentsList() {
+export default function DoctorAppointmentsList({ appointments: initialAppointments = [] }) {
+  const [appointments, setAppointments] = useState(initialAppointments);
   const {
     loading,
     data,
@@ -16,10 +17,17 @@ export default function DoctorAppointmentsList() {
   } = useFetch(getDoctorAppointments);
 
   useEffect(() => {
-    fetchAppointments();
-  }, []);
+    if (data?.appointments) {
+      setAppointments(data.appointments);
+    }
+  }, [data]);
 
-  const appointments = data?.appointments || [];
+  const handleRefetch = async () => {
+    const res = await fetchAppointments();
+    if (res?.appointments) {
+      setAppointments(res.appointments);
+    }
+  };
 
   const upcomingAppointments = appointments.filter(
     (app) => app.status === "SCHEDULED"
@@ -52,7 +60,7 @@ export default function DoctorAppointmentsList() {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6">
-              {loading ? (
+              {loading && appointments.length === 0 ? (
                 <div className="text-center py-12">
                   <div className="inline-flex items-center gap-2 text-muted-foreground">
                     <div className="h-4 w-4 border-2 border-sky-500 border-t-transparent rounded-full animate-spin" />
@@ -66,7 +74,7 @@ export default function DoctorAppointmentsList() {
                       key={appointment.id}
                       appointment={appointment}
                       userRole="DOCTOR"
-                      refetchAppointments={fetchAppointments}
+                      refetchAppointments={handleRefetch}
                     />
                   ))}
                 </div>
@@ -96,7 +104,7 @@ export default function DoctorAppointmentsList() {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6">
-              {loading ? (
+              {loading && appointments.length === 0 ? (
                 <div className="text-center py-12">
                   <div className="inline-flex items-center gap-2 text-muted-foreground">
                     <div className="h-4 w-4 border-2 border-sky-500 border-t-transparent rounded-full animate-spin" />
@@ -110,7 +118,7 @@ export default function DoctorAppointmentsList() {
                       key={appointment.id}
                       appointment={appointment}
                       userRole="DOCTOR"
-                      refetchAppointments={fetchAppointments}
+                      refetchAppointments={handleRefetch}
                     />
                   ))}
                 </div>

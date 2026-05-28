@@ -83,7 +83,7 @@ export default function NearbyDoctors() {
   };
 
   return (
-    <div className="absolute bottom-6 left-6 right-6 sm:right-auto max-w-sm w-full animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-500 z-30">
+    <div className="relative sm:absolute sm:bottom-6 sm:left-6 w-full sm:w-[280px] max-w-sm sm:max-w-none animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-500 z-30">
       <div className={cn(
         "bg-white/95 dark:bg-slate-950/95 backdrop-blur-xl rounded-3xl border border-sky-500/20 shadow-2xl transition-all duration-500 overflow-hidden",
         showList ? "p-0" : "p-4"
