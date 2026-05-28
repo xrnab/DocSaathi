@@ -43,11 +43,18 @@ export function HeaderActions({ dbUser }) {
 
   return (
     <>
-      {/* SMS Simulator Demo - always accessible as a feature showcase */}
+      {/* SMS Simulator Demo - responsive visibility */}
       <Link href="/sms-demo">
         <Button
           variant="outline"
-          className="hidden lg:inline-flex items-center gap-2 border-indigo-200 dark:border-indigo-850 bg-indigo-50/30 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 font-bold"
+          size="icon"
+          className="lg:hidden flex items-center justify-center rounded-full h-8 w-8 sm:h-9 sm:w-9 border-none bg-indigo-50/30 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 font-bold"
+        >
+          <MessageSquare className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="outline"
+          className="hidden lg:inline-flex items-center gap-2 border-none bg-indigo-50/30 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 font-bold"
         >
           <MessageSquare className="h-4 w-4" />
           SMS Demo
