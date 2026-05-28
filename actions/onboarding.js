@@ -172,7 +172,20 @@ export async function updatePatientMedicalProfile(formData) {
  */
 export async function getCurrentUser() {
   try {
-    return await checkUser();
+    const { userId } = await auth();
+    if (!userId) return null;
+
+    // Fast local database lookup first
+    const user = await db.user.findUnique({
+      where: { clerkUserId: userId },
+    });
+
+    // Only fetch from Clerk and provision if not found in our database
+    if (!user) {
+      return await checkUser();
+    }
+
+    return user;
   } catch (error) {
     console.error("Failed to get user information:", error);
     return null;
