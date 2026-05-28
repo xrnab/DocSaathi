@@ -221,19 +221,35 @@ export function MedicalAssistantChat({ title = "Medical Assistant (AI)" }) {
         console.error("Speech recognition error:", event.error);
         setIsListening(false);
         if (event.error === "not-allowed") {
-          toast.error("Microphone access denied. Please allow microphone permissions in your browser or system settings.");
-        } else if (event.error === "language-not-supported") {
-          toast.error(`Voice input in '${language}' is not supported on this device. Trying English fallback...`);
+          toast.error("Microphone access denied. Please check your browser and system microphone permissions.");
+        } else if (event.error === "service-not-allowed" || event.error === "language-not-supported") {
+          toast.error(`Voice input for '${language}' is not active or supported on this device. Trying system default speech language...`);
           try {
-            recognition.lang = "en-IN";
-            recognition.start();
+            // Create a fallback recognizer using the device's native default language (does not override .lang)
+            const fallbackRec = new SpeechRecognition();
+            fallbackRec.continuous = false;
+            fallbackRec.interimResults = false;
+            fallbackRec.onstart = () => {
+              setIsListening(true);
+              toast.info("Voice activated using device default language. Please speak...");
+            };
+            fallbackRec.onresult = recognition.onresult;
+            fallbackRec.onerror = (err) => {
+              console.error("Fallback speech recognition error:", err.error);
+              setIsListening(false);
+              toast.error("Could not capture speech. Please ensure Dictation & Microphone are enabled in your device settings.");
+            };
+            fallbackRec.onend = recognition.onend;
+            recognitionRef.current = fallbackRec;
+            fallbackRec.start();
           } catch (e) {
             console.error("Speech recognition fallback failed:", e);
+            toast.error("Speech recognition could not be started on this device.");
           }
         } else if (event.error === "no-speech") {
           toast.error("No speech detected. Please speak clearly into your mic.");
         } else {
-          toast.error(`Voice error: ${event.error}. Please try again.`);
+          toast.error(`Voice capture failed (${event.error}). Please try again.`);
         }
       };
 
