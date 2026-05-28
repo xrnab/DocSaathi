@@ -188,7 +188,12 @@ export function MedicalAssistantChat({ title = "Medical Assistant (AI)" }) {
 
     const SpeechRecognition = typeof window !== "undefined" ? (window.SpeechRecognition || window.webkitSpeechRecognition) : null;
     if (!SpeechRecognition) {
-      toast.error("Speech recognition is not supported in this browser. Please use Google Chrome or Microsoft Edge.");
+      const isIOS = typeof navigator !== "undefined" && /iPad|iPhone|iPod/.test(navigator.userAgent);
+      if (isIOS) {
+        toast.error("Speech recognition is not supported on this browser. On iPhone/iPad, please open the site in Safari to use voice input.");
+      } else {
+        toast.error("Speech recognition is not supported in this browser. Please use Google Chrome or Microsoft Edge.");
+      }
       return;
     }
 
@@ -216,9 +221,19 @@ export function MedicalAssistantChat({ title = "Medical Assistant (AI)" }) {
         console.error("Speech recognition error:", event.error);
         setIsListening(false);
         if (event.error === "not-allowed") {
-          toast.error("Microphone access denied. Please check browser permissions.");
+          toast.error("Microphone access denied. Please allow microphone permissions in your browser or system settings.");
+        } else if (event.error === "language-not-supported") {
+          toast.error(`Voice input in '${language}' is not supported on this device. Trying English fallback...`);
+          try {
+            recognition.lang = "en-IN";
+            recognition.start();
+          } catch (e) {
+            console.error("Speech recognition fallback failed:", e);
+          }
+        } else if (event.error === "no-speech") {
+          toast.error("No speech detected. Please speak clearly into your mic.");
         } else {
-          toast.error("Could not capture speech. Please try again.");
+          toast.error(`Voice error: ${event.error}. Please try again.`);
         }
       };
 
@@ -320,8 +335,8 @@ export function MedicalAssistantChat({ title = "Medical Assistant (AI)" }) {
   };
 
   return (
-    <div className="rounded-2xl overflow-hidden border-0 bg-white/90 dark:bg-slate-950/90 backdrop-blur-xl shadow-2xl">
-      <div className="p-0">
+    <div className="flex flex-col h-full max-h-[90dvh] sm:max-h-none sm:h-auto rounded-t-3xl sm:rounded-2xl overflow-hidden border-0 bg-white/90 dark:bg-slate-950/90 backdrop-blur-xl shadow-2xl flex-1">
+      <div className="flex flex-col h-full flex-1">
         <div className="px-4 sm:px-5 py-6 bg-gradient-to-br from-blue-600 via-sky-600 to-blue-700 text-white rounded-t-2xl">
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
@@ -364,7 +379,7 @@ export function MedicalAssistantChat({ title = "Medical Assistant (AI)" }) {
           </div>
         </div>
 
-        <div className="h-[calc(100dvh-280px)] sm:h-[480px] overflow-y-auto overscroll-contain px-4 sm:px-5 py-4 space-y-3 bg-white dark:bg-slate-950">
+        <div className="flex-1 min-h-[300px] sm:h-[450px] overflow-y-auto overscroll-contain px-4 sm:px-5 py-4 space-y-3 bg-white dark:bg-slate-950">
           {showInteractionWarning && (
             <div className="rounded-xl border border-red-200 bg-red-50 text-red-800 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-200 px-4 py-3 text-sm flex gap-2">
               <ShieldAlert className="h-4 w-4 mt-0.5 shrink-0" />
@@ -425,7 +440,7 @@ export function MedicalAssistantChat({ title = "Medical Assistant (AI)" }) {
           <div ref={endRef} />
         </div>
 
-        <div className="px-4 sm:px-5 py-4 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
+        <div className="px-4 sm:px-5 pt-4 pb-6 sm:pb-4 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 shrink-0">
           <form onSubmit={onSubmit} className="flex gap-3 items-end">
             <div className="relative flex-1">
               <Textarea
