@@ -349,12 +349,12 @@ export function MedicalAssistantChat({ title = "Medical Assistant (AI)" }) {
             </div>
           </div>
 
-          <div className="mt-4 flex flex-wrap gap-1.5">
+          <div className="mt-4 flex overflow-x-auto flex-nowrap pb-1 gap-1.5">
             {QUICK_SUGGESTIONS.map((s) => (
               <button
                 key={s}
                 type="button"
-                className="text-[11px] px-3 py-1 rounded-lg bg-white/5 hover:bg-white/15 border border-white/10 text-white/90 transition-all hover:scale-105 active:scale-95"
+                className="text-[11px] px-3 py-1 rounded-lg bg-white/5 hover:bg-white/15 border border-white/10 text-white/90 transition-all hover:scale-105 active:scale-95 shrink-0"
                 onClick={() => send(s)}
                 disabled={isSending}
               >
@@ -364,7 +364,7 @@ export function MedicalAssistantChat({ title = "Medical Assistant (AI)" }) {
           </div>
         </div>
 
-        <div className="h-[420px] sm:h-[480px] overflow-y-auto px-4 sm:px-5 py-4 space-y-3 bg-white dark:bg-slate-950">
+        <div className="h-[calc(100dvh-280px)] sm:h-[480px] overflow-y-auto overscroll-contain px-4 sm:px-5 py-4 space-y-3 bg-white dark:bg-slate-950">
           {showInteractionWarning && (
             <div className="rounded-xl border border-red-200 bg-red-50 text-red-800 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-200 px-4 py-3 text-sm flex gap-2">
               <ShieldAlert className="h-4 w-4 mt-0.5 shrink-0" />
@@ -397,7 +397,7 @@ export function MedicalAssistantChat({ title = "Medical Assistant (AI)" }) {
                     className={`rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap border ${
                       isUser
                         ? "bg-emerald-600 text-white border-emerald-600"
-                        : "bg-slate-50 text-slate-900 border-slate-200 dark:bg-slate-900/40 dark:text-slate-50 dark:border-slate-800"
+                        : "bg-muted text-foreground border-slate-200 dark:border-slate-800"
                     }`}
                   >
                     {m.content}
@@ -409,7 +409,7 @@ export function MedicalAssistantChat({ title = "Medical Assistant (AI)" }) {
               </div>
             );
           })}
-
+ 
           {isSending && (
             <div className="flex justify-start">
               <Avatar size="sm" className="mt-1 mr-2 shrink-0">
@@ -417,7 +417,7 @@ export function MedicalAssistantChat({ title = "Medical Assistant (AI)" }) {
                   ✚
                 </AvatarFallback>
               </Avatar>
-              <div className="max-w-[92%] sm:max-w-[78%] rounded-2xl px-4 py-3 text-sm border bg-slate-50 text-slate-900 border-slate-200 dark:bg-slate-900/40 dark:text-slate-50 dark:border-slate-800">
+              <div className="max-w-[92%] sm:max-w-[78%] rounded-2xl px-4 py-3 text-sm border bg-muted text-foreground border-slate-200 dark:border-slate-800">
                 <LoadingDots />
               </div>
             </div>

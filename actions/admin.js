@@ -3,6 +3,8 @@
 import { db } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
+import { sendDoctorVerificationEmail } from "@/lib/mail";
+import { createNotification } from "@/actions/notifications";
 
 /**
  * Verifies if current user has admin or owner role and returns user object
@@ -176,7 +178,7 @@ export async function updateDoctorStatus(formData) {
   }
 
   try {
-    await db.user.update({
+    const updatedDoctor = await db.user.update({
       where: {
         id: doctorId,
       },
@@ -184,6 +186,12 @@ export async function updateDoctorStatus(formData) {
         verificationStatus: status,
       },
     });
+
+    // Send email notification to doctor
+    if (updatedDoctor.email) {
+      sendDoctorVerificationEmail(updatedDoctor.email, updatedDoctor.name || "Doctor", status)
+        .catch((err) => console.error("Failed to send status email:", err));
+    }
 
     revalidatePath("/admin");
     return { success: true };
@@ -339,6 +347,14 @@ export async function approvePayout(formData) {
     });
 
     revalidatePath("/admin");
+
+    // Trigger notification to doctor
+    createNotification(
+      payout.doctorId,
+      `Your payout request for ₹${payout.netAmount.toFixed(2)} (${payout.credits} credits) has been processed and paid via UPI.`,
+      "PAYOUT"
+    ).catch(err => console.error("Failed to notify doctor about payout:", err));
+
     return { success: true };
   } catch (error) {
     console.error("Failed to approve payout:", error);

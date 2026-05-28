@@ -10,8 +10,12 @@ import { bookAppointment } from "@/actions/appointments";
 import { toast } from "sonner";
 import useFetch from "@/hooks/use-fetch";
 
+import { useRouter } from "next/navigation";
+
 export function AppointmentForm({ doctorId, slot, onBack, onComplete }) {
   const [description, setDescription] = useState("");
+  const [localLoading, setLocalLoading] = useState(false);
+  const router = useRouter();
 
   // Use the useFetch hook to handle loading, data, and error states
   const { loading, data, fn: submitBooking } = useFetch(bookAppointment);
@@ -19,6 +23,12 @@ export function AppointmentForm({ doctorId, slot, onBack, onComplete }) {
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (loading || localLoading) return;
+
+    setLocalLoading(true);
+    setTimeout(() => {
+      setLocalLoading(false);
+    }, 3000);
 
     // Create form data
     const formData = new FormData();
@@ -35,7 +45,10 @@ export function AppointmentForm({ doctorId, slot, onBack, onComplete }) {
   useEffect(() => {
     if (data) {
       if (data.success) {
-        toast.success("Appointment booked successfully!");
+        toast.success("Appointment booked! Check your email.");
+        setTimeout(() => {
+          router.push('/appointments');
+        }, 1500);
         onComplete();
       }
     }
@@ -93,10 +106,10 @@ export function AppointmentForm({ doctorId, slot, onBack, onComplete }) {
         </Button>
         <Button
           type="submit"
-          disabled={loading}
+          disabled={loading || localLoading}
           className="bg-sky-600 hover:bg-sky-700"
         >
-          {loading ? (
+          {loading || localLoading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Booking...

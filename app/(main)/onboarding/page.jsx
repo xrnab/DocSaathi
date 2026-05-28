@@ -11,7 +11,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { User, Stethoscope, Loader2 } from "lucide-react";
+import { User, Stethoscope, Loader2, Heart } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -32,6 +32,27 @@ import { useEffect } from "react";
 export default function OnboardingPage() {
   const [step, setStep] = useState("choose-role");
   const router = useRouter();
+
+  const [ashaForm, setAshaForm] = useState({
+    name: "",
+    ashaId: "",
+    village: "",
+    block: "",
+  });
+
+  const handleAshaSubmit = async (e) => {
+    e.preventDefault();
+    if (loading) return;
+
+    const formData = new FormData();
+    formData.append("role", "ASHA_WORKER");
+    formData.append("name", ashaForm.name);
+    formData.append("ashaId", ashaForm.ashaId);
+    formData.append("village", ashaForm.village);
+    formData.append("block", ashaForm.block);
+
+    await submitUserRole(formData);
+  };
 
   // Custom hook for user role server action
   const { loading, data, fn: submitUserRole } = useFetch(setUserRole);
@@ -104,7 +125,7 @@ export default function OnboardingPage() {
   // Role selection screen
   if (step === "choose-role") {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card
           className="border-border hover:border-sky-400 dark:hover:border-sky-700 cursor-pointer transition-all bg-card shadow-sm"
           onClick={() => !loading && handlePatientSelection()}
@@ -159,7 +180,133 @@ export default function OnboardingPage() {
             </Button>
           </CardContent>
         </Card>
+
+        <Card
+          className="border-border hover:border-sky-400 dark:hover:border-sky-700 cursor-pointer transition-all bg-card shadow-sm"
+          onClick={() => !loading && setStep('asha-form')}
+        >
+          <CardContent className="pt-6 pb-6 flex flex-col items-center text-center">
+            <div className="p-4 bg-sky-50 dark:bg-sky-900/20 rounded-full mb-4 border border-sky-100 dark:border-sky-800">
+              <Heart className="h-8 w-8 text-sky-400" />
+            </div>
+            <CardTitle className="text-xl font-semibold text-foreground mb-2">
+              ASHA Worker
+            </CardTitle>
+            <CardDescription className="mb-4">
+              Register village families, schedule appointments, and coordinate immunisations
+            </CardDescription>
+            <Button
+              className="w-full mt-2 bg-sky-600 hover:bg-sky-700"
+              disabled={loading}
+            >
+              Continue as ASHA Worker
+            </Button>
+          </CardContent>
+        </Card>
       </div>
+    );
+  }
+
+  // ASHA registration form
+  if (step === "asha-form") {
+    return (
+      <Card className="border-border bg-card shadow-sm animate-in fade-in duration-300">
+        <CardContent className="pt-6">
+          <div className="mb-6">
+            <CardTitle className="text-2xl font-bold text-foreground mb-2">
+              Register as an ASHA Worker
+            </CardTitle>
+            <CardDescription>
+              Please provide your community details and official government ASHA ID
+            </CardDescription>
+          </div>
+
+          <form onSubmit={handleAshaSubmit} className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="ashaName">Full Name</Label>
+              <Input
+                id="ashaName"
+                type="text"
+                required
+                placeholder="e.g. Gurpreet Kaur"
+                value={ashaForm.name}
+                onChange={(e) => setAshaForm(prev => ({ ...prev, name: e.target.value }))}
+                className="bg-slate-50/50 dark:bg-slate-900/30"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="ashaId">ASHA Accreditation ID</Label>
+              <Input
+                id="ashaId"
+                type="text"
+                required
+                placeholder="e.g. ASHA-PB-14785"
+                value={ashaForm.ashaId}
+                onChange={(e) => setAshaForm(prev => ({ ...prev, ashaId: e.target.value }))}
+                className="bg-slate-50/50 dark:bg-slate-900/30"
+              />
+              <p className="text-xs text-muted-foreground">
+                Enter your verified government worker registration code.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="ashaVillage">Village / Ward</Label>
+                <Input
+                  id="ashaVillage"
+                  type="text"
+                  required
+                  placeholder="e.g. Sauja"
+                  value={ashaForm.village}
+                  onChange={(e) => setAshaForm(prev => ({ ...prev, village: e.target.value }))}
+                  className="bg-slate-50/50 dark:bg-slate-900/30"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="ashaBlock">Block / District</Label>
+                <Input
+                  id="ashaBlock"
+                  type="text"
+                  required
+                  placeholder="e.g. Nabha, Patiala"
+                  value={ashaForm.block}
+                  onChange={(e) => setAshaForm(prev => ({ ...prev, block: e.target.value }))}
+                  className="bg-slate-50/50 dark:bg-slate-900/30"
+                />
+              </div>
+            </div>
+
+            <div className="pt-2 flex items-center justify-between">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setStep("choose-role")}
+                className="border-sky-900/30"
+                disabled={loading}
+              >
+                Back
+              </Button>
+              <Button
+                type="submit"
+                className="bg-sky-600 hover:bg-sky-700 text-white font-bold px-6"
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Registering...
+                  </>
+                ) : (
+                  "Complete ASHA Onboarding"
+                )}
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
     );
   }
 

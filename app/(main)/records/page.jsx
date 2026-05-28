@@ -7,6 +7,8 @@ import { Separator } from "@/components/ui/separator";
 import { getPatientRecords } from "@/actions/records";
 import { OfflineBadge } from "@/components/offline-badge";
 import { format } from "date-fns";
+import PunjabiVoiceReader from "@/components/punjabi-voice-reader";
+
 
 export default async function PatientRecordScreen({ searchParams }) {
   const params = await searchParams;
@@ -132,12 +134,24 @@ export default async function PatientRecordScreen({ searchParams }) {
               ) : (
                 <div className="divide-y divide-border">
                   {prescriptions.filter(p => p.active).map(med => (
-                    <div key={med.id} className="p-3 sm:p-4 hover:bg-muted/30 transition-colors">
-                      <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-1">
-                        <h4 className="font-semibold text-sm sm:text-base text-foreground break-words">{med.name}</h4>
-                        <Badge variant="secondary" className="text-[9px] w-fit">{med.duration}</Badge>
+                    <div key={med.id} className="p-4 hover:bg-muted/30 transition-colors space-y-2.5">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2">
+                        <h4 className="font-bold text-foreground break-words w-full sm:w-auto">
+                          {med.name}
+                        </h4>
+                        <span className="text-xs font-normal text-muted-foreground bg-muted px-2 py-0.5 rounded-full self-start sm:self-auto shrink-0">
+                          {med.duration}
+                        </span>
                       </div>
-                      <p className="text-xs sm:text-sm text-sky-600 dark:text-sky-400 font-medium mt-1">{med.dosage} • {med.frequency}</p>
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/50 dark:bg-slate-900/30 p-2.5 rounded-xl border border-border/40">
+                        <div>
+                          <p className="text-sm text-sky-600 dark:text-sky-400 font-extrabold">{med.dosage}</p>
+                          <p className="text-xs text-muted-foreground font-semibold mt-0.5">{med.frequency}</p>
+                        </div>
+                        <div className="shrink-0">
+                          <PunjabiVoiceReader prescription={med} />
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>

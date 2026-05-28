@@ -3,6 +3,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { SPECIALTIES } from "@/lib/specialities";
 
 export default async function DoctorsPage() {
+  const mostUsed = SPECIALTIES.filter(s => 
+    s.name === "General Physician" || 
+    s.name === "Cardiology" || 
+    s.name === "Pediatrics"
+  );
+
   return (
     <div className="space-y-8 sm:space-y-12 py-4 sm:py-8">
       {/* Premium Header */}
@@ -28,8 +34,27 @@ export default async function DoctorsPage() {
         </p>
       </div>
 
+      {/* Most Used Specialties (Pinned for Quick Access) */}
+      <div className="space-y-3 px-4 animate-in fade-in slide-in-from-top-2 duration-300">
+        <h2 className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest pl-1">
+          Most Used Specialties
+        </h2>
+        <div className="flex overflow-x-auto flex-nowrap pb-2 gap-3 scrollbar-hide">
+          {mostUsed.map((specialty) => (
+            <Link
+              key={specialty.name}
+              href={`/doctors/${specialty.name}`}
+              className="flex items-center gap-2 bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/20 hover:border-sky-500/40 rounded-xl px-3 py-2 text-xs font-bold text-sky-600 dark:text-sky-400 shrink-0 transition-all hover:scale-105 active:scale-95 shadow-sm"
+            >
+              <div className="scale-90">{specialty.icon}</div>
+              <span>{specialty.name}</span>
+            </Link>
+          ))}
+        </div>
+      </div>
+
       {/* Specialty Grid */}
-      <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 px-4">
+      <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6 px-4">
         {SPECIALTIES.map((specialty, index) => (
           <Link
             key={specialty.name}
@@ -38,13 +63,13 @@ export default async function DoctorsPage() {
             style={{ animationDelay: `${index * 50 + 300}ms` }}
           >
             <Card className="bg-card/50 backdrop-blur-md border-sky-200 dark:border-sky-900/20 hover:border-sky-400 hover:shadow-lg hover:shadow-sky-500/10 hover:-translate-y-1 transition-all duration-300 h-full">
-              <CardContent className="p-6 sm:p-8 flex flex-col items-center justify-center text-center h-full">
-                <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl bg-sky-50 dark:bg-sky-900/20 flex items-center justify-center mb-4 sm:mb-6 shadow-sm border border-sky-100 dark:border-sky-800/30">
-                  <div className="text-sky-500 dark:text-sky-400 scale-100 sm:scale-125">
+              <CardContent className="p-4 sm:p-8 flex flex-col items-center justify-center text-center h-full">
+                <div className="w-10 h-10 mb-3 sm:w-16 sm:h-16 sm:mb-6 rounded-2xl bg-sky-50 dark:bg-sky-900/20 flex items-center justify-center shadow-sm border border-sky-100 dark:border-sky-800/30">
+                  <div className="text-sky-500 dark:text-sky-400 scale-125">
                     {specialty.icon}
                   </div>
                 </div>
-                <h3 className="font-semibold text-foreground text-base sm:text-lg">
+                <h3 className="font-semibold text-foreground text-xs sm:text-sm md:text-lg leading-tight">
                   {specialty.name}
                 </h3>
               </CardContent>

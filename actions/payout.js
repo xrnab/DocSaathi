@@ -4,9 +4,9 @@ import { db } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 
-const CREDIT_VALUE = 10; // $10 per credit total
-const PLATFORM_FEE_PER_CREDIT = 2; // $2 platform fee
-const DOCTOR_EARNINGS_PER_CREDIT = 8; // $8 to doctor
+const CREDIT_VALUE = 1000; // ₹1000 per credit total
+const PLATFORM_FEE_PER_CREDIT = 200; // ₹200 platform fee
+const DOCTOR_EARNINGS_PER_CREDIT = 800; // ₹800 to doctor
 
 /**
  * Request payout for all remaining credits
@@ -30,10 +30,16 @@ export async function requestPayout(formData) {
       throw new Error("Doctor not found");
     }
 
-    const paypalEmail = formData.get("paypalEmail");
+    const upiId = formData.get("upiId");
+    const accountNumber = formData.get("accountNumber") || null;
+    const ifscCode = formData.get("ifscCode") || null;
 
-    if (!paypalEmail) {
-      throw new Error("PayPal email is required");
+    if (!upiId) {
+      throw new Error("UPI ID is required");
+    }
+
+    if (!upiId.includes("@")) {
+      throw new Error("Invalid UPI ID: must contain '@' symbol");
     }
 
     // Check if doctor has any pending payout requests
@@ -73,7 +79,9 @@ export async function requestPayout(formData) {
         credits: creditCount,
         platformFee,
         netAmount,
-        paypalEmail,
+        upiId,
+        accountNumber,
+        ifscCode,
         status: "PROCESSING",
       },
     });

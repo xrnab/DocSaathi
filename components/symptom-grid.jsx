@@ -53,22 +53,23 @@ export function SymptomGrid({ onChange, initialSelected = [] }) {
   }, [initialSelected]);
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 w-full">
+    <div role="group" aria-label="Select your symptoms" className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3 w-full">
       {ALL_SYMPTOMS.map((symptom) => {
         const isSelected = selected.includes(symptom.id);
         return (
           <button
             key={symptom.id}
             type="button"
+            aria-pressed={isSelected}
             onClick={() => toggleSymptom(symptom.id)}
             className={cn(
-              "relative flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all duration-200 group",
+              "relative flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all duration-200 group min-h-[90px]",
               isSelected
                 ? "bg-sky-600 border-sky-600 text-white shadow-md scale-[0.98]"
-                : "bg-white border-sky-50 hover:border-sky-300 text-slate-600"
+                : "bg-background border-border text-foreground hover:border-sky-400"
             )}
           >
-            <span className="text-xl sm:text-2xl mb-2 group-hover:scale-110 transition-transform">
+            <span className="text-2xl sm:text-3xl mb-2 group-hover:scale-110 transition-transform">
               {symptom.icon}
             </span>
             <span className={cn(
@@ -79,7 +80,7 @@ export function SymptomGrid({ onChange, initialSelected = [] }) {
             </span>
             
             {isSelected && (
-              <div className="absolute top-1 right-1 bg-white rounded-full p-0.5 shadow-sm animate-in zoom-in duration-200">
+              <div aria-hidden="true" className="absolute top-1 right-1 bg-sky-50 dark:bg-sky-900 rounded-full p-0.5 shadow-sm animate-in zoom-in duration-200">
                 <Check className="h-3 w-3 text-sky-600 font-bold" />
               </div>
             )}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { MapPin, Navigation, Loader2, Hospital, Stethoscope, Search, Activity } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -48,8 +48,16 @@ const STATIC_NABHA_FACILITIES = [
 ];
 
 export function FacilityFinder() {
+  const resultsHeaderRef = useRef(null);
   const [loading, setLoading] = useState(false);
   const [facilities, setFacilities] = useState([]);
+
+  useEffect(() => {
+    if (facilities.length > 0) {
+      resultsHeaderRef.current?.focus();
+    }
+  }, [facilities]);
+
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
@@ -294,6 +302,7 @@ export function FacilityFinder() {
                   placeholder="Nabha & nearby"
                   className="pl-12 bg-slate-50 dark:bg-slate-900 border-slate-100 dark:border-slate-800 text-slate-900 dark:text-white placeholder:text-slate-400 rounded-2xl h-14 text-lg focus:ring-sky-500/20"
                   autoFocus
+                  suppressHydrationWarning={true}
                 />
               </div>
               <div className="flex gap-3">
@@ -320,7 +329,13 @@ export function FacilityFinder() {
         <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
           <div className="flex items-center justify-between px-2">
             <div className="space-y-0.5">
-              <h4 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">Nearby {locationName}</h4>
+              <h4 
+                ref={resultsHeaderRef} 
+                tabIndex={-1} 
+                className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] focus:outline-none"
+              >
+                Nearby {locationName}
+              </h4>
               {facilities.some(f => f.isOfflineFallback) ? (
                 <p className="text-[9px] text-amber-600 dark:text-amber-400 font-bold flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> Offline Mode: Showing verified Nabha facilities
@@ -334,7 +349,7 @@ export function FacilityFinder() {
             <button onClick={() => { setFacilities([]); setLocationName(""); }} className="text-[10px] font-bold text-slate-400 hover:text-sky-600 transition-colors uppercase tracking-widest bg-slate-50 dark:bg-slate-900 px-3 py-1.5 rounded-full border border-slate-100 dark:border-slate-800">Clear Results</button>
           </div>
           {facilities.map((fac) => (
-            <div key={fac.id} className="p-5 bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-100 dark:border-slate-800 hover:border-sky-200 dark:hover:border-sky-900 hover:shadow-xl hover:shadow-sky-500/5 transition-all duration-300 group flex items-center justify-between gap-4">
+            <div key={fac.id} className="p-5 bg-card rounded-[2rem] border border-slate-100 dark:border-slate-800 hover:border-sky-200 dark:hover:border-sky-900 hover:shadow-xl hover:shadow-sky-500/5 transition-all duration-300 group flex items-center justify-between gap-4">
               <div className="flex items-center gap-5">
                 <div className={cn(
                   "p-4 rounded-[1.25rem] transition-all duration-300",
@@ -343,7 +358,7 @@ export function FacilityFinder() {
                   {fac.type === 'hospital' ? <Hospital className="h-6 w-6" /> : <Stethoscope className="h-6 w-6" />}
                 </div>
                 <div className="space-y-1.5">
-                  <h5 className="font-bold text-slate-900 dark:text-white text-base line-clamp-1 leading-none">{fac.name}</h5>
+                  <h5 className="font-bold text-card-foreground text-base line-clamp-1 leading-none">{fac.name}</h5>
                   <div className="flex items-center gap-3">
                     <span className={cn(
                       "text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border",
@@ -366,7 +381,14 @@ export function FacilityFinder() {
           ))}
         </div>
       )}
-      {error && <p className="text-xs text-red-500 font-medium text-center">{error}</p>}
+      {error && (
+        <div className="space-y-4">
+          <div className="p-4 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/30 rounded-2xl text-center">
+            <p className="text-xs text-red-500 dark:text-red-400 font-medium">{error}</p>
+          </div>
+          <OfflineEmergencyCard />
+        </div>
+      )}
     </div>
   );
 }

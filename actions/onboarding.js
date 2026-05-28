@@ -23,11 +23,40 @@ export async function setUserRole(formData) {
 
   const role = formData.get("role");
 
-  if (!role || !["PATIENT", "DOCTOR"].includes(role)) {
+  if (!role || !["PATIENT", "DOCTOR", "ASHA_WORKER"].includes(role)) {
     throw new Error("Invalid role selection");
   }
 
   try {
+    // For ASHA worker role
+    if (role === "ASHA_WORKER") {
+      const ashaId = formData.get("ashaId");
+      const village = formData.get("village");
+      const block = formData.get("block");
+      const name = formData.get("name");
+
+      if (!ashaId || !village || !block || !name) {
+        throw new Error("All fields are required");
+      }
+
+      await db.user.update({
+        where: {
+          clerkUserId: userId,
+        },
+        data: {
+          role: "ASHA_WORKER",
+          name,
+          village,
+          block,
+          ashaId,
+          isProfileComplete: true,
+        },
+      });
+
+      revalidatePath("/");
+      return { success: true, redirect: "/asha" };
+    }
+
     // For patient role - simple update
     if (role === "PATIENT") {
       await db.user.update({

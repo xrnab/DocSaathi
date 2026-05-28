@@ -10,11 +10,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 export function SlotPicker({ days, onSelectSlot }) {
   const [selectedSlot, setSelectedSlot] = useState(null);
 
-  // Find first day with slots as default tab
-  const firstDayWithSlots =
-    days.find((day) => day.slots.length > 0)?.date || days[0]?.date;
-  const [activeTab, setActiveTab] = useState(firstDayWithSlots);
-
   const handleSlotSelect = (slot) => {
     setSelectedSlot(slot);
   };
@@ -25,94 +20,139 @@ export function SlotPicker({ days, onSelectSlot }) {
     }
   };
 
+  // Find next available slot
+  const nextAvailableDay = days.find((day) => day.slots.length > 0);
+  const nextAvailableText = nextAvailableDay ? (() => {
+    const dateObj = new Date(nextAvailableDay.date);
+    const today = new Date();
+    const tomorrow = new Date();
+    tomorrow.setDate(today.getDate() + 1);
+    
+    const isToday = format(dateObj, "yyyy-MM-dd") === format(today, "yyyy-MM-dd");
+    const isTomorrow = format(dateObj, "yyyy-MM-dd") === format(tomorrow, "yyyy-MM-dd");
+    
+    if (isToday) return "Today";
+    if (isTomorrow) return "Tomorrow";
+    return format(dateObj, "EEEE, d MMM");
+  })() : null;
+
+  const getDateHeader = (dateStr) => {
+    const dateObj = new Date(dateStr);
+    const today = new Date();
+    const tomorrow = new Date();
+    tomorrow.setDate(today.getDate() + 1);
+
+    const isToday = format(dateObj, "yyyy-MM-dd") === format(today, "yyyy-MM-dd");
+    const isTomorrow = format(dateObj, "yyyy-MM-dd") === format(tomorrow, "yyyy-MM-dd");
+
+    // Check if it's next week
+    const diffTime = dateObj - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    let prefix = "";
+    if (isToday) prefix = "Today — ";
+    else if (isTomorrow) prefix = "Tomorrow — ";
+    else if (diffDays >= 4) prefix = "Next Week — ";
+    else prefix = "This Week — ";
+
+    return `${prefix}${format(dateObj, "EEE d MMM")}`;
+  };
+
+  const daysWithSlots = days.filter(d => d.slots.length > 0);
+
   return (
     <div className="space-y-6">
-      <Tabs
-        defaultValue={activeTab}
-        onValueChange={setActiveTab}
-        className="w-full"
-      >
-        <TabsList className="w-full justify-start overflow-x-auto">
-          {days.map((day) => (
-            <TabsTrigger
-              key={day.date}
-              value={day.date}
-              disabled={day.slots.length === 0}
-              className={
-                day.slots.length === 0 ? "opacity-50 cursor-not-allowed" : ""
-              }
+      {/* Soonest Available Slot Highlight Banner */}
+      {nextAvailableText && (
+        <div className="bg-sky-500/10 dark:bg-sky-500/20 border border-sky-200 dark:border-sky-800/80 rounded-2xl p-4 flex items-center justify-between shadow-sm animate-in fade-in slide-in-from-top-2 duration-500">
+          <div className="space-y-0.5">
+            <p className="text-[10px] font-black text-sky-600 dark:text-sky-400 uppercase tracking-widest leading-none">Soonest Consultation</p>
+            <p className="text-sm font-bold text-slate-800 dark:text-slate-200 mt-1">
+              Next available: <span className="text-sky-600 dark:text-sky-400 font-extrabold">{nextAvailableText}</span>
+            </p>
+          </div>
+          <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+        </div>
+      )}
+
+      {/* Grouped Time Slots by Date with Visual Separators */}
+      {daysWithSlots.length === 0 ? (
+        <div className="text-center py-12 text-muted-foreground border-2 border-dashed border-sky-100 dark:border-sky-900/30 rounded-3xl">
+          No available slots for the upcoming week.
+        </div>
+      ) : (
+        <div className="space-y-6 max-h-[420px] overflow-y-auto pr-2 scrollbar-thin">
+          {daysWithSlots.map((day, idx) => (
+            <div 
+              key={day.date} 
+              className={`space-y-3 pb-6 border-b border-slate-100 dark:border-slate-800 last:border-0 last:pb-0 ${
+                idx > 0 ? "pt-2" : ""
+              }`}
             >
-              <div className="flex gap-2">
-                <div className=" opacity-80">
-                  {format(new Date(day.date), "MMM d")}
-                </div>
-                <div>({format(new Date(day.date), "EEE")})</div>
+              <div className="flex items-center gap-2">
+                <div className="h-1.5 w-1.5 rounded-full bg-sky-500" />
+                <h4 className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  {getDateHeader(day.date)}
+                </h4>
               </div>
-              {day.slots.length > 0 && (
-                <div className="ml-2 bg-sky-900/30 text-sky-400 text-xs px-2 py-1 rounded">
-                  {day.slots.length}
-                </div>
-              )}
-            </TabsTrigger>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                {day.slots.map((slot) => (
+                  <Card
+                    key={slot.startTime}
+                    className={`border-sky-100 dark:border-sky-900/20 cursor-pointer transition-all rounded-xl ${
+                      selectedSlot?.startTime === slot.startTime
+                        ? "bg-sky-500/10 dark:bg-sky-500/20 border-sky-500"
+                        : "hover:border-sky-300 dark:hover:border-sky-700/50 bg-slate-50/50 dark:bg-slate-900/30"
+                    }`}
+                    onClick={() => handleSlotSelect(slot)}
+                  >
+                    <CardContent className="p-3 flex items-center">
+                      <Clock
+                        className={`h-4 w-4 mr-2 ${
+                          selectedSlot?.startTime === slot.startTime
+                            ? "text-sky-500"
+                            : "text-muted-foreground"
+                        }`}
+                      />
+                      <span
+                        className={`text-xs font-bold ${
+                          selectedSlot?.startTime === slot.startTime
+                            ? "text-sky-600 dark:text-sky-400"
+                            : "text-slate-700 dark:text-slate-300"
+                        }`}
+                      >
+                        {format(new Date(slot.startTime), "h:mm a")}
+                      </span>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
           ))}
-        </TabsList>
+        </div>
+      )}
 
-        {days.map((day) => (
-          <TabsContent key={day.date} value={day.date} className="pt-4">
-            {day.slots.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                No available slots for this day.
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <h3 className="text-lg font-medium text-foreground mb-2">
-                  {day.displayDate}
-                </h3>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-                  {day.slots.map((slot) => (
-                    <Card
-                      key={slot.startTime}
-                      className={`border-sky-900/20 cursor-pointer transition-all ${
-                        selectedSlot?.startTime === slot.startTime
-                          ? "bg-sky-900/30 border-sky-600"
-                          : "hover:border-sky-700/40"
-                      }`}
-                      onClick={() => handleSlotSelect(slot)}
-                    >
-                      <CardContent className="p-3 flex items-center">
-                        <Clock
-                          className={`h-4 w-4 mr-2 ${
-                            selectedSlot?.startTime === slot.startTime
-                              ? "text-sky-400"
-                              : "text-muted-foreground"
-                          }`}
-                        />
-                        <span
-                          className={
-                            selectedSlot?.startTime === slot.startTime
-                              ? "text-foreground"
-                              : "text-muted-foreground"
-                          }
-                        >
-                          {format(new Date(slot.startTime), "h:mm a")}
-                        </span>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </div>
-            )}
-          </TabsContent>
-        ))}
-      </Tabs>
-
-      <div className="flex justify-end">
+      {/* Confirmation Area with Selected Slot Date Details */}
+      <div className="flex flex-col sm:flex-row items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-6 gap-4">
+        <div className="text-center sm:text-left">
+          {selectedSlot ? (
+            <p className="text-xs text-muted-foreground font-medium">
+              Selected Slot:{" "}
+              <span className="font-extrabold text-sky-600 dark:text-sky-400 block sm:inline">
+                {format(new Date(selectedSlot.startTime), "EEEE, d MMM 'at' h:mm a")}
+              </span>
+            </p>
+          ) : (
+            <p className="text-xs text-muted-foreground italic font-medium">No slot selected yet</p>
+          )}
+        </div>
         <Button
           onClick={confirmSelection}
           disabled={!selectedSlot}
-          className="bg-sky-600 hover:bg-sky-700"
+          className="w-full sm:w-auto bg-sky-600 hover:bg-sky-700 text-white rounded-xl font-bold px-6 h-11"
         >
-          Continue
+          Confirm & Continue
           <ChevronRight className="ml-2 h-4 w-4" />
         </Button>
       </div>

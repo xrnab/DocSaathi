@@ -46,6 +46,27 @@ export default function MedicinesDashboard() {
   const [errorMsg, setErrorMsg] = useState("");
   const [filterType, setFilterType] = useState("all");
 
+  const [showScrollChip, setShowScrollChip] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowScrollChip(false);
+    };
+
+    const timer = setTimeout(() => {
+      if (window.scrollY < 50) {
+        setShowScrollChip(true);
+      }
+    }, 2000);
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
+
   const displayedPharmacies = (() => {
     let list = [...pharmacies];
 
@@ -378,7 +399,7 @@ export default function MedicinesDashboard() {
         </div>
 
         {/* Right Column: Interactive Map */}
-        <div className="lg:col-span-2 h-[400px] lg:h-[calc(100vh-12rem)] sticky top-24 rounded-3xl overflow-hidden border-4 border-white dark:border-slate-800 shadow-2xl shadow-sky-900/10">
+        <div className="lg:col-span-2 h-[220px] sm:h-[320px] lg:h-[440px] sticky top-24 rounded-3xl overflow-hidden border-4 border-white dark:border-slate-800 shadow-2xl shadow-sky-900/10">
           <HealthMap userLocation={userLocation} items={displayedPharmacies} type="Pharmacy" />
         </div>
       </div>
@@ -386,6 +407,15 @@ export default function MedicinesDashboard() {
       <div className="pt-2">
         <MedicalAssistantChat title="Pharmacy Assistant" />
       </div>
+
+      {showScrollChip && (
+        <div 
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-sky-600 dark:bg-sky-500 text-white font-black px-5 py-3 rounded-full shadow-2xl shadow-sky-500/20 text-xs animate-bounce flex items-center gap-1.5 cursor-pointer border border-sky-400/30"
+          onClick={() => window.scrollBy({ top: 400, behavior: 'smooth' })}
+        >
+          Scroll for results ⬇
+        </div>
+      )}
     </div>
   );
 }

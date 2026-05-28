@@ -18,6 +18,7 @@ import {
   Loader2,
   AlertCircle,
   CreditCard,
+  Copy,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
@@ -121,13 +122,19 @@ export function PendingPayouts({ payouts }) {
                             <div className="flex items-center gap-1">
                               <DollarSign className="h-3.5 w-3.5 text-emerald-500" />
                               <span className="font-medium text-foreground">
-                                ${payout.netAmount.toFixed(2)}
+                                ₹{payout.netAmount.toFixed(2)}
                               </span>
                               <span>({payout.credits} credits)</span>
                             </div>
-                            <div className="flex items-center gap-1">
-                              <Mail className="h-3.5 w-3.5 text-sky-500" />
-                              <span className="text-xs">{payout.paypalEmail}</span>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="text-xs font-semibold text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/40 px-1.5 py-0.5 rounded border border-sky-100 dark:border-sky-900/30">
+                                UPI: {payout.upiId}
+                              </span>
+                              {payout.accountNumber && (
+                                <span className="text-xs text-muted-foreground">
+                                  &bull; Bank: {payout.accountNumber} ({payout.ifscCode})
+                                </span>
+                              )}
                             </div>
                           </div>
                           <p className="text-xs text-muted-foreground mt-1">
@@ -213,19 +220,49 @@ export function PendingPayouts({ payouts }) {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Gross amount:</span>
-                    <span className="text-foreground">${selectedPayout.amount.toFixed(2)}</span>
+                    <span className="text-foreground">₹{selectedPayout.amount.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Platform fee:</span>
-                    <span className="text-red-600 dark:text-red-400">-${selectedPayout.platformFee.toFixed(2)}</span>
+                    <span className="text-red-600 dark:text-red-400">-₹{selectedPayout.platformFee.toFixed(2)}</span>
                   </div>
                   <div className="border-t border-border pt-2 flex justify-between font-semibold">
                     <span className="text-foreground">Net payout:</span>
-                    <span className="text-emerald-600 dark:text-emerald-400">${selectedPayout.netAmount.toFixed(2)}</span>
+                    <span className="text-emerald-600 dark:text-emerald-400">₹{selectedPayout.netAmount.toFixed(2)}</span>
                   </div>
-                  <div className="border-t border-border pt-2">
-                    <p className="text-xs text-muted-foreground mb-0.5">PayPal</p>
-                    <p className="font-medium text-foreground">{selectedPayout.paypalEmail}</p>
+                  <div className="border-t border-border pt-3 space-y-2.5">
+                    <div className="flex items-center justify-between bg-muted/30 p-2.5 rounded-lg border border-border/50">
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground">UPI ID</p>
+                        <p className="font-semibold text-foreground text-sm break-all mt-0.5">{selectedPayout.upiId}</p>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => {
+                          navigator.clipboard.writeText(selectedPayout.upiId);
+                          toast.success("UPI ID copied to clipboard!");
+                        }}
+                        className="h-8 text-xs px-2.5 bg-background border border-border hover:bg-muted text-foreground flex items-center gap-1"
+                      >
+                        <Copy className="h-3.5 w-3.5" />
+                        Copy
+                      </Button>
+                    </div>
+                    {selectedPayout.accountNumber && (
+                      <div className="grid grid-cols-2 gap-3 bg-muted/20 p-2.5 rounded-lg border border-border/40">
+                        <div>
+                          <p className="text-xs font-medium text-muted-foreground">Bank Account Number</p>
+                          <p className="font-semibold text-foreground text-sm break-all mt-0.5">{selectedPayout.accountNumber}</p>
+                        </div>
+                        {selectedPayout.ifscCode && (
+                          <div>
+                            <p className="text-xs font-medium text-muted-foreground">IFSC Code</p>
+                            <p className="font-semibold text-foreground text-sm uppercase tracking-wider mt-0.5">{selectedPayout.ifscCode}</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -281,8 +318,10 @@ export function PendingPayouts({ payouts }) {
               <div className="bg-muted/50 rounded-lg p-4 space-y-2 text-sm">
                 {[
                   { label: "Doctor", value: `Dr. ${selectedPayout.doctor.name}` },
-                  { label: "Amount to pay", value: `$${selectedPayout.netAmount.toFixed(2)}`, highlight: true },
-                  { label: "PayPal", value: selectedPayout.paypalEmail },
+                  { label: "Amount to pay", value: `₹${selectedPayout.netAmount.toFixed(2)}`, highlight: true },
+                  { label: "UPI ID", value: selectedPayout.upiId },
+                  ...(selectedPayout.accountNumber ? [{ label: "Bank Account", value: selectedPayout.accountNumber }] : []),
+                  ...(selectedPayout.ifscCode ? [{ label: "IFSC", value: selectedPayout.ifscCode }] : []),
                 ].map(({ label, value, highlight }) => (
                   <div key={label} className="flex justify-between">
                     <span className="text-muted-foreground">{label}:</span>

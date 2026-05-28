@@ -6,6 +6,7 @@ import { Prisma } from "@prisma/client";
 import { db } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
+import { createNotification } from "@/actions/notifications";
 import { Vonage } from "@vonage/server-sdk";
 import {
   addDays,
@@ -274,6 +275,21 @@ export async function bookAppointment(formData) {
     revalidatePath("/appointments");
     revalidatePath("/doctor");
     revalidatePath("/telemedicine");
+
+    // Trigger real-time notifications in background
+    const formattedTime = format(new Date(startTime), "MMM d, h:mm a");
+    createNotification(
+      doctor.id,
+      `New appointment booked by ${currentUser.name || "Patient"} for ${formattedTime}`,
+      "APPOINTMENT"
+    ).catch(err => console.error("Failed to notify doctor:", err));
+
+    createNotification(
+      currentUser.id,
+      `Your appointment with Dr. ${doctor.name} on ${formattedTime} has been scheduled and confirmed!`,
+      "APPOINTMENT"
+    ).catch(err => console.error("Failed to notify patient:", err));
+
     return { success: true, appointment: appointment };
   } catch (error) {
     console.error("Failed to book appointment:", error);

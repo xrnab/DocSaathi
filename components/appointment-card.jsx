@@ -111,18 +111,8 @@ export function AppointmentCard({
   };
 
   // Handle cancel appointment
-  const handleCancelAppointment = async () => {
-    if (cancelLoading) return;
-
-    if (
-      window.confirm(
-        "Are you sure you want to cancel this appointment? This action cannot be undone."
-      )
-    ) {
-      const formData = new FormData();
-      formData.append("appointmentId", appointment.id);
-      await submitCancel(formData);
-    }
+  const handleCancelAppointment = () => {
+    setAction("cancel_confirm");
   };
 
   // Handle reject appointment (doctor only)
@@ -454,6 +444,47 @@ export function AppointmentCard({
         </DialogContent>
       </Dialog>
 
+      {/* Cancel Confirmation Dialog (Bottom Sheet style on Mobile) */}
+      <Dialog open={action === "cancel_confirm"} onOpenChange={(isOpen) => !isOpen && setAction(null)}>
+        <DialogContent className="max-w-md max-sm:fixed max-sm:bottom-0 max-sm:top-auto max-sm:translate-y-0 max-sm:rounded-t-[2rem] max-sm:rounded-b-none max-sm:border-t-2 max-sm:border-x-0 max-sm:border-b-0 bg-white dark:bg-slate-900">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold flex items-center gap-2 text-red-500">
+              <AlertTriangle className="h-5 w-5 animate-pulse" />
+              Cancel Appointment?
+            </DialogTitle>
+            <DialogDescription className="text-sm">
+              Are you sure you want to cancel this appointment? This action cannot be undone and your credits will be refunded.
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter className="flex flex-col sm:flex-row gap-2 mt-4 w-full">
+            <Button 
+              variant="outline" 
+              className="w-full sm:w-auto h-12 sm:h-10 font-bold" 
+              onClick={() => setAction(null)} 
+              disabled={cancelLoading}
+            >
+              No, Keep It
+            </Button>
+            <Button 
+              onClick={async () => {
+                const formData = new FormData();
+                formData.append("appointmentId", appointment.id);
+                await submitCancel(formData);
+              }} 
+              className="bg-red-600 hover:bg-red-700 w-full sm:w-auto h-12 sm:h-10 font-bold text-white"
+              disabled={cancelLoading}
+            >
+              {cancelLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                "Yes, Cancel Appointment"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Appointment Details Dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-2xl">
@@ -566,7 +597,7 @@ export function AppointmentCard({
                 </h4>
                 <Button
                   className={cn(
-                    "w-full transition-all duration-300",
+                    "w-full h-12 sm:h-10 transition-all duration-300",
                     isAppointmentActive() 
                       ? "bg-sky-600 hover:bg-sky-700 shadow-md" 
                       : "bg-muted text-muted-foreground cursor-not-allowed border-none shadow-none"
@@ -680,14 +711,14 @@ export function AppointmentCard({
             </div>
           </div>
 
-          <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-between sm:space-x-2">
-            <div className="flex gap-2">
+          <DialogFooter className="flex flex-col sm:flex-row sm:justify-between gap-3 w-full">
+            <div className="flex flex-col sm:flex-row gap-2 w-full">
               {/* Mark as Complete Button - Only for doctors */}
               {canMarkCompleted() && (
                 <Button
                   onClick={handleMarkCompleted}
                   disabled={completeLoading}
-                  className="bg-sky-600 hover:bg-sky-700"
+                  className="bg-sky-600 hover:bg-sky-700 w-full sm:w-auto h-12 sm:h-10"
                 >
                   {completeLoading ? (
                     <>
@@ -709,7 +740,7 @@ export function AppointmentCard({
                   variant="outline"
                   onClick={handleCancelAppointment}
                   disabled={cancelLoading}
-                  className="border-red-900/30 text-red-400 hover:bg-red-900/10 mt-3 sm:mt-0"
+                  className="border-red-900/30 text-red-400 hover:bg-red-900/10 w-full sm:w-auto h-12 sm:h-10 font-bold"
                 >
                   {cancelLoading ? (
                     <>
@@ -728,7 +759,7 @@ export function AppointmentCard({
 
             {/* Report Card / Feedback (Visible to both if completed) */}
             {appointment.status === "COMPLETED" && appointment.grading && (
-              <div className="space-y-2 pt-4 border-t border-border">
+              <div className="space-y-2 pt-4 border-t border-border w-full">
                 <h4 className="text-sm font-bold text-sky-600 dark:text-sky-400 flex items-center gap-2">
                   <TrendingUp className="h-4 w-4" /> Medical Report Card
                 </h4>
@@ -757,7 +788,7 @@ export function AppointmentCard({
 
             <Button
               onClick={() => setOpen(false)}
-              className="bg-sky-600 hover:bg-sky-700"
+              className="bg-sky-600 hover:bg-sky-700 w-full sm:w-auto h-12 sm:h-10 shrink-0"
             >
               Close
             </Button>

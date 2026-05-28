@@ -1,10 +1,13 @@
 "use client";
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Languages } from 'lucide-react';
 
 const GoogleTranslate = () => {
+  const [mounted, setMounted] = useState(false);
+
   useEffect(() => {
+    setMounted(true);
     // Check if the script is already loaded
     if (window.googleTranslateElementInit) return;
 
@@ -32,6 +35,10 @@ const GoogleTranslate = () => {
 
     addScript();
   }, []);
+
+  if (!mounted) {
+    return <div className="flex items-center mx-1 shrink-0 min-w-[100px]" />;
+  }
 
   return (
     <div className="flex items-center mx-0.5 relative group">

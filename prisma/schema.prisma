@@ -35,6 +35,10 @@ model User {
   isProfileComplete Boolean @default(false)
   village           String? // Patient's village/town (optional, e.g. for Nabha regional mapping)
 
+  // ASHA-specific fields
+  ashaId            String?
+  block             String?
+
   // Doctor-specific fields
   specialty          String?
   experience         Int? // Years of experience
@@ -49,8 +53,11 @@ model User {
   availabilities      Availability[]
   transactions        CreditTransaction[]
   payouts             Payout[]
+  notifications       Notification[]
   prescriptions       Prescription[]      @relation("PatientPrescriptions")
   vaccinations        Vaccination[]       @relation("PatientVaccinations")
+  ashaFamilies        AshaFamily[]        @relation("AshaFamilies")
+  outbreakReports     OutbreakReport[]    @relation("AshaOutbreaks")
 }
 
 model Prescription {
@@ -81,6 +88,7 @@ enum UserRole {
   DOCTOR
   ADMIN
   OWNER
+  ASHA_WORKER
 }
 
 enum VerificationStatus {
@@ -126,6 +134,7 @@ model Appointment {
   // Video session fields
   videoSessionId    String? // Vonage Video API Session ID
   videoSessionToken String? // Optional: Can store tokens if needed
+  reminderSent      Boolean           @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -165,7 +174,9 @@ model Payout {
   credits     Int // Number of credits being paid out
   platformFee Float // Platform fee deducted (2 USD per credit)
   netAmount   Float // Amount doctor receives (8 USD per credit)
-  paypalEmail String // Doctor's PayPal email for payout
+  upiId         String // Doctor's UPI ID for payout
+  accountNumber String? // Optional bank account number
+  ifscCode      String? // Optional IFSC code
   status      PayoutStatus @default(PROCESSING)
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
@@ -179,4 +190,69 @@ model Payout {
 enum PayoutStatus {
   PROCESSING
   PROCESSED
+}
+
+model AshaFamily {
+  id        String             @id @default(uuid())
+  ashaId    String
+  asha      User               @relation("AshaFamilies", fields: [ashaId], references: [id], onDelete: Cascade)
+  headName  String
+  village   String
+  block     String
+  pincode   String?
+  createdAt DateTime           @default(now())
+  members   AshaFamilyMember[]
+}
+
+model AshaFamilyMember {
+  id            String     @id @default(uuid())
+  familyId      String
+  family        AshaFamily @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  name          String
+  age           Int
+  gender        String
+  relation      String // Head, Wife, Son, Daughter, etc.
+  immunisations String?    @db.Text // JSON or text list of immunisations and dates
+  createdAt     DateTime   @default(now())
+}
+
+model OutbreakReport {
+  id           String   @id @default(uuid())
+  reportedById String
+  reportedBy   User     @relation("AshaOutbreaks", fields: [reportedById], references: [id], onDelete: Cascade)
+  symptoms     String[] // list of symptoms
+  village      String
+  block        String
+  caseCount    Int
+  notes        String?  @db.Text
+  createdAt    DateTime @default(now())
+}
+
+model SymptomSubmission {
+  id          String   @id @default(uuid())
+  symptoms    String[]
+  duration    String
+  patientType String
+  language    String
+  village     String?
+  createdAt   DateTime @default(now())
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message   String
+  type      NotificationType
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  @@index([userId, read])
+}
+
+enum NotificationType {
+  APPOINTMENT
+  REMINDER
+  PAYOUT
+  SYSTEM
 }
