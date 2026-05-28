@@ -7,72 +7,16 @@ const NABHA_VILLAGES = ["Sauja", "Bhadson", "Nabha Central", "Kaul", "Chhintanwa
 const SYMPTOMS_POOL = ["Fever", "Cough", "Diarrhea", "Vomiting", "Jaundice", "Rash"];
 
 /**
- * Checks, seeds, and retrieves epidemiological statistics and logs.
+ * Checks and retrieves epidemiological statistics and logs.
  */
 export async function getOutbreakDashboardData() {
   try {
-    // 1. Check existing symptom submission count
-    const count = await db.symptomSubmission.count();
-
-    // 2. If fewer than 50 logs, perform auto-seeding to make the dashboard look rich and fully functional
-    if (count < 50) {
-      console.log(`Outbreak Dashboard: Found only ${count} logs. Auto-seeding 60 realistic surveillance entries...`);
-      
-      const seedEntries = [];
-      const now = new Date();
-
-      // Seed baseline data spread across 7 days
-      for (let i = 0; i < 45; i++) {
-        const date = new Date(now);
-        date.setDate(now.getDate() - Math.floor(Math.random() * 7) - 2); // 2 to 9 days ago
-
-        const village = NABHA_VILLAGES[Math.floor(Math.random() * NABHA_VILLAGES.length)];
-        // Ensure baseline is very low for Sauja
-        const finalVillage = (village === "Sauja" && Math.random() > 0.3) ? "Nabha Central" : village;
-
-        seedEntries.push({
-          symptoms: [
-            SYMPTOMS_POOL[Math.floor(Math.random() * SYMPTOMS_POOL.length)],
-            Math.random() > 0.7 ? SYMPTOMS_POOL[Math.floor(Math.random() * SYMPTOMS_POOL.length)] : null
-          ].filter(Boolean),
-          duration: "1-3 days",
-          patientType: Math.random() > 0.5 ? "ADULT" : "CHILD",
-          language: Math.random() > 0.5 ? "PA" : "EN",
-          village: finalVillage,
-          createdAt: date
-        });
-      }
-
-      // Seed a sharp SPIKE in "Sauja" within the last 48 hours
-      // 15 cases of Fever and Diarrhea to trigger >200% spike alerts
-      for (let i = 0; i < 15; i++) {
-        const date = new Date(now);
-        date.setHours(now.getHours() - Math.floor(Math.random() * 40)); // last 40 hours
-
-        seedEntries.push({
-          symptoms: ["Fever", "Diarrhea"],
-          duration: "1-3 days",
-          patientType: Math.random() > 0.5 ? "CHILD" : "ADULT",
-          language: "PA",
-          village: "Sauja",
-          createdAt: date
-        });
-      }
-
-      // Bulk create seeds
-      await db.symptomSubmission.createMany({
-        data: seedEntries,
-      });
-
-      console.log("Outbreak Dashboard: Seeding completed successfully.");
-    }
-
-    // 3. Fetch all symptom submissions
+    // 1. Fetch all symptom submissions
     const submissions = await db.symptomSubmission.findMany({
       orderBy: { createdAt: "desc" },
     });
 
-    // 4. Fetch formal OutbreakReports from ASHA workers
+    // 2. Fetch formal OutbreakReports from ASHA workers
     const formalReports = await db.outbreakReport.findMany({
       include: {
         reportedBy: {
@@ -81,6 +25,33 @@ export async function getOutbreakDashboardData() {
       },
       orderBy: { createdAt: "desc" }
     });
+
+    // 3. If real submissions count is 0, return a clean empty state object
+    if (submissions.length === 0) {
+      const villageStats = {};
+      NABHA_VILLAGES.forEach(v => {
+        villageStats[v] = { last48h: 0, prev48h: 0, total: 0 };
+      });
+
+      const chartTimeline = [];
+      const now = new Date();
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(now.getDate() - i);
+        const dateStr = d.toLocaleDateString([], { month: "short", day: "numeric" });
+        chartTimeline.push({ date: dateStr, count: 0 });
+      }
+
+      return {
+        submissions: [],
+        formalReports: [],
+        villageStats,
+        symptomCounts: {},
+        activeAlerts: [],
+        chartTimeline,
+        totalCount: 0
+      };
+    }
 
     // 5. Calculate epidemiological metrics
     const now = new Date();

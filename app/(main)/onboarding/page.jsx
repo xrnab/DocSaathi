@@ -11,7 +11,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { User, Stethoscope, Loader2, Heart } from "lucide-react";
+import { User, Stethoscope, Loader2, HeartPulse } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -187,13 +187,13 @@ export default function OnboardingPage() {
         >
           <CardContent className="pt-6 pb-6 flex flex-col items-center text-center">
             <div className="p-4 bg-sky-50 dark:bg-sky-900/20 rounded-full mb-4 border border-sky-100 dark:border-sky-800">
-              <Heart className="h-8 w-8 text-sky-400" />
+              <HeartPulse className="h-8 w-8 text-sky-400" />
             </div>
             <CardTitle className="text-xl font-semibold text-foreground mb-2">
               ASHA Worker
             </CardTitle>
             <CardDescription className="mb-4">
-              Register village families, schedule appointments, and coordinate immunisations
+              Register as an ASHA community health worker
             </CardDescription>
             <Button
               className="w-full mt-2 bg-sky-600 hover:bg-sky-700"
