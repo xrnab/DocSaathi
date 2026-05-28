@@ -190,7 +190,7 @@ export default function OnboardingPage() {
               <Heart className="h-8 w-8 text-sky-400" />
             </div>
             <CardTitle className="text-xl font-semibold text-foreground mb-2">
-              ASHA Worker
+              ASHA (Astha) Worker
             </CardTitle>
             <CardDescription className="mb-4">
               Register village families, schedule appointments, and coordinate immunisations
@@ -199,7 +199,7 @@ export default function OnboardingPage() {
               className="w-full mt-2 bg-sky-600 hover:bg-sky-700"
               disabled={loading}
             >
-              Continue as ASHA Worker
+              Continue as ASHA (Astha) Worker
             </Button>
           </CardContent>
         </Card>
@@ -214,10 +214,10 @@ export default function OnboardingPage() {
         <CardContent className="pt-6">
           <div className="mb-6">
             <CardTitle className="text-2xl font-bold text-foreground mb-2">
-              Register as an ASHA Worker
+              Register as an ASHA (Astha) Worker
             </CardTitle>
             <CardDescription>
-              Please provide your community details and official government ASHA ID
+              Please provide your community details and official government ASHA (Astha) ID
             </CardDescription>
           </div>
 
@@ -236,7 +236,7 @@ export default function OnboardingPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="ashaId">ASHA Accreditation ID</Label>
+              <Label htmlFor="ashaId">ASHA (Astha) Accreditation ID</Label>
               <Input
                 id="ashaId"
                 type="text"
@@ -300,7 +300,7 @@ export default function OnboardingPage() {
                     Registering...
                   </>
                 ) : (
-                  "Complete ASHA Onboarding"
+                  "Complete ASHA (Astha) Onboarding"
                 )}
               </Button>
             </div>
