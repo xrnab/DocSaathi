@@ -14,33 +14,31 @@ export default function FacilitiesPage() {
         backLabel="Home"
       />
 
-      <Card className="border-none bg-sky-50 dark:bg-slate-900/50 shadow-xl shadow-sky-500/5 rounded-[3rem] overflow-hidden mb-12">
-        <CardContent className="p-10 sm:p-16 relative overflow-hidden">
+      <Card className="border-none bg-sky-50 dark:bg-slate-900/50 shadow-xl shadow-sky-500/5 rounded-[2rem] sm:rounded-[3rem] overflow-hidden mb-8 sm:mb-12">
+        <CardContent className="p-6 sm:p-10 md:p-16 relative overflow-hidden">
           {/* Soft background accents */}
-          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-sky-200/40 dark:bg-sky-500/10 rounded-full -mr-32 -mt-32 blur-3xl pointer-events-none" />
+          <div className="absolute top-0 right-0 w-[300px] sm:w-[500px] h-[300px] sm:h-[500px] bg-sky-200/40 dark:bg-sky-500/10 rounded-full -mr-16 sm:-mr-32 -mt-16 sm:-mt-32 blur-3xl pointer-events-none" />
           
-          <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-16">
-            <div className="space-y-8 text-center lg:text-left flex-1">
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-sky-500/10 rounded-full border border-sky-500/20 text-sky-600 dark:text-sky-400 text-xs font-bold uppercase tracking-widest">
-                <div className="w-2 h-2 rounded-full bg-sky-500 animate-pulse" /> Emergency Assistance
+          <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-10 lg:gap-16">
+            <div className="space-y-6 sm:space-y-8 text-center lg:text-left flex-1">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 bg-sky-500/10 rounded-full border border-sky-500/20 text-sky-600 dark:text-sky-400 text-[10px] sm:text-xs font-bold uppercase tracking-widest">
+                <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-sky-500 animate-pulse" /> Emergency Assistance
               </div>
-              <h2 className="text-5xl sm:text-7xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
+              <h2 className="text-4xl sm:text-5xl md:text-7xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
                 Find Help <br />
                 <span className="text-sky-600">Near You</span>
               </h2>
-              <p className="text-slate-600 dark:text-slate-400 text-xl max-w-md font-medium leading-relaxed">
+              <p className="text-slate-600 dark:text-slate-400 text-lg sm:text-xl max-w-md mx-auto lg:mx-0 font-medium leading-relaxed">
                 Locate verified hospitals, clinics, and emergency centers instantly with our real-time locator.
               </p>
-              <div className="flex flex-wrap justify-center lg:justify-start gap-4">
-                <div className="flex items-center gap-2 text-sm text-slate-500 font-medium">
-                  <Badge variant="secondary" className="bg-white dark:bg-slate-800">24/7 Access</Badge>
-                  <Badge variant="secondary" className="bg-white dark:bg-slate-800">Verified Institutions</Badge>
-                </div>
+              <div className="flex flex-wrap justify-center lg:justify-start gap-2 sm:gap-4">
+                <Badge variant="secondary" className="bg-white dark:bg-slate-800 text-[10px] sm:text-xs">24/7 Access</Badge>
+                <Badge variant="secondary" className="bg-white dark:bg-slate-800 text-[10px] sm:text-xs">Verified Institutions</Badge>
               </div>
             </div>
             
             <div className="w-full lg:w-[480px]">
-              <Card className="bg-white dark:bg-slate-950 p-8 rounded-[2.5rem] border-none shadow-2xl shadow-sky-900/10">
+              <Card className="bg-white dark:bg-slate-950 p-4 sm:p-8 rounded-[1.5rem] sm:rounded-[2.5rem] border-none shadow-2xl shadow-sky-900/10">
                 <FacilityFinder />
               </Card>
             </div>

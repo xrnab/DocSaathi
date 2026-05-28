@@ -10,14 +10,14 @@ export default async function DoctorsPage() {
   );
 
   return (
-    <div className="space-y-12 py-8">
+    <div className="space-y-8 sm:space-y-12 py-4 sm:py-8">
       {/* Premium Header */}
-      <div className="flex flex-col items-center justify-center text-center max-w-2xl mx-auto space-y-4">
-        <div className="flex flex-wrap items-center justify-center gap-2">
-          <div className="inline-flex items-center px-4 py-1.5 rounded-full bg-sky-50 dark:bg-sky-500/10 border border-sky-200 dark:border-sky-500/30 text-sm font-medium text-sky-600 dark:text-sky-400">
+      <div className="flex flex-col items-center justify-center text-center max-w-2xl mx-auto space-y-3 sm:space-y-4 px-4">
+        <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2">
+          <div className="inline-flex items-center px-3 py-1 sm:px-4 sm:py-1.5 rounded-full bg-sky-50 dark:bg-sky-500/10 border border-sky-200 dark:border-sky-500/30 text-xs sm:text-sm font-medium text-sky-600 dark:text-sky-400">
             Our Specialists
           </div>
-          <div className="inline-flex items-center px-3.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-xs font-semibold text-amber-600 dark:text-amber-400 gap-1.5 shadow-sm">
+          <div className="inline-flex items-center px-2.5 py-1 sm:px-3.5 sm:py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-[10px] sm:text-xs font-semibold text-amber-600 dark:text-amber-400 gap-1 sm:gap-1.5 shadow-sm">
             <span className="relative flex h-1.5 w-1.5">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-500"></span>
@@ -25,10 +25,10 @@ export default async function DoctorsPage() {
             District: Nabha
           </div>
         </div>
-        <h1 className="text-4xl md:text-5xl font-bold text-foreground leading-tight animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-100">
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground leading-tight animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-100">
           Find Your <span className="gradient-title">Doctor</span>
         </h1>
-        <p className="text-muted-foreground text-lg animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-200">
+        <p className="text-muted-foreground text-base sm:text-lg animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-200">
           Browse by specialty or view all available healthcare providers
           ready to help you today.
         </p>

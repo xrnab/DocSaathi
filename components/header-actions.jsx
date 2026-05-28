@@ -13,7 +13,7 @@ import {
   Activity,
 } from "lucide-react";
 import Link from "next/link";
-import { SignedIn, SignedOut, SignInButton, useUser } from "@clerk/nextjs";
+import { Show, SignInButton, useUser } from "@clerk/nextjs";
 import { ThemeAwareUserButton } from "./clerk-elements";
 import { Badge } from "./ui/badge";
 import {
@@ -38,23 +38,30 @@ export function HeaderActions({ dbUser }) {
   const credits = dbUser?.credits;
 
   if (!mounted || !isLoaded) {
-    return <div className="h-9 w-20 bg-muted animate-pulse rounded-full" />;
+    return <div className="h-8 w-8 sm:h-9 sm:w-20 bg-muted animate-pulse rounded-full" />;
   }
 
   return (
     <>
-      {/* SMS Simulator Demo - always accessible as a feature showcase */}
+      {/* SMS Simulator Demo - responsive visibility */}
       <Link href="/sms-demo">
         <Button
           variant="outline"
-          className="hidden lg:inline-flex items-center gap-2 border-indigo-200 dark:border-indigo-850 bg-indigo-50/30 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 font-bold"
+          size="icon"
+          className="lg:hidden flex items-center justify-center rounded-full h-8 w-8 sm:h-9 sm:w-9 border-none bg-indigo-50/30 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 font-bold"
+        >
+          <MessageSquare className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="outline"
+          className="hidden lg:inline-flex items-center gap-2 border-none bg-indigo-50/30 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 font-bold"
         >
           <MessageSquare className="h-4 w-4" />
           SMS Demo
         </Button>
       </Link>
 
-      <SignedIn>
+      <Show when="signed-in">
         {/* Admin/Owner Links */}
         {(role === "ADMIN" || role === "OWNER") && (
           <div className="flex items-center gap-2">
@@ -98,10 +105,11 @@ export function HeaderActions({ dbUser }) {
             <DropdownMenuTrigger asChild>
               <Button
                 variant="outline"
-                className="hidden md:inline-flex items-center gap-2"
+                size="icon"
+                className="md:w-auto md:px-4 items-center gap-2 rounded-full h-8 w-8 sm:h-9 sm:w-9"
               >
                 <Stethoscope className="h-4 w-4" />
-                Doctor Dashboard
+                <span className="hidden md:inline">Doctor Dashboard</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
@@ -126,10 +134,11 @@ export function HeaderActions({ dbUser }) {
           <Link href={isProfileComplete ? "/patients" : "/patients/onboarding"}>
             <Button
               variant="outline"
-              className={`hidden md:inline-flex items-center gap-2 ${!isProfileComplete ? "border-amber-200 bg-amber-50 dark:bg-amber-900/10 text-amber-600 animate-pulse" : ""}`}
+              size="icon"
+              className={`md:w-auto md:px-4 items-center gap-2 rounded-full h-8 w-8 sm:h-9 sm:w-9 ${!isProfileComplete ? "border-amber-200 bg-amber-50 dark:bg-amber-900/10 text-amber-600 animate-pulse" : ""}`}
             >
               <Calendar className="h-4 w-4" />
-              {isProfileComplete ? "Patient Dashboard" : "Complete Profile"}
+              <span className="hidden md:inline">{isProfileComplete ? "Patient Dashboard" : "Complete Profile"}</span>
             </Button>
           </Link>
         )}
@@ -139,51 +148,52 @@ export function HeaderActions({ dbUser }) {
           <Link href="/onboarding">
             <Button
               variant="outline"
-              className="hidden md:inline-flex items-center gap-2"
+              size="icon"
+              className="md:w-auto md:px-4 items-center gap-2 rounded-full h-8 w-8 sm:h-9 sm:w-9"
             >
               <User className="h-4 w-4" />
-              Complete Profile
+              <span className="hidden md:inline">Complete Profile</span>
             </Button>
           </Link>
         )}
-      </SignedIn>
+      </Show>
 
+      {/* Credits/Pricing - Circular Blue Button */}
       {(role !== "ADMIN" && role !== "OWNER") && (
         <Link href={!dbUser || role === "PATIENT" ? "/pricing" : "/doctor"}>
-          <Badge
+          <Button
             variant="outline"
-            className="hidden sm:flex h-9 bg-sky-100 dark:bg-sky-900/20 border-sky-300 dark:border-sky-700/30 px-3 py-1 items-center gap-2"
+            size="icon"
+            className="md:w-auto md:px-3 bg-sky-500 hover:bg-sky-600 border-none text-white rounded-full h-8 w-8 sm:h-9 sm:w-auto gap-2 shadow-lg shadow-sky-500/20"
           >
-            <CreditCard className="h-3.5 w-3.5 text-sky-600 dark:text-sky-400" />
-            <span className="text-sky-600 dark:text-sky-400 font-medium">
-              {dbUser && role !== "ADMIN" && role !== "OWNER" ? (
-                <>
-                  {credits}{" "}
-                  <span className="hidden xs:inline">
-                    {role === "PATIENT" ? "Credits" : "Earned Credits"}
-                  </span>
-                </>
-              ) : (
-                <>Pricing</>
-              )}
-            </span>
-          </Badge>
+            <CreditCard className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
+            {dbUser && role !== "ADMIN" && role !== "OWNER" ? (
+              <span className="hidden md:inline text-xs font-bold">
+                {credits} {role === "PATIENT" ? "Credits" : "Earned Credits"}
+              </span>
+            ) : (
+              <span className="hidden md:inline text-xs font-bold">Pricing</span>
+            )}
+          </Button>
         </Link>
       )}
 
-      <SignedOut>
+      <Show when="signed-out">
         <SignInButton mode="modal">
-          <Button variant="secondary" className="font-semibold px-6 shadow-sm">Sign In</Button>
+          <Button variant="secondary" size="sm" className="font-semibold px-2 sm:px-4 shadow-sm h-8 sm:h-9 text-xs rounded-full">
+            <User className="h-4 w-4 md:hidden" />
+            <span className="hidden md:inline">Sign In</span>
+          </Button>
         </SignInButton>
-      </SignedOut>
+      </Show>
 
-      <SignedIn>
+      <Show when="signed-in">
         <div className="flex items-center gap-2.5">
           <NotificationBell userId={dbUser?.id} />
           <ThemeAwareUserButton
             appearance={{
               elements: {
-                avatarBox: "w-10 h-10",
+                avatarBox: "w-8 h-8 sm:w-10 sm:h-10",
                 userButtonPopoverCard: "shadow-xl",
                 userPreviewMainIdentifier: "font-semibold",
               },
@@ -191,7 +201,7 @@ export function HeaderActions({ dbUser }) {
             afterSignOutUrl="/"
           />
         </div>
-      </SignedIn>
+      </Show>
     </>
   );
 }

@@ -229,8 +229,8 @@ export default function MedicinesDashboard() {
                 <div className="relative">
                   <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-sky-600 dark:text-sky-400" />
                   <Input
-                    placeholder="Enter City or Village name (e.g., London, Delhi)..."
-                    className="pl-12 h-12 text-md rounded-full border-sky-200 dark:border-sky-800 focus-visible:ring-sky-500 shadow-sm bg-background"
+                    placeholder="Enter City or Village..."
+                    className="pl-12 h-12 text-sm sm:text-md rounded-full border-sky-200 dark:border-sky-800 focus-visible:ring-sky-500 shadow-sm bg-background"
                     value={locationQuery}
                     onChange={(e) => setLocationQuery(e.target.value)}
                   />
@@ -238,10 +238,10 @@ export default function MedicinesDashboard() {
                     type="button" 
                     variant="ghost" 
                     size="sm" 
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-sky-600 hover:bg-sky-100 rounded-full h-8 px-3 text-xs"
+                    className="absolute right-1 sm:right-2 top-1/2 -translate-y-1/2 text-sky-600 hover:bg-sky-100 rounded-full h-8 sm:h-9 px-2 sm:px-3 text-[10px] sm:text-xs"
                     onClick={locateUser}
                   >
-                    Use GPS
+                    GPS
                   </Button>
                 </div>
 
@@ -250,8 +250,8 @@ export default function MedicinesDashboard() {
                   <div className="relative flex-1 w-full">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-sky-600 dark:text-sky-400" />
                     <Input
-                      placeholder="Search for a specific pharmacy..."
-                      className="pl-12 h-12 text-md rounded-full border-sky-200 dark:border-sky-800 focus-visible:ring-sky-500 shadow-sm bg-background w-full"
+                      placeholder="Search pharmacy..."
+                      className="pl-12 h-12 text-sm sm:text-md rounded-full border-sky-200 dark:border-sky-800 focus-visible:ring-sky-500 shadow-sm bg-background w-full"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                     />
@@ -259,17 +259,17 @@ export default function MedicinesDashboard() {
                   
                   <div className="flex items-center gap-2 w-full sm:w-auto">
                     <Select value={radius} onValueChange={handleRadiusChange}>
-                      <SelectTrigger className="flex-1 sm:w-[140px] h-12 rounded-full border-sky-200 dark:border-sky-800 bg-background shadow-sm">
+                      <SelectTrigger className="flex-1 sm:w-[130px] h-12 rounded-full border-sky-200 dark:border-sky-800 bg-background shadow-sm text-sm">
                         <div className="flex items-center gap-2">
                           <Filter className="h-4 w-4 text-sky-600 dark:text-sky-400" />
-                          <SelectValue placeholder="Distance" />
+                          <SelectValue placeholder="Range" />
                         </div>
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="2">Within 2 km</SelectItem>
-                        <SelectItem value="5">Within 5 km</SelectItem>
-                        <SelectItem value="10">Within 10 km</SelectItem>
-                        <SelectItem value="25">Within 25 km</SelectItem>
+                        <SelectItem value="2">2 km</SelectItem>
+                        <SelectItem value="5">5 km</SelectItem>
+                        <SelectItem value="10">10 km</SelectItem>
+                        <SelectItem value="25">25 km</SelectItem>
                       </SelectContent>
                     </Select>
                     <Button type="submit" size="icon" className="h-12 w-12 rounded-full bg-sky-600 hover:bg-sky-700 shrink-0 shadow-sm">
@@ -282,27 +282,27 @@ export default function MedicinesDashboard() {
           </Card>
 
           {/* Category Filter Tabs */}
-          <div className="flex gap-2 p-1.5 bg-slate-100 dark:bg-slate-900/60 rounded-2xl w-fit border border-slate-200/40 dark:border-slate-800/40 animate-in fade-in slide-in-from-top-2 duration-300">
+          <div className="flex flex-wrap gap-2 p-1.5 bg-slate-100 dark:bg-slate-900/60 rounded-2xl w-fit border border-slate-200/40 dark:border-slate-800/40 animate-in fade-in slide-in-from-top-2 duration-300">
             <button
               onClick={() => setFilterType("all")}
-              className={`px-5 py-2.5 text-xs font-black uppercase tracking-wider rounded-xl transition-all duration-300 ${
+              className={`px-3 sm:px-5 py-2 text-[10px] sm:text-xs font-black uppercase tracking-wider rounded-xl transition-all duration-300 ${
                 filterType === "all"
                   ? "bg-white dark:bg-slate-800 text-sky-600 dark:text-sky-400 shadow-md"
                   : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
               }`}
             >
-              All Pharmacies
+              All Stores
             </button>
             <button
               onClick={() => setFilterType("jan-aushadhi")}
-              className={`px-5 py-2.5 text-xs font-black uppercase tracking-wider rounded-xl transition-all duration-300 flex items-center gap-1.5 ${
+              className={`px-3 sm:px-5 py-2 text-[10px] sm:text-xs font-black uppercase tracking-wider rounded-xl transition-all duration-300 flex items-center gap-1 sm:gap-1.5 ${
                 filterType === "jan-aushadhi"
                   ? "bg-emerald-600 text-white shadow-md shadow-emerald-500/10"
                   : "text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400"
               }`}
             >
-              <Pill className="h-3.5 w-3.5 animate-bounce" />
-              Jan Aushadhi (Govt)
+              <Pill className="h-3 w-3 sm:h-3.5 sm:w-3.5 animate-bounce" />
+              Jan Aushadhi
             </button>
           </div>
 
