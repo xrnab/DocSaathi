@@ -3,6 +3,7 @@
 import { db } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
+import { checkUser } from "@/lib/checkUser";
 
 /**
  * Sets the user's role and related information
@@ -15,11 +16,15 @@ export async function setUserRole(formData) {
   }
 
   // Find user in our database
-  const user = await db.user.findUnique({
+  let user = await db.user.findUnique({
     where: { clerkUserId: userId },
   });
 
-  if (!user) throw new Error("User not found in database");
+  if (!user) {
+    user = await checkUser();
+  }
+
+  if (!user) throw new Error("User not found in database and could not be provisioned");
 
   const role = formData.get("role");
 
@@ -166,20 +171,8 @@ export async function updatePatientMedicalProfile(formData) {
  * Gets the current user's complete profile information
  */
 export async function getCurrentUser() {
-  const { userId } = await auth();
-
-  if (!userId) {
-    return null;
-  }
-
   try {
-    const user = await db.user.findUnique({
-      where: {
-        clerkUserId: userId,
-      },
-    });
-
-    return user;
+    return await checkUser();
   } catch (error) {
     console.error("Failed to get user information:", error);
     return null;
