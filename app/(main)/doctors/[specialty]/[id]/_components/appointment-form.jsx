@@ -1,14 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { format } from "date-fns";
 import { Loader2, Clock, ArrowLeft, Calendar, CreditCard } from "lucide-react";
-import { bookAppointment } from "@/actions/appointments";
+import { useOfflineBooking } from "@/hooks/use-offline-booking";
 import { toast } from "sonner";
-import useFetch from "@/hooks/use-fetch";
 
 import { useRouter } from "next/navigation";
 
@@ -17,18 +16,14 @@ export function AppointmentForm({ doctorId, slot, onBack, onComplete }) {
   const [localLoading, setLocalLoading] = useState(false);
   const router = useRouter();
 
-  // Use the useFetch hook to handle loading, data, and error states
-  const { loading, data, fn: submitBooking } = useFetch(bookAppointment);
+  const { book, isPending } = useOfflineBooking();
 
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (loading || localLoading) return;
+    if (isPending || localLoading) return;
 
     setLocalLoading(true);
-    setTimeout(() => {
-      setLocalLoading(false);
-    }, 3000);
 
     // Create form data
     const formData = new FormData();
@@ -37,22 +32,22 @@ export function AppointmentForm({ doctorId, slot, onBack, onComplete }) {
     formData.append("endTime", slot.endTime);
     formData.append("description", description);
 
-    // Submit booking using the function from useFetch
-    await submitBooking(formData);
-  };
-
-  // Handle response after booking attempt
-  useEffect(() => {
-    if (data) {
-      if (data.success) {
-        toast.success("Appointment booked! Check your email.");
-        setTimeout(() => {
-          router.push('/appointments');
-        }, 1500);
-        onComplete();
+    try {
+      const result = await book(formData);
+      if (result.queued) {
+        toast.info("Appointment saved offline — will confirm when back online");
+        router.push("/appointments");
+      } else if (result.result?.success) {
+        toast.success("Appointment confirmed!");
+        router.push("/appointments");
       }
+      onComplete();
+    } catch (err) {
+      toast.error(err.message || "Failed to book appointment");
+    } finally {
+      setLocalLoading(false);
     }
-  }, [data]);
+  };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -98,7 +93,7 @@ export function AppointmentForm({ doctorId, slot, onBack, onComplete }) {
           type="button"
           variant="outline"
           onClick={onBack}
-          disabled={loading}
+          disabled={isPending}
           className="border-sky-900/30"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
@@ -106,10 +101,10 @@ export function AppointmentForm({ doctorId, slot, onBack, onComplete }) {
         </Button>
         <Button
           type="submit"
-          disabled={loading || localLoading}
+          disabled={isPending || localLoading}
           className="bg-sky-600 hover:bg-sky-700"
         >
-          {loading || localLoading ? (
+          {isPending || localLoading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Booking...

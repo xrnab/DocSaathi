@@ -12,6 +12,9 @@ import {
   getVerifiedDoctors,
   bookAshaPatientAppointment
 } from "@/actions/asha";
+import { useOfflineAsha } from "@/hooks/use-offline-asha";
+import { useOfflineSyncCtx } from "@/components/offline-sync-provider";
+import { PendingSyncBadge } from "@/components/pending-sync-badge";
 import { 
   Card, 
   CardContent, 
@@ -57,8 +60,16 @@ const VACCINE_LIST = [
 ];
 
 export default function AshaWorkerDashboard() {
+  const { isOnline, enqueue } = useOfflineSyncCtx();
+  const {
+    families,
+    loading: offlineAshaLoading,
+    createFamily,
+    addMember,
+    recordVaccination
+  } = useOfflineAsha();
+
   const [profile, setProfile] = useState(null);
-  const [families, setFamilies] = useState([]);
   const [appointments, setAppointments] = useState([]);
   const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -95,13 +106,21 @@ export default function AshaWorkerDashboard() {
           setProfile(prof);
         }
 
-        const fams = await getAshaFamilies();
-        setFamilies(fams || []);
-
-        const apps = await getAshaAppointments();
+        let apps = [];
+        let docs = [];
+        if (isOnline) {
+          try {
+            apps = await getAshaAppointments();
+          } catch (e) {
+            console.error(e);
+          }
+        }
+        try {
+          docs = await getVerifiedDoctors();
+        } catch (e) {
+          console.error(e);
+        }
         setAppointments(apps || []);
-
-        const docs = await getVerifiedDoctors();
         setDoctors(docs || []);
       } catch (err) {
         console.error("Error loading dashboard data:", err);
@@ -111,7 +130,7 @@ export default function AshaWorkerDashboard() {
     }
 
     loadData();
-  }, []);
+  }, [isOnline]);
 
   const showNotification = (text, type = "success") => {
     setMessage({ text, type });
@@ -122,17 +141,20 @@ export default function AshaWorkerDashboard() {
     e.preventDefault();
     setSubmittingFamily(true);
     try {
-      const res = await createAshaFamily({
+      const familyPayload = {
         ...newFamily,
         village: newFamily.village || profile?.village || "Sauja",
         block: newFamily.block || profile?.block || "Nabha"
-      });
-      if (res.success) {
+      };
+
+      const res = await createFamily(familyPayload);
+
+      if (res.queued) {
+        showNotification("Household registry saved offline! Will sync when connection returns.");
+      } else if (res.result?.success) {
         showNotification("Household registry created successfully!");
-        setNewFamily({ headName: "", village: "", block: "", pincode: "" });
-        const fams = await getAshaFamilies();
-        setFamilies(fams);
       }
+      setNewFamily({ headName: "", village: "", block: "", pincode: "" });
     } catch (err) {
       showNotification(err.message || "Failed to create household", "error");
     } finally {
@@ -148,20 +170,22 @@ export default function AshaWorkerDashboard() {
     }
     setSubmittingMember(true);
     try {
-      const res = await addAshaFamilyMember({
-        familyId: selectedFamilyId,
+      const memberPayload = {
         name: newMember.name,
         age: parseInt(newMember.age, 10),
         gender: newMember.gender,
         relation: newMember.relation,
         immunisations: JSON.stringify(newMember.immunisations)
-      });
-      if (res.success) {
+      };
+
+      const res = await addMember(selectedFamilyId, memberPayload);
+
+      if (res.queued) {
+        showNotification(`${newMember.name} added offline! Will sync when connection returns.`);
+      } else if (res.result?.success) {
         showNotification(`${newMember.name} added to family registry!`);
-        setNewMember({ name: "", age: "", gender: "Male", relation: "Son", immunisations: [] });
-        const fams = await getAshaFamilies();
-        setFamilies(fams);
       }
+      setNewMember({ name: "", age: "", gender: "Male", relation: "Son", immunisations: [] });
     } catch (err) {
       showNotification(err.message || "Failed to add family member", "error");
     } finally {
@@ -182,11 +206,15 @@ export default function AshaWorkerDashboard() {
       : [...currentVaccines, vaccineCode];
 
     try {
-      const res = await updateMemberImmunisations(member.id, JSON.stringify(updated));
-      if (res.success) {
+      const res = await recordVaccination({
+        memberId: member.id,
+        immunisations: JSON.stringify(updated)
+      });
+
+      if (res.queued) {
+        showNotification(`Vaccination record updated offline for ${member.name}`);
+      } else if (res.result?.success) {
         showNotification(`Immunisation records updated for ${member.name}`);
-        const fams = await getAshaFamilies();
-        setFamilies(fams);
       }
     } catch (err) {
       showNotification("Failed to update immunisation", "error");
@@ -209,17 +237,24 @@ export default function AshaWorkerDashboard() {
     }
     setSubmittingOutbreak(true);
     try {
-      const res = await createOutbreakReport({
+      const outbreakPayload = {
         symptoms: outbreak.symptoms,
         village: outbreak.village || profile?.village || "Sauja",
         block: outbreak.block || profile?.block || "Nabha",
         caseCount: parseInt(outbreak.caseCount, 10),
         notes: outbreak.notes
-      });
-      if (res.success) {
-        showNotification("CRITICAL ALERT DISPATCHED: Outbreak reported to District Surveillance Office!");
-        setOutbreak({ symptoms: [], village: "", block: "", caseCount: "", notes: "" });
+      };
+
+      if (isOnline) {
+        const res = await createOutbreakReport(outbreakPayload);
+        if (res.success) {
+          showNotification("CRITICAL ALERT DISPATCHED: Outbreak reported to District Surveillance Office!");
+        }
+      } else {
+        await enqueue("CREATE_OUTBREAK_REPORT", outbreakPayload);
+        showNotification("Outbreak Alert saved offline! Will dispatch automatically when back online.");
       }
+      setOutbreak({ symptoms: [], village: "", block: "", caseCount: "", notes: "" });
     } catch (err) {
       showNotification(err.message || "Failed to submit report", "error");
     } finally {
@@ -231,27 +266,41 @@ export default function AshaWorkerDashboard() {
     e.preventDefault();
     setSubmittingBooking(true);
     try {
-      // Mock booking time end
       const start = new Date(appointmentForm.startTime);
       const end = new Date(start.getTime() + 30 * 60 * 1000); // 30 mins
 
-      const res = await bookAshaPatientAppointment({
+      const bookingPayload = {
         doctorId: appointmentForm.doctorId,
         startTime: start.toISOString(),
         endTime: end.toISOString(),
         memberName: appointmentForm.memberName,
         notes: appointmentForm.notes
-      });
+      };
 
-      if (res.success) {
-        showNotification(`Telemedicine consultation scheduled for ${appointmentForm.memberName}!`);
-        setAppointmentForm({ doctorId: "", startTime: "", memberName: "", notes: "" });
-        const apps = await getAshaAppointments();
-        setAppointments(apps);
-        // Refresh profile for credits
-        const prof = await getAshaWorkerProfile();
-        if (prof) setProfile(prof);
+      if (isOnline) {
+        const res = await bookAshaPatientAppointment(bookingPayload);
+        if (res.success) {
+          showNotification(`Telemedicine consultation scheduled for ${appointmentForm.memberName}!`);
+          const apps = await getAshaAppointments();
+          setAppointments(apps);
+          const prof = await getAshaWorkerProfile();
+          if (prof) setProfile(prof);
+        }
+      } else {
+        await enqueue("BOOK_ASHA_APPOINTMENT", bookingPayload);
+        showNotification("Proxy booking saved offline! Doctor consultation will schedule once online.");
+        
+        const optimisticApp = {
+          id: `local-app-${Date.now()}`,
+          startTime: start.toISOString(),
+          endTime: end.toISOString(),
+          patientDescription: `Booked by ASHA Worker (Offline Queue) for family member: ${appointmentForm.memberName}. Notes: ${appointmentForm.notes || "None"}`,
+          doctor: doctors.find(d => d.id === appointmentForm.doctorId) || { name: "Selected Doctor", specialty: "Specialist" },
+          _pendingSync: true
+        };
+        setAppointments(prev => [optimisticApp, ...prev]);
       }
+      setAppointmentForm({ doctorId: "", startTime: "", memberName: "", notes: "" });
     } catch (err) {
       showNotification(err.message || "Failed to book appointment", "error");
     } finally {
@@ -259,7 +308,7 @@ export default function AshaWorkerDashboard() {
     }
   };
 
-  if (loading) {
+  if (loading || offlineAshaLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
         <Loader2 className="h-10 w-10 text-sky-500 animate-spin" />
@@ -585,7 +634,10 @@ export default function AshaWorkerDashboard() {
                     <div key={fam.id} className="border border-border/80 rounded-2xl p-5 hover:border-sky-400/40 transition-colors bg-slate-50/20 dark:bg-slate-900/10 space-y-4">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/60 pb-3">
                         <div>
-                          <h4 className="text-lg font-bold text-foreground">{fam.headName}&apos;s Household</h4>
+                          <div className="flex items-center gap-3">
+                            <h4 className="text-lg font-bold text-foreground">{fam.headName}&apos;s Household</h4>
+                            {fam._pendingSync && <PendingSyncBadge label="Sync Pending" />}
+                          </div>
                           <div className="flex items-center text-muted-foreground text-xs font-semibold gap-3 mt-1">
                             <span className="flex items-center"><MapPin className="w-3.5 h-3.5 mr-1" /> {fam.village}, {fam.block}</span>
                             {fam.pincode && <span>PIN: {fam.pincode}</span>}

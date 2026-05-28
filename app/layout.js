@@ -9,6 +9,8 @@ import { OfflineIndicator } from "@/components/offline-indicator";
 import { PageProgress } from "@/components/page-progress";
 import { Suspense } from "react";
 import { PwaInstallBanner } from "@/components/pwa-install-banner";
+import { OfflineSyncProvider } from "@/components/offline-sync-provider";
+import { ServiceWorkerRegistrar } from "@/components/sw-registrar";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -55,26 +57,29 @@ export default function RootLayout({ children }) {
             enableSystem
             disableTransitionOnChange
           >
-            <Suspense fallback={null}>
-              <PageProgress />
-            </Suspense>
-            <Suspense fallback={
-              <header className="fixed top-4 left-0 right-0 z-50 px-4 flex justify-center">
-                <nav className="container max-w-7xl h-16 bg-background/70 backdrop-blur-xl border border-border rounded-[2rem] animate-pulse" />
-              </header>
-            }>
-              <Header />
-            </Suspense>
-            <main className="min-h-screen pt-24 mb-16 sm:mb-0">{children}</main>
-            <Toaster richColors />
-            <OfflineIndicator />
-            <PwaInstallBanner />
+            <OfflineSyncProvider>
+              <Suspense fallback={null}>
+                <PageProgress />
+              </Suspense>
+              <Suspense fallback={
+                <header className="fixed top-4 left-0 right-0 z-50 px-4 flex justify-center">
+                  <nav className="container max-w-7xl h-16 bg-background/70 backdrop-blur-xl border border-border rounded-[2rem] animate-pulse" />
+                </header>
+              }>
+                <Header />
+              </Suspense>
+              <main className="min-h-screen pt-24 mb-16 sm:mb-0">{children}</main>
+              <Toaster richColors />
+              <OfflineIndicator />
+              <PwaInstallBanner />
 
-            <footer className="bg-muted/50 py-12">
-              <div className="container mx-auto px-4 text-center text-muted-foreground">
-                <p>&copy; {new Date().getFullYear()} DocSaathi. All rights reserved.</p>
-              </div>
-            </footer>
+              <footer className="bg-muted/50 py-12">
+                <div className="container mx-auto px-4 text-center text-muted-foreground">
+                  <p>&copy; {new Date().getFullYear()} DocSaathi. All rights reserved.</p>
+                </div>
+              </footer>
+            </OfflineSyncProvider>
+            <ServiceWorkerRegistrar />
           </ThemeProvider>
         </body>
       </html>

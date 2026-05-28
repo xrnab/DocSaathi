@@ -179,3 +179,28 @@ export async function resolveOutbreakAlert(village) {
     return { success: false, error: error.message };
   }
 }
+
+export async function submitSymptomReport(data) {
+  const { symptoms, duration, patientType, language, village } = data;
+  if (!symptoms || symptoms.length === 0) {
+    throw new Error("Symptoms are required");
+  }
+
+  try {
+    const submission = await db.symptomSubmission.create({
+      data: {
+        symptoms,
+        duration: duration || "Today",
+        patientType: patientType || "ADULT",
+        language: language || "PA",
+        village: village || "Nabha Central",
+      },
+    });
+
+    revalidatePath("/admin/outbreak");
+    return { success: true, submission };
+  } catch (error) {
+    console.error("Failed to submit symptoms:", error);
+    throw new Error(error.message || "Failed to submit symptoms");
+  }
+}

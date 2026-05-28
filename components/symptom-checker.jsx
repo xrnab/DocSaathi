@@ -33,6 +33,7 @@ import { cn } from "@/lib/utils";
 import { analyzeSymptoms } from "@/actions/ai";
 import { SymptomGrid } from "./symptom-grid";
 import { FacilityFinder } from "./facility-finder";
+import { useOfflineSymptoms } from "@/hooks/use-offline-symptoms";
 
 const ALL_SYMPTOMS_LOOKUP = [
   { id: "fever", label: "Fever" },
@@ -180,6 +181,7 @@ function parseReport(text) {
 }
 
 export default function SymptomChecker() {
+  const { submitSymptoms, isPending: isOfflinePending } = useOfflineSymptoms();
   const [selectedSymptoms, setSelectedSymptoms] = useState([]);
   const [customSymptom, setCustomSymptom] = useState("");
   const [language, setLanguage] = useState("Punjabi");
@@ -319,22 +321,48 @@ export default function SymptomChecker() {
     setIsAnalyzing(true);
     setError(null);
     
+    const selectedLabels = selectedSymptoms.map(id => ALL_SYMPTOMS_LOOKUP.find(s => s.id === id)?.label);
+    const allSymptoms = [...selectedLabels, customSymptom].filter(Boolean);
+    
     try {
-      const selectedLabels = selectedSymptoms.map(id => ALL_SYMPTOMS_LOOKUP.find(s => s.id === id)?.label);
-      const allSymptoms = [...selectedLabels, customSymptom].filter(Boolean);
-      
-      const result = await analyzeSymptoms({
-        symptoms: allSymptoms,
-        language,
-        patientType,
-        duration
-      });
+      let triageReport = null;
+      let isDeviceOffline = typeof navigator !== "undefined" ? !navigator.onLine : false;
 
-      if (!result.success) {
-        throw new Error(result.error);
+      if (isDeviceOffline) {
+        triageReport = `URGENCY: YELLOW\n\nPOSSIBLE CONDITIONS:\n- Unable to analyze online (Device Offline)\n\nRECOMMENDED ACTION:\n- Your symptoms have been securely saved offline and will automatically be triaged once your network is restored.\n- For immediate assistance in Nabha, consult a GP or go to Rajindra Hospital Patiala.\n\nHOME REMEDIES:\n- Rest, drink plenty of water, and isolate if showing contagious symptoms.\n\nDISCLAIMER: This is an offline placeholder assessment. Real-time AI triage will complete once you are back online.`;
+        setReport(triageReport);
+      } else {
+        const result = await analyzeSymptoms({
+          symptoms: allSymptoms,
+          language,
+          patientType,
+          duration
+        });
+
+        if (!result.success) {
+          throw new Error(result.error);
+        }
+
+        triageReport = result.data;
+        setReport(triageReport);
       }
 
-      setReport(result.data);
+      // Submit report to sync system
+      const submitRes = await submitSymptoms({
+        symptoms: allSymptoms,
+        duration,
+        patientType: patientType.toUpperCase(),
+        language: language === "Punjabi" ? "PA" : language === "Hindi" ? "HI" : "EN",
+        village: "Nabha Central"
+      });
+
+      if (submitRes.queued) {
+        toast.info("Symptoms saved offline! Outbreak tracker will sync when connection returns.", {
+          duration: 5000
+        });
+      } else {
+        toast.success("Symptoms submitted successfully to outbreak tracker!");
+      }
     } catch (err) {
       console.error("Symptom checker error:", err);
       setError(err.message || "Failed to analyze symptoms. Please try again.");

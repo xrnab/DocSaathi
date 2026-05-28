@@ -1,114 +1,209 @@
-// DocSaathi Progressive Web App Service Worker
-const CACHE_NAME = "docsaathi-cache-v1";
+const CACHE_SHELL = "docsaathi-shell-v2";
+const CACHE_STATIC = "docsaathi-static-v2";
+const CACHE_API = "docsaathi-api-v2";
+const ALL_CACHES = [CACHE_SHELL, CACHE_STATIC, CACHE_API];
 
-// Essential assets to cache on install for offline boot
-const PRECACHE_ASSETS = [
-  "/",
-  "/logo.png",
-  "/banner2.png",
-  "/hero-duo.png"
-];
+const PRECACHE_PAGES = ["/", "/_offline", "/appointments", "/asha", "/doctors"];
+const PRECACHE_STATIC = ["/logo.png", "/banner2.png", "/hero-duo.png", "/manifest.json"];
 
-// Install listener - pre-cache static layout shell & core assets
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      console.log("[Service Worker] Pre-caching core layout shell");
-      return cache.addAll(PRECACHE_ASSETS);
-    }).then(() => {
-      return self.skipWaiting();
-    })
+    Promise.all([
+      caches.open(CACHE_SHELL).then((cache) => {
+        console.log("[SW] Precaching pages with bypass load...");
+        const pageRequests = PRECACHE_PAGES.map(url => new Request(url, { cache: "reload" }));
+        return cache.addAll(pageRequests);
+      }),
+      caches.open(CACHE_STATIC).then((cache) => {
+        console.log("[SW] Precaching static resources...");
+        return cache.addAll(PRECACHE_STATIC);
+      })
+    ]).then(() => self.skipWaiting())
   );
 });
 
-// Activate listener - clean up legacy caches
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
+    caches.keys().then((keys) => {
       return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME) {
-            console.log("[Service Worker] Removing old cache:", cacheName);
-            return caches.delete(cacheName);
+        keys.map((key) => {
+          if (!ALL_CACHES.includes(key)) {
+            console.log("[SW] Removing old cache:", key);
+            return caches.delete(key);
           }
         })
       );
-    }).then(() => {
-      return self.clients.claim();
-    })
+    }).then(() => self.clients.claim())
   );
 });
 
-// Fetch listener - intercept and serve cached assets or fetch fresh copies
+function fetchWithTimeout(request, timeoutMs = 5000) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error("Network timeout")), timeoutMs);
+    fetch(request).then(
+      (res) => {
+        clearTimeout(timer);
+        resolve(res);
+      },
+      (err) => {
+        clearTimeout(timer);
+        reject(err);
+      }
+    );
+  });
+}
+
 self.addEventListener("fetch", (event) => {
-  const request = event.request;
+  const { request } = event;
   const url = new URL(request.url);
 
-  // 1. Bypass rules: Only cache GET requests, and ignore Chrome extensions, Clerk auth, and api calls
+  // 1. Skip rules
   if (
     request.method !== "GET" ||
-    !request.url.startsWith("http") ||
-    url.pathname.startsWith("/api/") ||
+    url.origin !== self.location.origin ||
     url.pathname.startsWith("/sign-in") ||
     url.pathname.startsWith("/sign-up") ||
     url.hostname.includes("clerk")
   ) {
-    return; // Fallback directly to native browser fetch
+    return;
   }
 
-  // 2. Navigation Requests (Main Pages / Documents) -> Network-First, Fallback to Cache
+  // 2. Cache-First (immutable) for Next.js build outputs
+  if (url.pathname.startsWith("/_next/static/")) {
+    event.respondWith(
+      caches.match(request).then((cached) => {
+        if (cached) return cached;
+        return fetch(request).then((res) => {
+          if (res.status === 200) {
+            const resClone = res.clone();
+            caches.open(CACHE_STATIC).then((cache) => cache.put(request, resClone));
+          }
+          return res;
+        });
+      })
+    );
+    return;
+  }
+
+  // 3. Network-First with 5s timeout for specific critical APIs
+  if (url.pathname.startsWith("/api/doctors") || url.pathname.startsWith("/api/specialities")) {
+    event.respondWith(
+      fetchWithTimeout(request, 5000)
+        .then((res) => {
+          if (res.status === 200) {
+            const resClone = res.clone();
+            caches.open(CACHE_API).then((cache) => cache.put(request, resClone));
+          }
+          return res;
+        })
+        .catch(() => {
+          return caches.match(request).then((cached) => cached || new Response(JSON.stringify({ error: "Offline" }), { status: 503, headers: { "Content-Type": "application/json" } }));
+        })
+    );
+    return;
+  }
+
+  // 4. Navigate requests (documents) -> Network-First with deep fallbacks
   if (request.mode === "navigate") {
     event.respondWith(
       fetch(request)
-        .then((response) => {
-          // Put a copy of the fresh page in the cache
-          const responseClone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(request, responseClone);
-          });
-          return response;
+        .then((res) => {
+          if (res.status === 200) {
+            const resClone = res.clone();
+            caches.open(CACHE_SHELL).then((cache) => cache.put(request, resClone));
+          }
+          return res;
         })
         .catch(() => {
-          // If offline, serve the cached index shell page `/`
-          return caches.match("/").then((cachedResponse) => {
-            if (cachedResponse) return cachedResponse;
-            // Or return match for specific subpage if cached
-            return caches.match(request);
+          // Failure cascade: try exact page cached, then try cached "/", then try cached "/_offline"
+          return caches.match(request).then((cachedPage) => {
+            if (cachedPage) return cachedPage;
+            return caches.match("/").then((cachedRoot) => {
+              if (cachedRoot) return cachedRoot;
+              return caches.match("/_offline");
+            });
           });
         })
     );
     return;
   }
 
-  // 3. Static Resources (CSS, Chunks, JS, Fonts, Images) -> Cache-First, Fallback to Network
+  // 5. Stale-While-Revalidate for everything else
   event.respondWith(
-    caches.match(request).then((cachedResponse) => {
-      if (cachedResponse) {
-        // Fetch static assets in background to keep cache up to date (stale-while-revalidate)
-        fetch(request)
-          .then((response) => {
-            if (response.status === 200) {
-              caches.open(CACHE_NAME).then((cache) => cache.put(request, response));
-            }
-          })
-          .catch(() => {}); // Ignore network errors during background update
-        
-        return cachedResponse;
-      }
+    caches.match(request).then((cached) => {
+      const fetchPromise = fetch(request)
+        .then((res) => {
+          if (res.status === 200) {
+            const resClone = res.clone();
+            caches.open(CACHE_STATIC).then((cache) => cache.put(request, resClone));
+          }
+          return res;
+        })
+        .catch(() => null);
 
-      // If not in cache, fetch from network and add to cache dynamically
-      return fetch(request).then((response) => {
-        if (!response || response.status !== 200 || response.type !== "basic") {
-          return response;
-        }
+      return cached || fetchPromise;
+    })
+  );
+});
 
-        const responseClone = response.clone();
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(request, responseClone);
+// Sync handler
+self.addEventListener("sync", (event) => {
+  if (event.tag === "docsaathi-sync") {
+    console.log("[SW] Background sync triggered on 'docsaathi-sync'");
+    event.waitUntil(
+      self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
+        clients.forEach((client) => {
+          client.postMessage({ type: "BACKGROUND_SYNC_TRIGGERED" });
         });
+      })
+    );
+  }
+});
 
-        return response;
-      });
+// Push handler
+self.addEventListener("push", (event) => {
+  let data = { title: "DocSaathi Update", body: "Check your dashboard for new updates." };
+  try {
+    if (event.data) {
+      data = event.data.json();
+    }
+  } catch (e) {
+    data = { title: "DocSaathi Update", body: event.data ? event.data.text() : "New update received." };
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: "/logo.png",
+      vibrate: [200, 100, 200],
+      data: { url: data.url || "/" },
+      actions: [
+        { action: "open", title: "Open" },
+        { action: "dismiss", title: "Dismiss" }
+      ]
+    })
+  );
+});
+
+// Notification click handler
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  if (event.action === "dismiss") {
+    return;
+  }
+
+  const targetUrl = event.notification.data?.url || "/";
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((windowClients) => {
+      for (let i = 0; i < windowClients.length; i++) {
+        const client = windowClients[i];
+        if (client.url === targetUrl && "focus" in client) {
+          return client.focus();
+        }
+      }
+      if (self.clients.openWindow) {
+        return self.clients.openWindow(targetUrl);
+      }
     })
   );
 });
