@@ -503,8 +503,8 @@ export default function VideoCall({
                 className={cn(
                   "rounded-full h-12 w-12 sm:h-16 sm:w-16 border-2 transition-all active:scale-90",
                   isVideoEnabled
-                    ? "bg-white/10 border-white/20 text-white hover:bg-white/20"
-                    : "bg-red-500/20 border-red-500 text-red-500 hover:bg-red-500/30"
+                    ? "bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-800 dark:bg-white/10 dark:border-white/20 dark:text-white dark:hover:bg-white/20"
+                    : "bg-red-50 hover:bg-red-100 border-red-200 text-red-600 dark:bg-red-500/20 dark:border-red-500 dark:text-red-400 dark:hover:bg-red-500/30"
                 )}
                 disabled={!publisherRef.current}
               >
@@ -518,8 +518,8 @@ export default function VideoCall({
                 className={cn(
                   "rounded-full h-12 w-12 sm:h-16 sm:w-16 border-2 transition-all active:scale-90",
                   isAudioEnabled
-                    ? "bg-white/10 border-white/20 text-white hover:bg-white/20"
-                    : "bg-red-500/20 border-red-500 text-red-500 hover:bg-red-500/30"
+                    ? "bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-800 dark:bg-white/10 dark:border-white/20 dark:text-white dark:hover:bg-white/20"
+                    : "bg-red-50 hover:bg-red-100 border-red-200 text-red-600 dark:bg-red-500/20 dark:border-red-500 dark:text-red-400 dark:hover:bg-red-500/30"
                 )}
                 disabled={!publisherRef.current}
               >
@@ -530,7 +530,7 @@ export default function VideoCall({
                 variant="destructive"
                 size="icon"
                 onClick={endCall}
-                className="rounded-full h-12 w-12 sm:h-16 sm:w-16 bg-red-600 hover:bg-red-700 shadow-xl shadow-red-900/40 active:scale-90 transition-all"
+                className="rounded-full h-12 w-12 sm:h-16 sm:w-16 bg-red-600 hover:bg-red-700 shadow-xl shadow-red-900/40 active:scale-90 transition-all text-white"
               >
                 <PhoneOff className="h-5 w-5 sm:h-6 sm:w-6" />
               </Button>
