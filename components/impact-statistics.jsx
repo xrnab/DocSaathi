@@ -58,12 +58,16 @@ export function ImpactStatistics() {
               // Specific overrides to make the "pop-up" effect work based on scroll position
               onViewportEnter={() => {}} 
             >
-              {/* Desktop Indicator */}
-              <div className="absolute top-6 left-6 w-1 h-8 rounded-full opacity-40 hidden md:block" style={{ backgroundColor: "currentColor" }} />
-
               <div className="space-y-2 flex flex-col items-center md:items-start">
-                <div className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tighter leading-none">
-                  {stat.value}
+                <div className="flex items-center gap-3">
+                  {/* Indicator Line - Clean inline placement prevents overlap glitches on all viewports */}
+                  <div 
+                    className="w-1 h-8 rounded-full opacity-40 shrink-0" 
+                    style={{ backgroundColor: "currentColor" }} 
+                  />
+                  <div className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tighter leading-none">
+                    {stat.value}
+                  </div>
                 </div>
                 <div className="space-y-1">
                   <p className="text-[10px] sm:text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-widest leading-tight">
