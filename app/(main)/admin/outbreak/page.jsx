@@ -180,50 +180,58 @@ export default function OutbreakSurveillancePage() {
 
       {/* Metrics Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="border-border bg-card shadow-sm">
-          <CardContent className="flex items-center p-6 space-x-4">
-            <div className="p-3.5 bg-rose-50 dark:bg-rose-950/40 rounded-2xl text-rose-500 border border-rose-100 dark:border-rose-800">
-              <Activity className="w-6 h-6" />
+        <Card className="border-border bg-card shadow-sm min-w-0">
+          <CardContent className="flex items-center p-4 sm:p-6 gap-3 sm:gap-4 min-w-0">
+            <div className="p-3 bg-rose-50 dark:bg-rose-950/40 rounded-2xl text-rose-500 border border-rose-100 dark:border-rose-800 shrink-0">
+              <Activity className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
-            <div>
-              <p className="text-sm font-semibold text-muted-foreground">Surveillance Logs</p>
-              <p className="text-2xl font-black text-foreground">{data?.totalCount} Submissions</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-border bg-card shadow-sm">
-          <CardContent className="flex items-center p-6 space-x-4">
-            <div className="p-3.5 bg-sky-50 dark:bg-sky-950/40 rounded-2xl text-sky-500 border border-sky-100 dark:border-sky-800">
-              <MapPin className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-muted-foreground">Villages Tracked</p>
-              <p className="text-2xl font-black text-foreground">5 Local Wards</p>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs sm:text-sm font-semibold text-muted-foreground truncate">Surveillance Logs</p>
+              <p className="text-lg sm:text-xl md:text-2xl font-black text-foreground leading-tight mt-0.5 break-words">
+                {data?.totalCount} <span className="text-xs sm:text-sm font-medium text-muted-foreground block xl:inline">Submissions</span>
+              </p>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-border bg-card shadow-sm">
-          <CardContent className="flex items-center p-6 space-x-4">
-            <div className="p-3.5 bg-indigo-50 dark:bg-indigo-950/40 rounded-2xl text-indigo-500 border border-indigo-100 dark:border-indigo-800">
-              <Users className="w-6 h-6" />
+        <Card className="border-border bg-card shadow-sm min-w-0">
+          <CardContent className="flex items-center p-4 sm:p-6 gap-3 sm:gap-4 min-w-0">
+            <div className="p-3 bg-sky-50 dark:bg-sky-950/40 rounded-2xl text-sky-500 border border-sky-100 dark:border-sky-800 shrink-0">
+              <MapPin className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
-            <div>
-              <p className="text-sm font-semibold text-muted-foreground">ASHA Formal Reports</p>
-              <p className="text-2xl font-black text-foreground">{data?.formalReports.length} Dispatches</p>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs sm:text-sm font-semibold text-muted-foreground truncate">Villages Tracked</p>
+              <p className="text-lg sm:text-xl md:text-2xl font-black text-foreground leading-tight mt-0.5 break-words">
+                5 <span className="text-xs sm:text-sm font-medium text-muted-foreground block xl:inline">Local Wards</span>
+              </p>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-border bg-card shadow-sm">
-          <CardContent className="flex items-center p-6 space-x-4">
-            <div className="p-3.5 bg-amber-50 dark:bg-amber-950/40 rounded-2xl text-amber-500 border border-amber-100 dark:border-amber-800">
-              <AlertTriangle className="w-6 h-6 animate-bounce" />
+        <Card className="border-border bg-card shadow-sm min-w-0">
+          <CardContent className="flex items-center p-4 sm:p-6 gap-3 sm:gap-4 min-w-0">
+            <div className="p-3 bg-indigo-50 dark:bg-indigo-950/40 rounded-2xl text-indigo-500 border border-indigo-100 dark:border-indigo-800 shrink-0">
+              <Users className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
-            <div>
-              <p className="text-sm font-semibold text-muted-foreground">Active Spikes</p>
-              <p className="text-2xl font-black text-foreground">{data?.activeAlerts.length} Alerts</p>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs sm:text-sm font-semibold text-muted-foreground truncate">ASHA Formal Reports</p>
+              <p className="text-lg sm:text-xl md:text-2xl font-black text-foreground leading-tight mt-0.5 break-words">
+                {data?.formalReports.length} <span className="text-xs sm:text-sm font-medium text-muted-foreground block xl:inline">Dispatches</span>
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border bg-card shadow-sm min-w-0">
+          <CardContent className="flex items-center p-4 sm:p-6 gap-3 sm:gap-4 min-w-0">
+            <div className="p-3 bg-amber-50 dark:bg-amber-950/40 rounded-2xl text-amber-500 border border-amber-100 dark:border-amber-800 shrink-0">
+              <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6 animate-bounce" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs sm:text-sm font-semibold text-muted-foreground truncate">Active Spikes</p>
+              <p className="text-lg sm:text-xl md:text-2xl font-black text-foreground leading-tight mt-0.5 break-words">
+                {data?.activeAlerts.length} <span className="text-xs sm:text-sm font-medium text-muted-foreground block xl:inline">Alerts</span>
+              </p>
             </div>
           </CardContent>
         </Card>
