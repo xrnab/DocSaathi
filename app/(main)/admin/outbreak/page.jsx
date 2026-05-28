@@ -1,7 +1,19 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { getOutbreakDashboardData, resolveOutbreakAlert } from "@/actions/outbreak";
+import { 
+  getOutbreakDashboardData, 
+  resolveOutbreakAlert, 
+  NABHA_VILLAGES, 
+  SYMPTOMS_POOL 
+} from "@/actions/outbreak";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { 
   Card, 
   CardContent, 
