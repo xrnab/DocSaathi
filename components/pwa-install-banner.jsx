@@ -123,7 +123,7 @@ export function PwaInstallBanner() {
   if (!mounted || !showBanner || isInstalled) return null;
 
   return (
-    <div className="fixed bottom-6 left-4 right-4 md:left-auto md:right-6 md:w-[420px] z-[999] animate-in slide-in-from-bottom-8 duration-500 ease-out">
+    <div className="fixed bottom-24 sm:bottom-6 left-4 right-4 md:left-auto md:right-6 md:w-[420px] z-[999] animate-in slide-in-from-bottom-8 duration-500 ease-out">
       <div className="relative overflow-hidden bg-background/90 backdrop-blur-xl border border-sky-500/20 shadow-2xl shadow-sky-500/10 rounded-[2rem] p-5 sm:p-6 transition-all">
         {/* Glow Background Accent */}
         <div className="absolute top-0 right-0 w-24 h-24 bg-sky-500/10 dark:bg-sky-500/20 blur-2xl rounded-full pointer-events-none" />

@@ -410,7 +410,7 @@ export default function MedicinesDashboard() {
 
       {showScrollChip && (
         <div 
-          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-sky-600 dark:bg-sky-500 text-white font-black px-5 py-3 rounded-full shadow-2xl shadow-sky-500/20 text-xs animate-bounce flex items-center gap-1.5 cursor-pointer border border-sky-400/30"
+          className="fixed bottom-24 sm:bottom-6 left-1/2 -translate-x-1/2 z-50 bg-sky-600 dark:bg-sky-500 text-white font-black px-5 py-3 rounded-full shadow-2xl shadow-sky-500/20 text-xs animate-bounce flex items-center gap-1.5 cursor-pointer border border-sky-400/30"
           onClick={() => window.scrollBy({ top: 400, behavior: 'smooth' })}
         >
           Scroll for results ⬇
