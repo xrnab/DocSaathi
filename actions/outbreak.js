@@ -3,8 +3,8 @@
 import { db } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 
-export const NABHA_VILLAGES = ["Sauja", "Bhadson", "Nabha Central", "Kaul", "Chhintanwala"];
-export const SYMPTOMS_POOL = ["Fever", "Cough", "Diarrhea", "Vomiting", "Jaundice", "Rash"];
+const NABHA_VILLAGES = ["Sauja", "Bhadson", "Nabha Central", "Kaul", "Chhintanwala"];
+const SYMPTOMS_POOL = ["Fever", "Cough", "Diarrhea", "Vomiting", "Jaundice", "Rash"];
 
 /**
  * Checks, seeds, and retrieves epidemiological statistics and logs.

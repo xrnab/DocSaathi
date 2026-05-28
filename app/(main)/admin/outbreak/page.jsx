@@ -3,9 +3,7 @@
 import { useState, useEffect } from "react";
 import { 
   getOutbreakDashboardData, 
-  resolveOutbreakAlert, 
-  NABHA_VILLAGES, 
-  SYMPTOMS_POOL 
+  resolveOutbreakAlert 
 } from "@/actions/outbreak";
 import {
   Select,
@@ -14,6 +12,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+
+const NABHA_VILLAGES = ["Sauja", "Bhadson", "Nabha Central", "Kaul", "Chhintanwala"];
+const SYMPTOMS_POOL = ["Fever", "Cough", "Diarrhea", "Vomiting", "Jaundice", "Rash"];
 import { 
   Card, 
   CardContent, 
