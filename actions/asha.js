@@ -397,36 +397,38 @@ export async function bookAshaPatientAppointment(data) {
 
 export async function getAshaDashboardStats() {
   const { userId } = await auth();
-  if (!userId) return { familiesCount: 0, membersCount: 0, outbreakReports: 0, vaccinationsCount: 0 };
+  if (!userId) return null;
 
   try {
     const user = await db.user.findUnique({
       where: { clerkUserId: userId },
     });
 
-    if (!user) return { familiesCount: 0, membersCount: 0, outbreakReports: 0, vaccinationsCount: 0 };
+    if (!user || user.role !== "ASHA_WORKER") return null;
 
-    const [familiesCount, membersCount, outbreakReports, vaccinationsCount] = await Promise.all([
+    const [familiesCount, membersCount, outbreakReports, proxyAppointments] = await Promise.all([
       db.ashaFamily.count({ where: { ashaId: user.id } }).catch(() => 0),
       db.ashaFamilyMember.count({ where: { family: { ashaId: user.id } } }).catch(() => 0),
       db.outbreakReport.count({ where: { reportedById: user.id } }).catch(() => 0),
-      db.vaccination.count({ where: { patientId: user.id } }).catch(() => 0),
+      db.appointment.count({
+        where: {
+          OR: [
+            { patientDescription: { contains: "ASHA proxy" } },
+            { patientDescription: { contains: "Booked by ASHA" } }
+          ],
+          doctorId: { not: user.id }
+        }
+      }).catch(() => 0),
     ]);
 
     return {
       familiesCount,
       membersCount,
       outbreakReports,
-      // If patient vaccination count is 0, let's count members who have immunisation entries as a fallback
-      vaccinationsCount: vaccinationsCount || (await db.ashaFamilyMember.count({
-        where: {
-          family: { ashaId: user.id },
-          NOT: { immunisations: "" }
-        }
-      }).catch(() => 0))
+      proxyAppointments,
     };
   } catch (error) {
     console.error("Failed to get ASHA dashboard stats:", error);
-    return { familiesCount: 0, membersCount: 0, outbreakReports: 0, vaccinationsCount: 0 };
+    return null;
   }
 }

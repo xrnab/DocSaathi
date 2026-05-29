@@ -47,9 +47,10 @@ import {
   Stethoscope, 
   CheckCircle,
   Loader2,
-  QrCode
+  QrCode,
+  AlertTriangle
 } from "lucide-react";
-import { format } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
@@ -77,7 +78,9 @@ export default function AshaWorkerDashboard() {
   } = useOfflineAsha();
 
   const [profile, setProfile] = useState(null);
-  const [stats, setStats] = useState({ familiesCount: 0, membersCount: 0, outbreakReports: 0, vaccinationsCount: 0 });
+  const [stats, setStats] = useState({ familiesCount: 0, membersCount: 0, outbreakReports: 0, proxyAppointments: 0 });
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [lastSynced, setLastSynced] = useState(null);
   const [appointments, setAppointments] = useState([]);
   const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -133,12 +136,16 @@ export default function AshaWorkerDashboard() {
             console.error(e);
           }
           try {
+            setStatsLoading(true);
             const dashboardStats = await getAshaDashboardStats();
             if (dashboardStats) {
               setStats(dashboardStats);
+              setLastSynced(new Date());
             }
           } catch (e) {
             console.error(e);
+          } finally {
+            setStatsLoading(false);
           }
         }
         try {
@@ -416,55 +423,43 @@ export default function AshaWorkerDashboard() {
       </div>
 
       {/* Metrics Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="border-border border-l-4 border-l-emerald-500 bg-white dark:bg-card shadow-sm hover:shadow-md transition-all">
-          <CardContent className="flex items-center justify-between p-6">
-            <div>
-              <p className="text-3xl font-extrabold text-foreground">{stats.familiesCount || families.length}</p>
-              <p className="text-xs font-semibold text-muted-foreground mt-1">👨‍👩‍👧 Families Registered</p>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        {[
+          { title: "Families Registered", count: stats.familiesCount || families.length, color: "sky", icon: Users },
+          { title: "Members Tracked", count: stats.membersCount || totalMembers, color: "emerald", icon: Heart },
+          { title: "Outbreak Reports", count: stats.outbreakReports, color: "rose", icon: AlertTriangle },
+          { title: "Proxy Bookings", count: stats.proxyAppointments, color: "purple", icon: Calendar }
+        ].map((card, idx) => {
+          const Icon = card.icon;
+          return (
+            <div 
+              key={idx} 
+              className={`bg-card border border-border rounded-2xl p-5 border-l-4 border-l-${card.color}-500 flex flex-col justify-between min-h-[120px] relative hover:shadow-md transition-all duration-300`}
+            >
+              <Icon className="absolute top-5 right-5 h-5 w-5 text-muted-foreground/60" />
+              
+              {statsLoading ? (
+                <div className="animate-pulse space-y-3 mt-1 w-full">
+                  <div className="h-8 bg-slate-200 dark:bg-slate-800 rounded-lg w-16" />
+                  <div className="h-4 bg-slate-200 dark:bg-slate-800 rounded-lg w-28" />
+                </div>
+              ) : (
+                <div className="flex flex-col justify-between h-full pt-1">
+                  <span className="text-3xl font-black text-foreground">{card.count}</span>
+                  <span className="text-xs text-muted-foreground uppercase font-bold tracking-wider mt-2">{card.title}</span>
+                </div>
+              )}
             </div>
-            <div className="bg-emerald-50 dark:bg-emerald-950/40 p-3 rounded-2xl text-emerald-500 border border-emerald-100 dark:border-emerald-800/30">
-              <Users className="w-6 h-6" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-border border-l-4 border-l-sky-500 bg-white dark:bg-card shadow-sm hover:shadow-md transition-all">
-          <CardContent className="flex items-center justify-between p-6">
-            <div>
-              <p className="text-3xl font-extrabold text-foreground">{stats.membersCount || totalMembers}</p>
-              <p className="text-xs font-semibold text-muted-foreground mt-1">👥 Total Members</p>
-            </div>
-            <div className="bg-sky-50 dark:bg-sky-950/40 p-3 rounded-2xl text-sky-500 border border-sky-100 dark:border-sky-800/30">
-              <UserPlus className="w-6 h-6" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-border border-l-4 border-l-rose-500 bg-white dark:bg-card shadow-sm hover:shadow-md transition-all">
-          <CardContent className="flex items-center justify-between p-6">
-            <div>
-              <p className="text-3xl font-extrabold text-foreground">{stats.outbreakReports}</p>
-              <p className="text-xs font-semibold text-muted-foreground mt-1">🦠 Outbreak Reports Filed</p>
-            </div>
-            <div className="bg-rose-50 dark:bg-rose-950/40 p-3 rounded-2xl text-rose-500 border border-rose-100 dark:border-rose-800/30">
-              <Activity className="w-6 h-6" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-border border-l-4 border-l-purple-500 bg-white dark:bg-card shadow-sm hover:shadow-md transition-all">
-          <CardContent className="flex items-center justify-between p-6">
-            <div>
-              <p className="text-3xl font-extrabold text-foreground">{stats.vaccinationsCount}</p>
-              <p className="text-xs font-semibold text-muted-foreground mt-1">💉 Vaccinations Tracked</p>
-            </div>
-            <div className="bg-purple-50 dark:bg-purple-950/40 p-3 rounded-2xl text-purple-500 border border-purple-100 dark:border-purple-800/30">
-              <Heart className="w-6 h-6" />
-            </div>
-          </CardContent>
-        </Card>
+          );
+        })}
       </div>
+
+      {/* Last Sync Timestamp */}
+      {lastSynced && (
+        <p className="text-xs text-muted-foreground italic -mt-2 mb-6 pl-1 select-none animate-in fade-in duration-300">
+          Last sync: {formatDistanceToNow(lastSynced, { addSuffix: true })}
+        </p>
+      )}
 
       {/* Tabs Switcher */}
       <div className="flex overflow-x-auto no-scrollbar border-b border-border/80 gap-2 scroll-smooth whitespace-nowrap pb-1">
