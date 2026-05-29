@@ -24,10 +24,9 @@ export default async function Home() {
   const userRole = await getUserRole();
   return (
     <div className="bg-background">
-      <LiveStatsBanner />
       <HomeAiAssistantButton />
       {/* Refactored Hero Section into a Card Layout */}
-      <section className="container mx-auto px-4 pt-3 sm:pt-4 pb-6 flex flex-col items-center">
+      <section className="container mx-auto px-4 pt-8 sm:pt-10 pb-6 flex flex-col items-center">
         <Card className="w-full relative overflow-hidden border-none shadow-2xl rounded-[2.5rem] sm:rounded-[4rem] bg-slate-950 min-h-[60vh] sm:min-h-[40vh] lg:min-h-[35vh] flex flex-col">
           {/* Background Image with Overlay */}
           <div className="absolute inset-0 z-0">
