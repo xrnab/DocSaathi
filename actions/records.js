@@ -57,7 +57,10 @@ export async function getPatientRecords(patientId = null) {
       where: { id: targetId },
       include: {
         patientAppointments: {
-          include: { doctor: true },
+          include: { 
+            doctor: true,
+            voiceNotes: true,
+          },
           orderBy: { startTime: 'desc' }
         },
         prescriptions: true,

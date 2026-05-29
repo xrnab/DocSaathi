@@ -1,4 +1,4 @@
-import { User, Activity, Droplet, Calendar, FileText, Pill, ShieldCheck, HeartPulse } from "lucide-react";
+import { User, Activity, Droplet, Calendar, FileText, Pill, ShieldCheck, HeartPulse, Sparkles } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/page-header";
@@ -283,6 +283,30 @@ export default async function PatientRecordScreen({ searchParams }) {
                         <p className="text-[11px] sm:text-sm text-muted-foreground leading-relaxed line-clamp-3 sm:line-clamp-none">
                           {visit.notes || "No notes yet."}
                         </p>
+
+                        {visit.voiceNotes && visit.voiceNotes.length > 0 && (
+                          <div className="mt-3 space-y-2 border-t border-dashed border-sky-100 dark:border-sky-900/50 pt-2.5">
+                            <h5 className="text-[10px] font-black uppercase tracking-widest text-sky-600 dark:text-sky-400 flex items-center gap-1.5">
+                              <Sparkles className="h-3.5 w-3.5 text-amber-500 animate-pulse" />
+                              AI Voice Consultation Notes
+                            </h5>
+                            <div className="space-y-1.5 max-h-[120px] overflow-y-auto pr-1">
+                              {visit.voiceNotes.map((vn) => (
+                                <div key={vn.id} className="p-2 bg-sky-50/30 dark:bg-sky-950/20 rounded-xl border border-sky-100/30 dark:border-sky-900/15 text-[11px] leading-relaxed">
+                                  <div className="flex items-center justify-between gap-2 mb-1">
+                                    <Badge variant="outline" className="text-[8px] px-1 py-0 bg-white dark:bg-slate-900 text-sky-600 dark:text-sky-400 border-sky-200 text-[8px] leading-none shrink-0">
+                                      {vn.fromRole === "DOCTOR" ? "Doctor Note" : "Patient Note"}
+                                    </Badge>
+                                    <span className="text-[8px] text-muted-foreground/60 font-semibold font-mono shrink-0">
+                                      {format(new Date(vn.createdAt), "h:mm a")}
+                                    </span>
+                                  </div>
+                                  <p className="text-foreground/90 italic font-medium">"{vn.transcript}"</p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}
