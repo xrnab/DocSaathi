@@ -60,6 +60,7 @@ model User {
   outbreakReports     OutbreakReport[]    @relation("AshaOutbreaks")
   patientEmergencies  EmergencyRequest[]  @relation("PatientEmergencies")
   doctorQueue         DoctorQueue?        @relation("DoctorQueue")
+  doctorEmergencies   EmergencyRequest[]  @relation("DoctorEmergencies")
 }
 
 model Prescription {
@@ -287,17 +288,19 @@ model ChatMessage {
 }
 
 model EmergencyRequest {
-  id          String   @id @default(uuid())
-  patientId   String
-  patient     User     @relation("PatientEmergencies", fields: [patientId], references: [id])
-  latitude    Float?
-  longitude   Float?
-  address     String?
-  status      EmergencyStatus @default(ACTIVE)
-  message     String?  @db.Text
-  respondedBy String?
-  createdAt   DateTime @default(now())
-  resolvedAt  DateTime?
+  id               String   @id @default(uuid())
+  patientId        String
+  patient          User     @relation("PatientEmergencies", fields: [patientId], references: [id])
+  latitude         Float?
+  longitude        Float?
+  address          String?
+  status           EmergencyStatus @default(ACTIVE)
+  message          String?  @db.Text
+  respondedBy      String?
+  assignedDoctorId String?
+  assignedDoctor   User?    @relation("DoctorEmergencies", fields: [assignedDoctorId], references: [id])
+  createdAt        DateTime @default(now())
+  resolvedAt       DateTime?
   @@index([status, createdAt])
 }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { 
   getAshaWorkerProfile, 
   getAshaFamilies, 
@@ -13,6 +13,12 @@ import {
   bookAshaPatientAppointment,
   getAshaDashboardStats
 } from "@/actions/asha";
+import { 
+  getActiveEmergencies, 
+  updateEmergencyStatus, 
+  assignDoctorToEmergency 
+} from "@/actions/emergency";
+import { getPusherClient } from "@/lib/pusher";
 import { useOfflineAsha } from "@/hooks/use-offline-asha";
 import { useOfflineSyncCtx } from "@/components/offline-sync-provider";
 import { PendingSyncBadge } from "@/components/pending-sync-badge";
@@ -100,6 +106,73 @@ export default function AshaWorkerDashboard() {
   const [submittingOutbreak, setSubmittingOutbreak] = useState(false);
   const [submittingBooking, setSubmittingBooking] = useState(false);
   const [message, setMessage] = useState(null);
+
+  // Emergency States
+  const [emergencies, setEmergencies] = useState([]);
+  const [emergencyLoading, setEmergencyLoading] = useState(true);
+
+  const fetchEmergencies = useCallback(async () => {
+    try {
+      const res = await getActiveEmergencies();
+      if (res.emergencies) {
+        setEmergencies(res.emergencies);
+      }
+    } catch (e) {
+      console.error("Failed to load active emergencies:", e);
+    } finally {
+      setEmergencyLoading(false);
+    }
+  }, []);
+
+  const handleAssignDoctor = async (emergencyId, doctorId) => {
+    if (!doctorId) return;
+    try {
+      const res = await assignDoctorToEmergency(emergencyId, doctorId);
+      if (res.success) {
+        showNotification("Verified doctor successfully assigned & directed!");
+        fetchEmergencies();
+      }
+    } catch (err) {
+      showNotification(err.message || "Failed to direct doctor", "error");
+    }
+  };
+
+  const handleUpdateStatus = async (emergencyId, newStatus) => {
+    try {
+      const res = await updateEmergencyStatus(emergencyId, newStatus);
+      if (res.success) {
+        showNotification(`Emergency status updated to ${newStatus}`);
+        fetchEmergencies();
+      }
+    } catch (err) {
+      showNotification(err.message || "Failed to update status", "error");
+    }
+  };
+
+  useEffect(() => {
+    if (isOnline) {
+      fetchEmergencies();
+
+      const pusher = getPusherClient();
+      if (pusher) {
+        const channel = pusher.subscribe("emergency-channel");
+
+        channel.bind("new-emergency", (data) => {
+          showNotification(`🚨 CRITICAL EMERGENCY SOS: ${data.patientName} needs help!`, "error");
+          fetchEmergencies();
+        });
+
+        channel.bind("emergency-assigned", () => {
+          fetchEmergencies();
+        });
+
+        return () => {
+          channel.unbind_all();
+          pusher.unsubscribe("emergency-channel");
+        };
+      }
+    }
+  }, [isOnline, fetchEmergencies]);
 
   useEffect(() => {
     if (prefillName) {
@@ -501,6 +574,20 @@ export default function AshaWorkerDashboard() {
           }`}
         >
           Proxy Book Doctor
+        </button>
+        <button 
+          onClick={() => setActiveTab("emergency")}
+          className={`pb-4 px-4 text-sm font-bold border-b-2 transition-all shrink-0 flex items-center gap-1.5 ${
+            activeTab === "emergency" 
+              ? "border-rose-500 text-rose-600 dark:text-rose-400 font-extrabold" 
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Activity className="w-4 h-4 text-rose-500 animate-pulse" />
+          Emergency SOS Alerts
+          {emergencies.filter(e => e.status === "ACTIVE").length > 0 && (
+            <span className="h-2.5 w-2.5 rounded-full bg-rose-500 animate-ping shrink-0" />
+          )}
         </button>
         <Link href="/asha/scan" className="pb-4 px-4 text-sm font-bold text-muted-foreground hover:text-foreground flex items-center gap-1.5 ml-auto shrink-0">
           <Button size="sm" className="bg-sky-600 hover:bg-sky-700 text-white gap-1.5 font-bold rounded-xl h-8 cursor-pointer shadow-md shadow-sky-600/10">
@@ -1055,6 +1142,141 @@ export default function AshaWorkerDashboard() {
               </CardContent>
             </Card>
           </div>
+        </div>
+      )}
+
+      {/* Emergency SOS Alerts Tab Content */}
+      {activeTab === "emergency" && (
+        <div className="space-y-6">
+          <Card className="border-rose-100 dark:border-rose-950/40 bg-rose-50/5 dark:bg-rose-950/5 shadow-sm rounded-2xl relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-2 h-full bg-rose-600 animate-pulse" />
+            <CardHeader className="pl-6 sm:pl-8">
+              <CardTitle className="text-xl font-black text-rose-700 dark:text-rose-400 flex items-center gap-2">
+                <Activity className="h-5 w-5 animate-pulse" /> Active Critical SOS Dispatch Monitor
+              </CardTitle>
+              <CardDescription>
+                Acknowledge incoming patient emergencies, locate their coordinates, and immediately refer/direct active verified medical specialist doctors.
+              </CardDescription>
+            </CardHeader>
+          </Card>
+
+          {emergencyLoading ? (
+            <div className="text-center py-12">
+              <Loader2 className="h-8 w-8 text-rose-500 animate-spin mx-auto mb-3" />
+              <p className="text-sm text-muted-foreground font-semibold">Resolving active dispatches...</p>
+            </div>
+          ) : emergencies.length === 0 ? (
+            <div className="text-center py-16 border-2 border-dashed border-border rounded-2xl bg-slate-50/20 dark:bg-slate-900/10">
+              <Activity className="w-12 h-12 text-muted-foreground/40 mx-auto mb-3" />
+              <h3 className="font-extrabold text-lg text-foreground">Zero active alerts in the region</h3>
+              <p className="text-muted-foreground text-sm max-w-xs mx-auto mt-1">No emergency broadcasts have been registered or active in your area today.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {emergencies.map((em) => (
+                <div 
+                  key={em.id} 
+                  className={`border rounded-2xl p-5 hover:shadow-md transition-all flex flex-col lg:flex-row lg:items-center justify-between gap-6 ${
+                    em.status === "ACTIVE" 
+                      ? "border-rose-200 dark:border-rose-900/50 bg-rose-500/5" 
+                      : "border-amber-200 dark:border-amber-900/50 bg-amber-500/5"
+                  }`}
+                >
+                  <div className="space-y-2.5 flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge className={`text-white px-2.5 py-0.5 text-[10px] font-black tracking-wider uppercase rounded-full border-none ${
+                        em.status === "ACTIVE" ? "bg-rose-600 animate-pulse animate-duration-1000" : "bg-amber-600"
+                      }`}>
+                        {em.status}
+                      </Badge>
+                      <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">
+                        Alerted: {formatDistanceToNow(new Date(em.createdAt), { addSuffix: true })}
+                      </span>
+                    </div>
+
+                    <h4 className="text-lg font-black text-foreground">{em.patient?.name || "Patient Needs Assistance"}</h4>
+                    <p className="text-sm font-semibold text-muted-foreground flex items-center gap-1.5 capitalize">
+                      📍 Village: <strong className="text-foreground">{em.patient?.village || "Sauja"}</strong>
+                      {em.address && <span className="text-xs">({em.address})</span>}
+                    </p>
+
+                    {em.message && (
+                      <div className="bg-white/60 dark:bg-black/30 border border-border/50 p-3 rounded-xl max-w-2xl text-xs sm:text-sm font-semibold leading-relaxed text-foreground/80 italic">
+                        "{em.message}"
+                      </div>
+                    )}
+
+                    {/* Coordinates Map link if active */}
+                    {(em.latitude && em.longitude) && (
+                      <a 
+                        href={`https://www.google.com/maps?q=${em.latitude},${em.longitude}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-xs font-bold text-sky-600 dark:text-sky-400 hover:underline pt-1"
+                      >
+                        🗺️ View Patient Location on Google Maps →
+                      </a>
+                    )}
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row lg:flex-col items-stretch sm:items-center lg:items-end gap-3.5 shrink-0 w-full sm:w-auto">
+                    {/* Direct Doctor Directive Selector */}
+                    <div className="space-y-1.5 w-full sm:w-56">
+                      <label className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-wider">
+                        {em.assignedDoctor ? "Directed Specialist" : "Direct verified doctor"}
+                      </label>
+                      
+                      {em.assignedDoctor ? (
+                        <div className="p-3 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-300 rounded-xl border border-emerald-100 dark:border-emerald-900/30 text-xs font-bold flex flex-col gap-0.5">
+                          <span>State: Directed Directive</span>
+                          <span className="font-extrabold text-emerald-900 dark:text-emerald-200 mt-1">Dr. {em.assignedDoctor.name}</span>
+                          <span className="text-[9px] font-black opacity-80 uppercase tracking-widest mt-0.5">{em.assignedDoctor.specialty}</span>
+                        </div>
+                      ) : (
+                        <Select onValueChange={(val) => handleAssignDoctor(em.id, val)}>
+                          <SelectTrigger className="bg-white dark:bg-slate-950 border border-border/80 text-xs rounded-xl shadow-xs font-bold h-10 w-full cursor-pointer">
+                            <SelectValue placeholder="Refer priority Doctor..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {doctors.length === 0 ? (
+                              <SelectItem value="demo-doc">Dr. Amritpal Singh (GP)</SelectItem>
+                            ) : (
+                              doctors.map((doc) => (
+                                <SelectItem key={doc.id} value={doc.id}>
+                                  Dr. {doc.name} ({doc.specialty})
+                                </SelectItem>
+                              ))
+                            )}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </div>
+
+                    {/* Emergency Status Actions */}
+                    <div className="flex gap-2 w-full sm:w-auto">
+                      {em.status === "ACTIVE" && (
+                        <Button 
+                          onClick={() => handleUpdateStatus(em.id, "RESPONDING")}
+                          size="sm"
+                          className="bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl h-10 px-4 flex-1 sm:flex-initial cursor-pointer"
+                        >
+                          Respond
+                        </Button>
+                      )}
+                      <Button 
+                        onClick={() => handleUpdateStatus(em.id, "RESOLVED")}
+                        variant="outline"
+                        size="sm"
+                        className="border-rose-200 hover:bg-rose-50 dark:border-rose-900/60 dark:hover:bg-rose-950/20 text-rose-600 font-bold rounded-xl h-10 px-4 flex-1 sm:flex-initial cursor-pointer"
+                      >
+                        Resolve
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
