@@ -53,8 +53,8 @@ export default function Header() {
             </span>
           </Link>
 
-          {/* Action Buttons Flex */}
-          <div className="flex items-center space-x-1.5 sm:space-x-2">
+          {/* Action Buttons Flex - Swipe-scrollable on mobile, static on desktop */}
+          <div className="flex items-center space-x-1.5 sm:space-x-2 overflow-x-auto no-scrollbar whitespace-nowrap max-w-[62vw] sm:max-w-none shrink-0 scroll-smooth pb-0.5">
             {/* SOS Emergency Button - Static / Instant */}
             <Button asChild variant="destructive" size="sm" className="bg-red-600 hover:bg-red-700 text-white font-bold flex items-center gap-1.5 shadow-lg shadow-red-500/20 rounded-full px-3 h-9 shrink-0 notranslate">
               <a href="tel:108">
@@ -65,14 +65,16 @@ export default function Header() {
             </Button>
 
             {/* Suspended User Logic - Prevents blocking the shell */}
-            <Suspense fallback={<div className="h-8 w-8 sm:h-9 sm:w-20 bg-muted/50 animate-pulse rounded-full" />}>
+            <Suspense fallback={<div className="h-8 w-8 sm:h-9 sm:w-20 bg-muted/50 animate-pulse rounded-full shrink-0" />}>
               <UserAuthSection />
             </Suspense>
 
             {/* Utilities - Static / Instant */}
-            <GoogleTranslate />
+            <div className="shrink-0 flex items-center">
+              <GoogleTranslate />
+            </div>
             
-            <div className="hidden sm:inline-flex">
+            <div className="hidden sm:inline-flex shrink-0">
               <ModeToggle />
             </div>
           </div>

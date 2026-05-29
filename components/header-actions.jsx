@@ -143,7 +143,7 @@ export function HeaderActions({ dbUser }) {
               <Button
                 variant="outline"
                 size="icon"
-                className="md:w-auto md:px-4 items-center gap-2 rounded-full h-8 w-8 sm:h-9 sm:w-9"
+                className="md:w-auto md:px-4 items-center gap-2 rounded-full h-8 w-8 sm:h-9 sm:w-9 shrink-0"
               >
                 <Stethoscope className="h-4 w-4" />
                 <span className="hidden md:inline">Doctor Dashboard</span>
@@ -172,7 +172,7 @@ export function HeaderActions({ dbUser }) {
             <Button
               variant="outline"
               size="icon"
-              className={`md:w-auto md:px-4 items-center gap-2 rounded-full h-8 w-8 sm:h-9 sm:w-9 ${!isProfileComplete ? "border-amber-200 bg-amber-50 dark:bg-amber-900/10 text-amber-600 animate-pulse" : ""}`}
+              className={`md:w-auto md:px-4 items-center gap-2 rounded-full h-8 w-8 sm:h-9 sm:w-9 shrink-0 ${!isProfileComplete ? "border-amber-200 bg-amber-50 dark:bg-amber-900/10 text-amber-600 animate-pulse" : ""}`}
             >
               <Calendar className="h-4 w-4" />
               <span className="hidden md:inline">{isProfileComplete ? "Patient Dashboard" : "Complete Profile"}</span>
@@ -186,7 +186,7 @@ export function HeaderActions({ dbUser }) {
             <Button
               variant="outline"
               size="icon"
-              className="md:w-auto md:px-4 items-center gap-2 rounded-full h-8 w-8 sm:h-9 sm:w-9"
+              className="md:w-auto md:px-4 items-center gap-2 rounded-full h-8 w-8 sm:h-9 sm:w-9 shrink-0"
             >
               <User className="h-4 w-4" />
               <span className="hidden md:inline">Complete Profile</span>
@@ -201,7 +201,7 @@ export function HeaderActions({ dbUser }) {
           <Button
             variant="outline"
             size="icon"
-            className="md:w-auto md:px-3 bg-sky-500 hover:bg-sky-600 border-none text-white rounded-full h-8 w-8 sm:h-9 sm:w-auto gap-2 shadow-lg shadow-sky-500/20"
+            className="md:w-auto md:px-3 bg-sky-500 hover:bg-sky-600 border-none text-white rounded-full h-8 w-8 sm:h-9 sm:w-auto gap-2 shadow-lg shadow-sky-500/20 shrink-0"
           >
             <CreditCard className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
             {dbUser && role !== "ADMIN" && role !== "OWNER" ? (
@@ -217,15 +217,15 @@ export function HeaderActions({ dbUser }) {
 
       <Show when="signed-out">
         <SignInButton mode="modal">
-          <Button variant="secondary" size="sm" className="font-semibold px-2 sm:px-4 shadow-sm h-8 sm:h-9 text-xs rounded-full">
-            <User className="h-4 w-4 md:hidden" />
+          <Button variant="secondary" size="sm" className="font-semibold px-2 sm:px-4 shadow-sm h-8 sm:h-9 text-xs rounded-full shrink-0">
+            <User className="h-4 w-4 md:hidden shrink-0" />
             <span className="hidden md:inline">Sign In</span>
           </Button>
         </SignInButton>
       </Show>
 
       <Show when="signed-in">
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2.5 shrink-0">
           <NotificationBell userId={dbUser?.id} />
           <ThemeAwareUserButton
             appearance={{
