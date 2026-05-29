@@ -313,7 +313,7 @@ export default function VideoCall({
   };
 
   // End call
-  const endCall = async () => {
+  const endCall = () => {
     stopPublisherTracks();
 
     // Properly destroy publisher
@@ -326,14 +326,6 @@ export default function VideoCall({
     if (sessionRef.current) {
       sessionRef.current.disconnect();
       sessionRef.current = null;
-    }
-
-    if (appointmentId) {
-      try {
-        await endActiveConsultation(appointmentId);
-      } catch (err) {
-        console.error("Failed to complete appointment status on database:", err);
-      }
     }
 
     router.push(backPath);

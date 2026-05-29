@@ -273,6 +273,9 @@ export async function getSmsBookedAppointments() {
       where: {
         patientId: user.id,
         status: "SCHEDULED",
+        endTime: {
+          gte: new Date(),
+        },
       },
       include: {
         doctor: {
