@@ -12,6 +12,7 @@ import {
   MessageSquare,
   Activity,
   Sparkles,
+  ChevronDown,
 } from "lucide-react";
 import Link from "next/link";
 import { SignInButton, useUser } from "@clerk/nextjs";
@@ -45,77 +46,82 @@ export function HeaderActions({ dbUser }) {
 
   return (
     <>
-      {/* Live Demo Scenario Page */}
-      <Link href="/demo">
-        <Button
-          variant="outline"
-          size="icon"
-          className="lg:hidden flex items-center justify-center rounded-full h-8 w-8 sm:h-9 sm:w-9 border-none bg-emerald-50/30 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 font-bold relative"
-        >
-          <Sparkles className="h-4 w-4 animate-pulse" />
-          <span className="absolute top-0.5 right-0.5 flex h-1.5 w-1.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
-          </span>
-        </Button>
-        <Button
-          variant="outline"
-          className="hidden lg:inline-flex items-center gap-1.5 border-none bg-emerald-50/30 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 font-bold relative"
-        >
-          <Sparkles className="h-4 w-4 text-emerald-500 animate-pulse" />
-          Live Demo
-          <span className="absolute top-0.5 right-1 flex h-1.5 w-1.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
-          </span>
-        </Button>
-      </Link>
-
       <OfflineFirstBadge />
 
-      {/* SMS Simulator Demo - responsive visibility */}
-      <Link href="/sms-demo">
-        <Button
-          variant="outline"
-          size="icon"
-          className="lg:hidden flex items-center justify-center rounded-full h-8 w-8 sm:h-9 sm:w-9 border-none bg-indigo-50/30 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 font-bold"
-        >
-          <MessageSquare className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="outline"
-          className="hidden lg:inline-flex items-center gap-2 border-none bg-indigo-50/30 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 font-bold"
-        >
-          <MessageSquare className="h-4 w-4" />
-          SMS Demo
-        </Button>
-      </Link>
-
-      <Show when="signed-in">
-        {/* Admin/Owner Links */}
-        {(role === "ADMIN" || role === "OWNER") && (
-          <div className="flex items-center gap-2">
-            <Link href="/admin">
-              <Button
-                variant="outline"
-                className="hidden md:inline-flex items-center gap-2 border-sky-200 dark:border-sky-800 bg-sky-50/50 dark:bg-sky-900/20 font-bold"
-              >
+      {/* Consolidated Control Panel / Demo Hub Dropdowns */}
+      {(role === "ADMIN" || role === "OWNER") ? (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="outline"
+              className="flex items-center gap-1.5 rounded-full h-8 px-2.5 text-xs sm:h-9 sm:px-4 sm:text-sm border-sky-200 dark:border-sky-800 bg-sky-50/50 dark:bg-sky-900/20 text-sky-600 dark:text-sky-400 font-bold hover:scale-102 active:scale-98 transition-all shadow-md shadow-sky-500/5 cursor-pointer shrink-0"
+            >
+              <ShieldCheck className="h-4 w-4 text-sky-500 animate-pulse shrink-0" />
+              <span>Control Panel</span>
+              <ChevronDown className="h-3 w-3 opacity-60 shrink-0" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56 rounded-2xl border-slate-200 dark:border-slate-800 p-1.5 shadow-xl bg-card/95 backdrop-blur-xl animate-in fade-in slide-in-from-top-2 duration-200 z-[60]">
+            <DropdownMenuItem asChild className="rounded-xl cursor-pointer hover:bg-sky-500/10 focus:bg-sky-500/10 transition-colors">
+              <Link href="/admin" className="flex items-center gap-2.5 px-2.5 py-2 text-xs sm:text-sm font-semibold text-foreground">
                 <ShieldCheck className="h-4 w-4 text-sky-500" />
                 Admin Dashboard
-              </Button>
-            </Link>
-            <Link href="/admin/outbreak">
-              <Button
-                variant="outline"
-                className="hidden md:inline-flex items-center gap-2 border-rose-200 dark:border-rose-900 bg-rose-50/50 dark:bg-rose-900/20 font-bold"
-              >
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild className="rounded-xl cursor-pointer hover:bg-rose-500/10 focus:bg-rose-500/10 transition-colors">
+              <Link href="/admin/outbreak" className="flex items-center gap-2.5 px-2.5 py-2 text-xs sm:text-sm font-semibold text-foreground">
                 <Activity className="h-4 w-4 text-rose-500" />
-                Outbreak Alert
-              </Button>
-            </Link>
-          </div>
-        )}
+                Outbreak Alert Map
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild className="rounded-xl cursor-pointer hover:bg-emerald-500/10 focus:bg-emerald-500/10 transition-colors">
+              <Link href="/demo" className="flex items-center gap-2.5 px-2.5 py-2 text-xs sm:text-sm font-semibold text-foreground">
+                <Sparkles className="h-4 w-4 text-emerald-500 animate-pulse" />
+                Live Judging Demo
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild className="rounded-xl cursor-pointer hover:bg-indigo-500/10 focus:bg-indigo-500/10 transition-colors">
+              <Link href="/sms-demo" className="flex items-center gap-2.5 px-2.5 py-2 text-xs sm:text-sm font-semibold text-foreground">
+                <MessageSquare className="h-4 w-4 text-indigo-500" />
+                SMS Keypad Demo
+              </Link>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ) : (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="outline"
+              className="flex items-center gap-1 border-none bg-emerald-50/30 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 font-bold hover:scale-102 active:scale-98 transition-all rounded-full h-8 px-2 text-xs sm:h-9 sm:px-3.5 sm:text-sm cursor-pointer relative shrink-0"
+            >
+              <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-emerald-500 animate-pulse shrink-0" />
+              <span>Demo Hub</span>
+              <ChevronDown className="h-3 w-3 opacity-60 shrink-0" />
+              <span className="absolute top-0.5 right-0.5 flex h-1.5 w-1.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+              </span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48 rounded-2xl border-slate-200 dark:border-slate-800 p-1.5 shadow-xl bg-card/95 backdrop-blur-xl animate-in fade-in slide-in-from-top-2 duration-200 z-[60]">
+            <DropdownMenuItem asChild className="rounded-xl cursor-pointer hover:bg-emerald-500/10 focus:bg-emerald-500/10 transition-colors">
+              <Link href="/demo" className="flex items-center gap-2 px-2.5 py-2 text-xs sm:text-sm font-semibold text-foreground">
+                <Sparkles className="h-4 w-4 text-emerald-500" />
+                Live Demo Portal
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild className="rounded-xl cursor-pointer hover:bg-indigo-500/10 focus:bg-indigo-500/10 transition-colors">
+              <Link href="/sms-demo" className="flex items-center gap-2 px-2.5 py-2 text-xs sm:text-sm font-semibold text-foreground">
+                <MessageSquare className="h-4 w-4 text-indigo-500" />
+                SMS Triage Demo
+              </Link>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
 
+      <Show when="signed-in">
         {/* ASHA Worker Dashboard Link */}
         {role === "ASHA_WORKER" && (
           <Link href="/asha">
