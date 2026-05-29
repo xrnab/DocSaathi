@@ -240,3 +240,64 @@ ${pastVisits}
     return { error: error.message || "Failed to generate briefing." };
   }
 }
+
+export async function saveChatMessage(appointmentId, text, senderRole) {
+  const { userId } = await auth();
+  if (!userId) return { error: "Unauthorized" };
+
+  try {
+    const user = await db.user.findUnique({
+      where: { clerkUserId: userId }
+    });
+
+    if (!user) {
+      return { error: "User not found" };
+    }
+
+    const message = await db.chatMessage.create({
+      data: {
+        appointmentId,
+        text,
+        senderRole,
+      }
+    });
+
+    return { success: true, data: message };
+  } catch (error) {
+    console.error("Error saving chat message:", error);
+    return { error: "Failed to save chat message" };
+  }
+}
+
+export async function getChatMessages(appointmentId) {
+  const { userId } = await auth();
+  if (!userId) return [];
+
+  try {
+    const user = await db.user.findUnique({
+      where: { clerkUserId: userId }
+    });
+
+    if (!user) return [];
+
+    // Verify caller is a participant
+    const appointment = await db.appointment.findFirst({
+      where: {
+        id: appointmentId,
+        OR: [{ patientId: user.id }, { doctorId: user.id }]
+      }
+    });
+
+    if (!appointment) return [];
+
+    const messages = await db.chatMessage.findMany({
+      where: { appointmentId },
+      orderBy: { createdAt: "asc" }
+    });
+
+    return messages;
+  } catch (error) {
+    console.error("Error fetching chat messages:", error);
+    return [];
+  }
+}

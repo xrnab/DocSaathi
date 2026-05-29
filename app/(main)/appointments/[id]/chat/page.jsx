@@ -9,6 +9,9 @@ import Link from "next/link";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import VoiceNoteRecorder from "@/components/voice-note-recorder";
 import { getUserRole } from "@/actions/records";
+import { getAppointmentDetails } from "@/actions/appointments";
+import { saveChatMessage, getChatMessages } from "@/actions/telemedicine";
+import { format } from "date-fns";
 import dynamic from "next/dynamic";
 
 const PatientBriefingCard = dynamic(() => import("@/components/patient-briefing-card"), { ssr: false });
@@ -19,6 +22,8 @@ export default function TelemedicineChatPage({ params }) {
   const [userRole, setUserRole] = useState("PATIENT");
   const [isRecordDialogOpen, setIsRecordDialogOpen] = useState(false);
   const [isBriefingOpen, setIsBriefingOpen] = useState(true);
+  const [appointment, setAppointment] = useState(null);
+  const [isLoadingMessages, setIsLoadingMessages] = useState(true);
 
   useEffect(() => {
     Promise.resolve(params).then(p => {
@@ -38,9 +43,40 @@ export default function TelemedicineChatPage({ params }) {
     fetchUserRole();
   }, []);
 
-  const [messages, setMessages] = useState([
-    { id: 1, sender: "doctor", text: "Hello! How can I help you today?", time: "10:00 AM", status: "read" },
-  ]);
+  useEffect(() => {
+    if (!appointmentId) return;
+
+    async function fetchChatData() {
+      try {
+        setIsLoadingMessages(true);
+        const details = await getAppointmentDetails(appointmentId);
+        if (details) {
+          setAppointment(details);
+        }
+
+        const dbMessages = await getChatMessages(appointmentId);
+        if (dbMessages && dbMessages.length > 0) {
+          setMessages(dbMessages.map(m => ({
+            id: m.id,
+            sender: m.senderRole === "DOCTOR" ? "doctor" : "patient",
+            text: m.text,
+            time: format(new Date(m.createdAt), "h:mm a"),
+            status: "read"
+          })));
+        } else {
+          setMessages([]);
+        }
+      } catch (err) {
+        console.error("Error fetching chat data:", err);
+      } finally {
+        setIsLoadingMessages(false);
+      }
+    }
+
+    fetchChatData();
+  }, [appointmentId]);
+
+  const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState("");
 
   useEffect(() => {
@@ -58,20 +94,30 @@ export default function TelemedicineChatPage({ params }) {
     };
   }, []);
 
-  const handleSendMessage = (e) => {
+  const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!inputMessage.trim()) return;
 
+    const messageText = inputMessage;
+    setInputMessage("");
+
     const newMessage = {
-      id: Date.now(),
-      sender: "patient",
-      text: inputMessage,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      id: Date.now().toString(),
+      sender: userRole === "DOCTOR" ? "doctor" : "patient",
+      text: messageText,
+      time: format(new Date(), "h:mm a"),
       status: isOffline ? "pending" : "sent"
     };
 
-    setMessages([...messages, newMessage]);
-    setInputMessage("");
+    setMessages(prev => [...prev, newMessage]);
+
+    if (!isOffline) {
+      try {
+        await saveChatMessage(appointmentId, messageText, userRole);
+      } catch (err) {
+        console.error("Failed to save chat message:", err);
+      }
+    }
   };
 
   // Simulate network coming back online and sending pending messages
@@ -93,12 +139,16 @@ export default function TelemedicineChatPage({ params }) {
         <div className="bg-sky-50 dark:bg-sky-900/20 border-b border-sky-100 dark:border-sky-800/40 p-4 flex items-center justify-between shadow-sm z-10">
           <div className="flex items-center gap-3">
             <Avatar className="h-12 w-12 border-2 border-sky-200 dark:border-sky-700 shadow-sm">
-              <AvatarImage src="" />
+              <AvatarImage src={userRole === "DOCTOR" ? (appointment?.patient?.imageUrl || "") : (appointment?.doctor?.imageUrl || "")} />
               <AvatarFallback className="bg-sky-100 text-sky-700 dark:bg-sky-800 dark:text-sky-300 font-semibold">DR</AvatarFallback>
             </Avatar>
             <div>
-              <h2 className="font-semibold text-lg leading-tight text-foreground">Dr. Sarah Jenkins</h2>
-              <p className="text-xs text-sky-600 dark:text-sky-400 font-medium">General Physician</p>
+              <h2 className="font-semibold text-lg leading-tight text-foreground">
+                {userRole === "DOCTOR" ? (appointment?.patient?.name || "Patient") : (appointment?.doctor?.name ? `Dr. ${appointment.doctor.name}` : "Doctor")}
+              </h2>
+              <p className="text-xs text-sky-600 dark:text-sky-400 font-medium">
+                {userRole === "DOCTOR" ? "Patient Profile" : (appointment?.doctor?.specialty || "Specialist")}
+              </p>
             </div>
           </div>
           
@@ -122,7 +172,7 @@ export default function TelemedicineChatPage({ params }) {
               <Button asChild variant="outline" className="h-9 border-emerald-500 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 rounded-full px-3 py-1 font-bold text-xs flex items-center gap-1.5 cursor-pointer">
                 <a 
                   href={`https://wa.me/?text=${encodeURIComponent(
-                    `DocSaathi Appointment Summary with Dr. Sarah Jenkins:\n\n` + 
+                    `DocSaathi Appointment Chat Summary:\n\n` + 
                     messages.map(m => `[${m.sender === "doctor" ? "Doctor" : "Patient"}] ${m.text}`).join("\n") +
                     `\n\nView prescription details securely at: ${typeof window !== "undefined" ? window.location.href : ""}`
                   )}`}
@@ -162,25 +212,39 @@ export default function TelemedicineChatPage({ params }) {
         {/* Chat Feed */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50 dark:bg-slate-900/50 relative">
           <div className="absolute inset-0 bg-grid-slate-200/50 dark:bg-grid-slate-800/50 pointer-events-none [mask-image:linear-gradient(to_bottom,white,transparent)]" />
-          {messages.map((msg) => (
-            <div key={msg.id} className={`flex relative z-10 ${msg.sender === "patient" ? "justify-end" : "justify-start"}`}>
-              <div className={`max-w-[80%] md:max-w-[70%] rounded-2xl p-3 shadow-sm ${
-                msg.sender === "patient" 
-                  ? "bg-gradient-to-br from-sky-500 to-blue-600 text-white rounded-tr-sm" 
-                  : "bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-tl-sm"
-              }`}>
-                <p className="text-sm">{msg.text}</p>
-                <div className={`flex items-center justify-end gap-1 mt-1 ${msg.sender === "patient" ? "text-sky-100" : "text-muted-foreground"}`}>
-                  <span className="text-[10px]">{msg.time}</span>
-                  {msg.sender === "patient" && (
-                    <span className="ml-1">
-                      {msg.status === "pending" ? <Clock className="h-3 w-3 opacity-70" /> : <CheckCheck className="h-3 w-3" />}
-                    </span>
-                  )}
-                </div>
+          {isLoadingMessages ? (
+            <div className="flex flex-col gap-4 py-8 relative z-10 w-full">
+              <div className="flex justify-start">
+                <div className="bg-slate-200 dark:bg-slate-800 animate-pulse h-12 w-2/3 rounded-2xl rounded-tl-sm" />
+              </div>
+              <div className="flex justify-end">
+                <div className="bg-slate-200 dark:bg-slate-800 animate-pulse h-10 w-1/2 rounded-2xl rounded-tr-sm" />
+              </div>
+              <div className="flex justify-start">
+                <div className="bg-slate-200 dark:bg-slate-800 animate-pulse h-14 w-3/4 rounded-2xl rounded-tl-sm" />
               </div>
             </div>
-          ))}
+          ) : (
+            messages.map((msg) => (
+              <div key={msg.id} className={`flex relative z-10 ${msg.sender === "patient" ? "justify-end" : "justify-start"}`}>
+                <div className={`max-w-[80%] md:max-w-[70%] rounded-2xl p-3 shadow-sm ${
+                  msg.sender === "patient" 
+                    ? "bg-gradient-to-br from-sky-500 to-blue-600 text-white rounded-tr-sm" 
+                    : "bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-tl-sm"
+                }`}>
+                  <p className="text-sm">{msg.text}</p>
+                  <div className={`flex items-center justify-end gap-1 mt-1 ${msg.sender === "patient" ? "text-sky-100" : "text-muted-foreground"}`}>
+                    <span className="text-[10px]">{msg.time}</span>
+                    {msg.sender === "patient" && (
+                      <span className="ml-1">
+                        {msg.status === "pending" ? <Clock className="h-3 w-3 opacity-70" /> : <CheckCheck className="h-3 w-3" />}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
         </div>
 
         {/* Message Input Area */}
@@ -221,9 +285,14 @@ export default function TelemedicineChatPage({ params }) {
                   <VoiceNoteRecorder
                     appointmentId={appointmentId}
                     fromRole={userRole}
-                    onSaved={(newMsg) => {
+                    onSaved={async (newMsg) => {
                       setMessages((prev) => [...prev, newMsg]);
                       setIsRecordDialogOpen(false);
+                      try {
+                        await saveChatMessage(appointmentId, newMsg.text, userRole);
+                      } catch (err) {
+                        console.error("Failed to save voice note chat message:", err);
+                      }
                     }}
                     onClose={() => setIsRecordDialogOpen(false)}
                   />

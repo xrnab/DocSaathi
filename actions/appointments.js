@@ -400,3 +400,21 @@ export async function getAvailableTimeSlots(doctorId) {
   }
 }
 
+export async function getAppointmentDetails(appointmentId) {
+  const { userId } = await auth();
+  if (!userId) return null;
+  const user = await db.user.findUnique({ where: { clerkUserId: userId } });
+  if (!user) return null;
+  const appointment = await db.appointment.findFirst({
+    where: {
+      id: appointmentId,
+      OR: [{ patientId: user.id }, { doctorId: user.id }]
+    },
+    include: {
+      doctor: { select: { name: true, specialty: true, imageUrl: true } },
+      patient: { select: { name: true, imageUrl: true } }
+    }
+  });
+  return appointment;
+}
+
