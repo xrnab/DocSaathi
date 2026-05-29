@@ -18,7 +18,7 @@ const MOCK_NEARBY_DOCTORS = [
   { id: 3, name: "Dr. Elena Rodriguez", specialty: "Pediatrician", distance: "2.5 km", rating: 4.7 },
 ];
 
-export default function NearbyDoctors() {
+export default function NearbyDoctors({ className }) {
   const [isDetecting, setIsDetecting] = useState(false);
   const [showList, setShowList] = useState(false);
   const [location, setLocation] = useState(null);
@@ -82,8 +82,13 @@ export default function NearbyDoctors() {
     );
   };
 
+  useEffect(() => {
+    handleDetectLocation();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
-    <div className="relative sm:absolute sm:bottom-6 sm:left-6 w-full sm:w-[280px] max-w-sm sm:max-w-none animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-500 z-30">
+    <div className={cn("relative sm:absolute sm:bottom-6 sm:left-6 w-full sm:w-[280px] max-w-sm sm:max-w-none animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-500 z-30", className)}>
       <div className={cn(
         "bg-white/95 dark:bg-slate-950/95 backdrop-blur-xl rounded-2xl sm:rounded-3xl border border-sky-500/20 shadow-2xl transition-all duration-500 overflow-hidden",
         showList ? "p-0" : "p-3 sm:p-4"

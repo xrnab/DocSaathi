@@ -61,21 +61,10 @@ export default async function Home() {
                   Book appointments, consult via video, and manage your health journey in one secure platform.
                 </p>
 
-                {/* Nearby Support Card (Mobile Only) */}
-                <Link href="/facilities" className="block md:hidden w-full max-w-md mx-auto lg:mx-0">
-                  <div className="flex flex-row items-center gap-3 p-4 rounded-2xl border border-sky-500/20 bg-sky-500/10 dark:border-sky-900/40 dark:bg-sky-950/10 text-left hover:bg-sky-500/20 transition-all cursor-pointer">
-                    <MapPin className="h-5 w-5 text-sky-400 shrink-0 animate-pulse" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs sm:text-sm font-bold text-white leading-tight">
-                        Nearby Support
-                      </p>
-                      <p className="text-[10px] sm:text-xs text-slate-300 leading-snug mt-0.5">
-                        Find your nearest digital health booth or clinic.
-                      </p>
-                    </div>
-                    <ArrowRight className="h-4 w-4 text-sky-400 shrink-0" />
-                  </div>
-                </Link>
+                {/* Nearby Support Component (Mobile Only) */}
+                <div className="block lg:hidden w-full max-w-md mx-auto lg:mx-0 pb-2">
+                  <NearbyDoctors className="relative sm:relative sm:bottom-0 sm:left-0 sm:w-full max-w-md" />
+                </div>
                 
                 {/* Action Buttons Grid */}
                 <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 sm:gap-3 pt-2">
