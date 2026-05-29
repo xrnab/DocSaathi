@@ -81,7 +81,11 @@
    CLERK_SECRET_KEY="your-key"
    GROQ_API_KEY="your-key"
    GEOAPIFY_API_KEY="your-key"
+   CRON_SECRET="your-secret-key"
    ```
+
+   **Automated Reminders Setup:**
+   Set up a daily cron job to call `GET /api/send-reminders` with header `x-cron-secret: YOUR_SECRET`. Use [cron-job.org](https://cron-job.org/) (free) to call your deployed URL daily at 8 AM IST.
 
 4. **Initialize the Database:**
    ```bash

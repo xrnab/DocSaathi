@@ -8,6 +8,7 @@ import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 import { createNotification } from "@/actions/notifications";
 import { getVideoCallSession, createVideoSession } from "@/lib/video";
+import { sendAppointmentReminder } from "@/lib/mail";
 
 const APPOINTMENT_CREDIT_COST = 2;
 import {
@@ -220,6 +221,20 @@ export async function bookAppointment(formData) {
       `Your appointment with Dr. ${doctor.name} on ${formattedTime} has been scheduled and confirmed!`,
       "APPOINTMENT"
     ).catch(err => console.error("Failed to notify patient:", err));
+
+    // Send immediate email confirmation via Resend
+    sendAppointmentReminder({
+      patient: {
+        name: currentUser.name,
+        email: currentUser.email,
+      },
+      doctor: {
+        name: doctor.name,
+        specialty: doctor.specialty,
+      },
+      startTime: appointment.startTime,
+      endTime: appointment.endTime
+    }, true).catch(err => console.error("Failed to send booking confirmation email:", err));
 
     return { success: true, appointment: appointment };
   } catch (error) {
