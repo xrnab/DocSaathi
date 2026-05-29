@@ -3,6 +3,8 @@
 import { db } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
+import { createNotification } from "@/actions/notifications";
+import { format } from "date-fns";
 
 /**
  * Formats a Date object into a timezone-aware (Asia/Kolkata) string for SMS.
@@ -225,6 +227,24 @@ export async function processIncomingSMS(messageText, lastDocId = null) {
         revalidatePath("/sms-demo");
 
         const formattedTimeLabel = formatSmsDateTime(startTime);
+
+        // Trigger real-time notifications in background
+        try {
+          const formattedTime = format(new Date(startTime), "MMM d, h:mm a");
+          createNotification(
+            doctorToBook.id,
+            `New appointment booked via SMS by ${user.name || "Patient"} for ${formattedTime}`,
+            "APPOINTMENT"
+          ).catch((err) => console.error("Failed to notify doctor:", err));
+
+          createNotification(
+            user.id,
+            `Your consultation with Dr. ${doctorToBook.name} booked via SMS on ${formattedTime} is scheduled!`,
+            "APPOINTMENT"
+          ).catch((err) => console.error("Failed to notify patient:", err));
+        } catch (notifyErr) {
+          console.error("SMS booking notification failed:", notifyErr);
+        }
 
         return {
           reply: `DocSaathi SUCCESS: Consultation scheduled with ${doctorToBook.name} for ${formattedTimeLabel}. Video booth link SMS sent to ASHA worker. Booking ID: ${bookResult.id.substring(0,8)}`,

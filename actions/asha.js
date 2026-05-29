@@ -3,6 +3,8 @@
 import { db } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
+import { createNotification } from "@/actions/notifications";
+import { format } from "date-fns";
 
 /**
  * Gets the current logged-in ASHA worker's user profile
@@ -388,6 +390,25 @@ export async function bookAshaPatientAppointment(data) {
     });
 
     revalidatePath("/asha");
+
+    // Trigger real-time notifications in background
+    try {
+      const formattedTime = format(new Date(startTime), "MMM d, h:mm a");
+      createNotification(
+        doctor.id,
+        `New proxy appointment booked by ASHA Worker ${user.name || "ASHA Worker"} for member ${memberName} at ${formattedTime}`,
+        "APPOINTMENT"
+      ).catch((err) => console.error("Failed to notify doctor:", err));
+
+      createNotification(
+        user.id,
+        `Proxy appointment for ${memberName} with Dr. ${doctor.name} at ${formattedTime} has been scheduled!`,
+        "APPOINTMENT"
+      ).catch((err) => console.error("Failed to notify ASHA worker:", err));
+    } catch (notifyErr) {
+      console.error("ASHA booking notification failed:", notifyErr);
+    }
+
     return { success: true, appointment };
   } catch (error) {
     console.error("ASHA Proxy Book failed:", error);

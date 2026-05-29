@@ -4,6 +4,7 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { useOfflineSync } from "@/hooks/use-offline-sync";
 import { WifiOff, RefreshCw, CloudUpload, CheckCircle2 } from "lucide-react";
 import { Button } from "./ui/button";
+import { useRouter } from "next/navigation";
 
 import { getPendingActions } from "@/lib/offline-db";
 import { toast } from "sonner";
@@ -12,10 +13,12 @@ const OfflineSyncContext = createContext(null);
 
 export function OfflineSyncProvider({ children }) {
   const [pendingCount, setPendingCount] = useState(0);
+  const router = useRouter();
 
   const syncValue = useOfflineSync(({ synced, failed }) => {
     if (synced > 0) {
       toast.success(`✅ Synced ${synced} items successfully`);
+      router.refresh();
     }
   });
 

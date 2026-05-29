@@ -3,7 +3,7 @@ const CACHE_STATIC = "docsaathi-static-v2";
 const CACHE_API = "docsaathi-api-v2";
 const ALL_CACHES = [CACHE_SHELL, CACHE_STATIC, CACHE_API];
 
-const PRECACHE_PAGES = ["/", "/_offline", "/appointments", "/asha", "/records"];
+const PRECACHE_PAGES = ["/", "/_offline", "/appointments", "/asha", "/records", "/pregnancy", "/facilities", "/telemedicine", "/doctors", "/medicines"];
 const PRECACHE_STATIC = ["/logo.png", "/banner2.png", "/hero-duo.png", "/manifest.json"];
 
 self.addEventListener("install", (event) => {
@@ -42,9 +42,11 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(request.url);
 
   // 1. Skip rules
+  const isGoogleFont = url.hostname.includes("fonts.googleapis.com") || url.hostname.includes("fonts.gstatic.com");
+
   if (
     request.method !== "GET" ||
-    url.origin !== self.location.origin ||
+    (url.origin !== self.location.origin && !isGoogleFont) ||
     url.pathname.startsWith("/sign-in") ||
     url.pathname.startsWith("/sign-up") ||
     url.hostname.includes("clerk")
@@ -69,8 +71,8 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // 3. Cache-First strategy for critical pages: /, /asha, /records, /appointments
-  const cacheFirstPaths = ["/", "/asha", "/records", "/appointments"];
+  // 3. Cache-First strategy for critical pages: /, /asha, /records, /appointments, /pregnancy, /facilities, /telemedicine, /doctors, /medicines
+  const cacheFirstPaths = ["/", "/asha", "/records", "/appointments", "/pregnancy", "/facilities", "/telemedicine", "/doctors", "/medicines"];
   const isCacheFirstPath = cacheFirstPaths.some(path => 
     url.pathname === path || url.pathname.startsWith(path + "/")
   );

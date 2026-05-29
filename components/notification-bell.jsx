@@ -16,55 +16,86 @@ import { getPusherClient } from "@/lib/pusher";
 import { getUnreadNotifications, markAsRead } from "@/actions/notifications";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 export default function NotificationBell({ userId }) {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const router = useRouter();
 
   useEffect(() => {
     if (!userId) return;
 
-    // Load unread notifications on mount
-    async function loadNotifications() {
+    let isMounted = true;
+
+    // Load unread notifications on mount & background poll
+    async function loadNotifications(triggerRefresh = false) {
       const res = await getUnreadNotifications(userId);
-      if (res.success) {
+      if (res.success && isMounted) {
         // Map backend Date objects or strings to standard JS Date
         const mapped = res.notifications.map((n) => ({
           ...n,
           createdAt: new Date(n.createdAt),
         }));
-        setNotifications(mapped);
+
+        let hasNew = false;
+        setNotifications((prev) => {
+          hasNew = mapped.some((n) => !prev.some((p) => p.id === n.id));
+          return mapped;
+        });
         setUnreadCount(mapped.length);
+
+        if (hasNew && triggerRefresh) {
+          router.refresh();
+        }
       }
     }
-    loadNotifications();
+    loadNotifications(false);
+
+    // Set up resource-friendly, visibility-aware background polling every 6 seconds
+    const pollInterval = setInterval(() => {
+      if (document.visibilityState === "visible") {
+        loadNotifications(true);
+      }
+    }, 6000);
 
     // Connect to Pusher client
     const pusher = getPusherClient();
-    if (!pusher) return;
-
+    let channel = null;
     const channelName = `user-${userId}`;
-    const channel = pusher.subscribe(channelName);
 
-    channel.bind("new-notification", (newNotification) => {
-      // Append to local state in real-time
-      setNotifications((prev) => [
-        {
-          ...newNotification,
-          createdAt: new Date(newNotification.createdAt),
-        },
-        ...prev,
-      ]);
-      setUnreadCount((count) => count + 1);
-      toast("New notification received!", {
-        description: newNotification.message,
-        icon: <Bell className="h-4 w-4 text-sky-500" />,
+    if (pusher) {
+      channel = pusher.subscribe(channelName);
+
+      channel.bind("new-notification", (newNotification) => {
+        if (!isMounted) return;
+        setNotifications((prev) => {
+          // Prevent duplicates if already present in state
+          if (prev.some((n) => n.id === newNotification.id)) return prev;
+          return [
+            {
+              ...newNotification,
+              createdAt: new Date(newNotification.createdAt),
+            },
+            ...prev,
+          ];
+        });
+        setUnreadCount((count) => count + 1);
+        toast("New notification received!", {
+          description: newNotification.message,
+          icon: <Bell className="h-4 w-4 text-sky-500" />,
+        });
+        router.refresh();
       });
-    });
+    }
 
     return () => {
-      channel.unbind("new-notification");
-      pusher.unsubscribe(channelName);
+      isMounted = false;
+      clearInterval(pollInterval);
+      if (pusher && channel) {
+        channel.unbind("new-notification");
+        pusher.unsubscribe(channelName);
+      }
     };
   }, [userId]);
 
