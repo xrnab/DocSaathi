@@ -193,3 +193,53 @@ export async function deductCreditsForAppointment(userId, doctorId) {
     return { success: false, error: error.message };
   }
 }
+
+/**
+ * Simulated UPI transaction credit purchase.
+ * Gives credits directly in a single atomic transaction.
+ */
+export async function buyCreditsSimulated(creditsToAllocate, packageId = "custom") {
+  const { userId: clerkUserId } = await auth();
+  if (!clerkUserId) {
+    throw new Error("Unauthorized");
+  }
+
+  try {
+    const user = await db.user.findUnique({
+      where: { clerkUserId },
+    });
+
+    if (!user) {
+      throw new Error("User profile not found");
+    }
+
+    const updated = await db.$transaction(async (tx) => {
+      // Create transaction record
+      await tx.creditTransaction.create({
+        data: {
+          userId: user.id,
+          amount: creditsToAllocate,
+          type: "CREDIT_PURCHASE",
+          packageId,
+        },
+      });
+
+      // Update user's credit balance
+      return tx.user.update({
+        where: { id: user.id },
+        data: {
+          credits: {
+            increment: creditsToAllocate,
+          },
+        },
+      });
+    });
+
+    revalidatePath("/pricing");
+    revalidatePath("/appointments");
+    return { success: true, credits: updated.credits };
+  } catch (error) {
+    console.error("Failed simulated credit purchase:", error);
+    throw new Error("Payment simulation failed: " + error.message);
+  }
+}
