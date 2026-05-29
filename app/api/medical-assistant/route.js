@@ -32,11 +32,13 @@ export async function POST(req) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const apiKey = process.env.GROQ_API_KEY;
-    if (!apiKey) {
-      console.error("Missing GROQ_API_KEY in server environment");
+    const geminiApiKey = process.env.GEMINI_API_KEY;
+    const groqApiKey = process.env.GROQ_API_KEY;
+
+    if (!geminiApiKey && !groqApiKey) {
+      console.error("Missing both GEMINI_API_KEY and GROQ_API_KEY in server environment");
       return NextResponse.json(
-        { error: "Missing GROQ_API_KEY in server environment" },
+        { error: "AI service is not configured (missing Gemini or Groq API keys)." },
         { status: 500 }
       );
     }
@@ -63,32 +65,68 @@ export async function POST(req) {
       return NextResponse.json({ error: "No messages provided" }, { status: 400 });
     }
 
-    console.log("Sending request to Groq with model: llama-3.3-70b-versatile");
-    const resp = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
-        temperature: 0.2,
-        max_tokens: 800,
-        messages: [{ role: "system", content: systemPrompt }, ...messages],
-      }),
-    });
+    let text = "";
 
-    if (!resp.ok) {
-      const errorData = await resp.json().catch(() => ({}));
-      console.error("Groq API error:", errorData);
-      return NextResponse.json(
-        { error: errorData?.error?.message || "Groq API error" },
-        { status: resp.status }
-      );
+    if (geminiApiKey) {
+      console.log("Using Google Gemini API for Medical Assistant...");
+      try {
+        const mappedContents = messages.map((m) => ({
+          role: m.role === "assistant" ? "model" : "user",
+          parts: [{ text: m.content }]
+        }));
+
+        const geminiResponse = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              contents: mappedContents,
+              systemInstruction: {
+                parts: [{ text: systemPrompt }]
+              },
+              generationConfig: {
+                temperature: 0.2,
+                maxOutputTokens: 800
+              }
+            })
+          }
+        );
+
+        if (!geminiResponse.ok) {
+          const errorText = await geminiResponse.text();
+          console.error("Gemini API error response:", geminiResponse.status, errorText);
+          if (groqApiKey) {
+            console.log("Gemini failed. Falling back to Groq Llama...");
+            text = await callGroqChat(groqApiKey, systemPrompt, messages);
+          } else {
+            return NextResponse.json(
+              { error: "Error communicating with Google Gemini service." },
+              { status: geminiResponse.status }
+            );
+          }
+        } else {
+          const data = await geminiResponse.json();
+          text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+        }
+      } catch (geminiErr) {
+        console.error("Exception during Gemini Chat call:", geminiErr);
+        if (groqApiKey) {
+          console.log("Gemini exception. Falling back to Groq Llama...");
+          text = await callGroqChat(groqApiKey, systemPrompt, messages);
+        } else {
+          return NextResponse.json(
+            { error: geminiErr.message || "Failed to communicate with Google Gemini service." },
+            { status: 500 }
+          );
+        }
+      }
+    } else {
+      console.log("Using Groq API for Medical Assistant...");
+      text = await callGroqChat(groqApiKey, systemPrompt, messages);
     }
-
-    const data = await resp.json();
-    const text = String(data?.choices?.[0]?.message?.content || "");
 
     return NextResponse.json({ text: text || "" });
   } catch (e) {
@@ -100,3 +138,27 @@ export async function POST(req) {
   }
 }
 
+async function callGroqChat(apiKey, systemPrompt, messages) {
+  const resp = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: "llama-3.3-70b-versatile",
+      temperature: 0.2,
+      max_tokens: 800,
+      messages: [{ role: "system", content: systemPrompt }, ...messages],
+    }),
+  });
+
+  if (!resp.ok) {
+    const errorData = await resp.json().catch(() => ({}));
+    console.error("Groq API error:", errorData);
+    throw new Error(errorData?.error?.message || "Groq API error");
+  }
+
+  const data = await resp.json();
+  return String(data?.choices?.[0]?.message?.content || "");
+}
