@@ -84,8 +84,8 @@
    CRON_SECRET="your-secret-key"
    ```
 
-   **Automated Reminders Setup:**
-   Set up a daily cron job to call `GET /api/send-reminders` with header `x-cron-secret: YOUR_SECRET`. Use [cron-job.org](https://cron-job.org/) (free) to call your deployed URL daily at 8 AM IST.
+    **Automated Reminders Setup:**
+    Set up a free daily cron at https://cron-job.org pointing to GET https://your-domain.com/api/send-reminders with header x-cron-secret: YOUR_SECRET — runs at 8 AM IST daily
 
 4. **Initialize the Database:**
    ```bash

@@ -5,25 +5,27 @@ import { addHours } from "date-fns";
 
 export async function GET(request) {
   try {
-    // 1. Basic security check: x-cron-secret matching env var CRON_SECRET
-    const authHeader = request.headers.get("x-cron-secret");
+    const headerSecret = request.headers.get("x-cron-secret");
     const cronSecret = process.env.CRON_SECRET;
 
-    if (cronSecret && authHeader !== cronSecret) {
-      return NextResponse.json({ error: "Unauthorized access — invalid cron secret key." }, { status: 401 });
+    if (!cronSecret || headerSecret !== cronSecret) {
+      return NextResponse.json(
+        { error: "Unauthorized: Invalid or missing cron secret" },
+        { status: 401 }
+      );
     }
 
     const now = new Date();
-    const limitTime = addHours(now, 24);
+    const tomorrow = addHours(now, 24);
 
-    // 2. Find matching scheduled appointments lacking reminders
+    // Find all scheduled appointments that require a reminder within 24 hours
     const appointments = await db.appointment.findMany({
       where: {
         status: "SCHEDULED",
         reminderSent: false,
         startTime: {
           gte: now,
-          lte: limitTime,
+          lte: tomorrow,
         },
       },
       include: {
@@ -42,27 +44,39 @@ export async function GET(request) {
       },
     });
 
-    let sentCount = 0;
+    const remindedIds = [];
 
-    // 3. For each appointment, trigger reminder email & set reminderSent = true
+    // Send emails one by one
     for (const appointment of appointments) {
       if (appointment.patient?.email) {
-        await sendAppointmentReminder(appointment, false);
-        
-        await db.appointment.update({
-          where: { id: appointment.id },
-          data: { reminderSent: true },
-        });
-        
-        sentCount++;
+        try {
+          await sendAppointmentReminder(appointment, false);
+          remindedIds.push(appointment.id);
+        } catch (mailErr) {
+          console.error(`Failed to send reminder for appointment ${appointment.id}:`, mailErr);
+        }
       }
     }
 
-    return NextResponse.json({ success: true, sent: sentCount });
+    // Batch update the reminderSent status to true
+    if (remindedIds.length > 0) {
+      await db.appointment.updateMany({
+        where: {
+          id: {
+            in: remindedIds,
+          },
+        },
+        data: {
+          reminderSent: true,
+        },
+      });
+    }
+
+    return NextResponse.json({ success: true, sent: remindedIds.length });
   } catch (error) {
-    console.error("Error running send-reminders API route:", error);
+    console.error("Cron send-reminders execution failed:", error);
     return NextResponse.json(
-      { error: error.message || "An unexpected error occurred during reminders dispatch." },
+      { error: "Internal Server Error", details: error.message },
       { status: 500 }
     );
   }
