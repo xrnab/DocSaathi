@@ -82,11 +82,6 @@ export default function NearbyDoctors({ className }) {
     );
   };
 
-  useEffect(() => {
-    handleDetectLocation();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   return (
     <div className={cn("relative sm:absolute sm:bottom-6 sm:left-6 w-full sm:w-[280px] max-w-sm sm:max-w-none animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-500 z-30", className)}>
       <div className={cn(
