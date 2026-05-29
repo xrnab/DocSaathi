@@ -6,9 +6,17 @@
 
 ## 🌟 Key Features
 
+- **Voice Note Consultations**: Send transcription-backed spoken clinical notes instantly.
+- **AI Prescription Scanner**: Groq Vision-backed optical recognition to auto-extract medicine charts.
+- **ASHA Worker Rural Dashboard**: Dedicated offline-first interfaces for community healthcare facilitators.
+- **Outbreak Early-Warning Surveillance**: Live geographic epidemiological threat alerts and outbreak heatmaps.
+- **Offline-First PWA**: Progressive Web App with client-side caching, background synchronization, and automatic offline status bars.
+- **QR Patient ID Cards**: Digital and printable health cards for quick clinical lookup and scan-in.
+- **SMS Booking for Feature Phones**: Booking interfaces optimized to support basic feature phones.
+
 ### 👨‍⚕️ For Patients
 - **Smart Symptom Checker**: AI-powered triage to help you understand your health concerns before booking.
-- **Instant Video Consultations**: High-quality, secure telemedicine powered by **Vonage Video API**.
+- **Instant Video Consultations**: Secure telemedicine with low-bandwidth adaptive quality for rural connectivity.
 - **Specialist Discovery**: Find and book appointments with verified doctors across various specialties.
 - **Emergency Locator**: Real-time GPS tracking for nearby hospitals, clinics, and pharmacies.
 - **Health Records Hub**: Manage your medical history, vitals, and prescriptions in one secure place.
@@ -33,7 +41,12 @@
 - **Database**: [PostgreSQL (via Neon)](https://neon.tech/)
 - **ORM**: [Prisma](https://www.prisma.io/)
 - **Authentication**: [Clerk](https://clerk.com/)
-- **Video API**: [Vonage Video API](https://www.vonage.com/communications-apis/video/)
+- **AI Vision OCR**: Groq Vision (llama-4-scout) for prescription scanning
+- **Voice Transcription**: Groq Whisper for multilingual voice notes (Punjabi/Hindi/English)
+- **Offline-First**: IndexedDB + Service Worker with background sync queue
+- **Real-Time**: Pusher for live notifications and appointment alerts
+- **Maps**: Leaflet + react-leaflet for geographic outbreak surveillance heatmap
+- **QR System**: qrcode library for patient health ID cards + @zxing/browser for scanning
 - **Styling**: Tailwind CSS & Shadcn UI
 - **Location Services**: [Geoapify](https://www.geoapify.com/) & [OpenStreetMap](https://www.openstreetmap.org/)
 - **AI Triage**: [Groq AI](https://groq.com/)
@@ -45,7 +58,7 @@
 ### Prerequisites
 - Node.js 18+ 
 - A Neon PostgreSQL instance
-- Clerk, Vonage, and Groq API keys
+- Clerk and Groq API keys
 
 ### Installation
 
@@ -66,8 +79,6 @@
    DATABASE_URL="your-neon-url"
    NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="your-key"
    CLERK_SECRET_KEY="your-key"
-   VONAGE_APPLICATION_ID="your-id"
-   VONAGE_PRIVATE_KEY="your-key"
    GROQ_API_KEY="your-key"
    GEOAPIFY_API_KEY="your-key"
    ```

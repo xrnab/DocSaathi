@@ -26,6 +26,12 @@ export default function PrescriptionOCR({ patientId = null, onSaveSuccess }) {
       return;
     }
 
+    const MAX_SIZE_MB = 4;
+    if (selectedFile.size > MAX_SIZE_MB * 1024 * 1024) {
+      setError(`File too large. Please upload an image under ${MAX_SIZE_MB}MB. Current size: ${(selectedFile.size / 1024 / 1024).toFixed(1)}MB`);
+      return;
+    }
+
     setFile(selectedFile);
     setError("");
     setMedicines([]);

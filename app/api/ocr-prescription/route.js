@@ -12,6 +12,10 @@ export async function POST(request) {
       );
     }
 
+    if (file.size > 4 * 1024 * 1024) {
+      return NextResponse.json({ error: "Image too large. Maximum size is 4MB." }, { status: 413 });
+    }
+
     const apiKey = process.env.GROQ_API_KEY;
     if (!apiKey) {
       console.error("Missing GROQ_API_KEY in server environment");
