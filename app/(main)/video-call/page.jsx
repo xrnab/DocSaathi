@@ -94,6 +94,7 @@ export default async function VideoCallPage({ searchParams }) {
 
   return (
     <VideoCall
+      appointmentId={appointmentId}
       applicationId={session.applicationId}
       sessionId={session.videoSessionId}
       token={session.token}

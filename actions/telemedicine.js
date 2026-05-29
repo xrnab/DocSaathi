@@ -542,3 +542,36 @@ export async function toggleQueueActive(doctorId, isActive) {
     return { error: "Failed to toggle queue" };
   }
 }
+
+/**
+ * Marks an active appointment status as COMPLETED when call ends
+ */
+export async function endActiveConsultation(appointmentId) {
+  const { userId } = await auth();
+  if (!userId) return { error: "Unauthorized" };
+
+  try {
+    const user = await db.user.findUnique({
+      where: { clerkUserId: userId }
+    });
+
+    if (!user) return { error: "User not found" };
+
+    const appointment = await db.appointment.findUnique({
+      where: { id: appointmentId }
+    });
+
+    if (!appointment) return { error: "Appointment not found" };
+
+    // Update appointment status to COMPLETED
+    await db.appointment.update({
+      where: { id: appointmentId },
+      data: { status: "COMPLETED" }
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error ending consultation:", error);
+    return { error: "Failed to end consultation: " + error.message };
+  }
+}

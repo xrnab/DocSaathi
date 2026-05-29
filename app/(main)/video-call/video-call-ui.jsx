@@ -17,8 +17,10 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { endActiveConsultation } from "@/actions/telemedicine";
 
 export default function VideoCall({
+  appointmentId,
   applicationId,
   sessionId,
   token,
@@ -301,7 +303,7 @@ export default function VideoCall({
   };
 
   // End call
-  const endCall = () => {
+  const endCall = async () => {
     stopPublisherTracks();
 
     // Properly destroy publisher
@@ -314,6 +316,14 @@ export default function VideoCall({
     if (sessionRef.current) {
       sessionRef.current.disconnect();
       sessionRef.current = null;
+    }
+
+    if (appointmentId) {
+      try {
+        await endActiveConsultation(appointmentId);
+      } catch (err) {
+        console.error("Failed to complete appointment status on database:", err);
+      }
     }
 
     router.push(backPath);
