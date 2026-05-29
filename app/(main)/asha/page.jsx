@@ -23,6 +23,7 @@ import {
   CardHeader, 
   CardTitle 
 } from "@/components/ui/card";
+import StatsCardSkeleton from "@/components/skeletons/stats-card-skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -424,34 +425,32 @@ export default function AshaWorkerDashboard() {
 
       {/* Metrics Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        {[
-          { title: "Families Registered", count: stats.familiesCount || families.length, color: "sky", icon: Users },
-          { title: "Members Tracked", count: stats.membersCount || totalMembers, color: "emerald", icon: Heart },
-          { title: "Outbreak Reports", count: stats.outbreakReports, color: "rose", icon: AlertTriangle },
-          { title: "Proxy Bookings", count: stats.proxyAppointments, color: "purple", icon: Calendar }
-        ].map((card, idx) => {
-          const Icon = card.icon;
-          return (
-            <div 
-              key={idx} 
-              className={`bg-card border border-border rounded-2xl p-5 border-l-4 border-l-${card.color}-500 flex flex-col justify-between min-h-[120px] relative hover:shadow-md transition-all duration-300`}
-            >
-              <Icon className="absolute top-5 right-5 h-5 w-5 text-muted-foreground/60" />
-              
-              {statsLoading ? (
-                <div className="animate-pulse space-y-3 mt-1 w-full">
-                  <div className="h-8 bg-slate-200 dark:bg-slate-800 rounded-lg w-16" />
-                  <div className="h-4 bg-slate-200 dark:bg-slate-800 rounded-lg w-28" />
-                </div>
-              ) : (
+        {statsLoading ? (
+          Array.from({ length: 4 }).map((_, idx) => (
+            <StatsCardSkeleton key={idx} />
+          ))
+        ) : (
+          [
+            { title: "Families Registered", count: stats.familiesCount || families.length, color: "sky", icon: Users },
+            { title: "Members Tracked", count: stats.membersCount || totalMembers, color: "emerald", icon: Heart },
+            { title: "Outbreak Reports", count: stats.outbreakReports, color: "rose", icon: AlertTriangle },
+            { title: "Proxy Bookings", count: stats.proxyAppointments, color: "purple", icon: Calendar }
+          ].map((card, idx) => {
+            const Icon = card.icon;
+            return (
+              <div 
+                key={idx} 
+                className={`bg-card border border-border rounded-2xl p-5 border-l-4 border-l-${card.color}-500 flex flex-col justify-between min-h-[120px] relative hover:shadow-md transition-all duration-300`}
+              >
+                <Icon className="absolute top-5 right-5 h-5 w-5 text-muted-foreground/60" />
                 <div className="flex flex-col justify-between h-full pt-1">
                   <span className="text-3xl font-black text-foreground">{card.count}</span>
                   <span className="text-xs text-muted-foreground uppercase font-bold tracking-wider mt-2">{card.title}</span>
                 </div>
-              )}
-            </div>
-          );
-        })}
+              </div>
+            );
+          })
+        )}
       </div>
 
       {/* Last Sync Timestamp */}

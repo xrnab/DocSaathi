@@ -1,5 +1,5 @@
 import PageSkeleton from "@/components/skeletons/page-skeleton";
 
-export default function MainLoading() {
+export default function DoctorsGeneralLoading() {
   return <PageSkeleton />;
 }

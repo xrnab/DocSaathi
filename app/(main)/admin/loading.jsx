@@ -1,10 +1,17 @@
-import { Loader2 } from "lucide-react";
+import StatsCardSkeleton from "@/components/skeletons/stats-card-skeleton";
+import TableSkeleton from "@/components/skeletons/table-skeleton";
 
 export default function AdminLoading() {
   return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] w-full text-center px-4 animate-in fade-in duration-300">
-      <Loader2 className="h-10 w-10 animate-spin text-sky-500 mx-auto" />
-      <p className="text-muted-foreground font-medium mt-4 animate-pulse">Loading Admin Panel...</p>
+    <div className="space-y-6 max-w-7xl mx-auto py-4 animate-pulse">
+      {/* 4 Stats Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[1, 2, 3, 4].map((i) => (
+          <StatsCardSkeleton key={i} />
+        ))}
+      </div>
+      {/* Table Skeleton */}
+      <TableSkeleton rows={6} cols={5} />
     </div>
   );
 }
