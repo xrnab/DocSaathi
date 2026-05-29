@@ -2,6 +2,8 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { getVideoCallSession } from "@/lib/video";
 import VideoCall from "./video-call-ui";
+import { db } from "@/lib/prisma";
+import { auth } from "@clerk/nextjs/server";
 
 const BACK_PATHS = {
   appointments: "/appointments",
@@ -92,9 +94,20 @@ export default async function VideoCallPage({ searchParams }) {
     );
   }
 
+  const { userId } = await auth();
+  let userRole = "PATIENT";
+  if (userId) {
+    const user = await db.user.findUnique({
+      where: { clerkUserId: userId },
+      select: { role: true }
+    });
+    if (user) userRole = user.role;
+  }
+
   return (
     <VideoCall
       appointmentId={appointmentId}
+      userRole={userRole}
       applicationId={session.applicationId}
       sessionId={session.videoSessionId}
       token={session.token}

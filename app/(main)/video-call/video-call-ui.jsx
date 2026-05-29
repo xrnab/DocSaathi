@@ -18,9 +18,18 @@ import {
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { endActiveConsultation } from "@/actions/telemedicine";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import VoiceNoteRecorder from "@/components/voice-note-recorder";
 
 export default function VideoCall({
   appointmentId,
+  userRole = "PATIENT",
   applicationId,
   sessionId,
   token,
@@ -33,6 +42,7 @@ export default function VideoCall({
   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
   const [hardwareUnavailable, setHardwareUnavailable] = useState(false);
   const [hasJoinedCall, setHasJoinedCall] = useState(false);
+  const [isRecordDialogOpen, setIsRecordDialogOpen] = useState(false);
 
   const sessionRef = useRef(null);
   const publisherRef = useRef(null);
@@ -535,6 +545,35 @@ export default function VideoCall({
               >
                 {isAudioEnabled ? <Mic className="h-5 w-5 sm:h-6 sm:w-6" /> : <MicOff className="h-5 w-5 sm:h-6 sm:w-6" />}
               </Button>
+
+              <Dialog open={isRecordDialogOpen} onOpenChange={setIsRecordDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="rounded-full h-12 w-12 sm:h-16 sm:w-16 border-2 border-sky-400 bg-sky-50 hover:bg-sky-100 text-sky-600 dark:bg-sky-950/20 dark:border-sky-800 dark:text-sky-400 dark:hover:bg-sky-900/30 transition-all active:scale-90 shadow-lg shadow-sky-500/10 cursor-pointer"
+                    title="Record AI Voice Consultation Note"
+                  >
+                    <Mic className="h-5 w-5 sm:h-6 sm:w-6 text-sky-500" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md rounded-3xl border-sky-100 dark:border-sky-900/30 bg-slate-950 p-6 shadow-2xl">
+                  <DialogHeader>
+                    <DialogTitle className="text-center font-bold text-sky-700 dark:text-sky-400">
+                      AI Voice Consultation Note
+                    </DialogTitle>
+                  </DialogHeader>
+                  <VoiceNoteRecorder
+                    appointmentId={appointmentId}
+                    fromRole={userRole}
+                    onSaved={() => {
+                      toast.success("AI Voice Note successfully saved to medical records!");
+                      setIsRecordDialogOpen(false);
+                    }}
+                    onClose={() => setIsRecordDialogOpen(false)}
+                  />
+                </DialogContent>
+              </Dialog>
 
               <Button
                 variant="destructive"
