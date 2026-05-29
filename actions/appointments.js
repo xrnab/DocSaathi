@@ -98,57 +98,65 @@ export async function bookAppointment(formData) {
 
     const appointment = await db.$transaction(
       async (tx) => {
-        const freshPatient = await tx.user.findUnique({
-          where: {
-            id: currentUser.id,
-          },
-          select: {
-            id: true,
-            credits: true,
-          },
-        });
-
-        if (!freshPatient || freshPatient.credits < APPOINTMENT_CREDIT_COST) {
-          throw new Error("Insufficient credits to book an appointment");
-        }
-
-        const overlappingAppointment = await tx.appointment.findFirst({
+        // Lock: check if slot is still available inside the transaction
+        const conflictingAppointment = await tx.appointment.findFirst({
           where: {
             doctorId,
-            status: "SCHEDULED",
+            status: { in: ["SCHEDULED"] },
             OR: [
-              {
-                startTime: {
-                  lte: startTime,
-                },
-                endTime: {
-                  gt: startTime,
-                },
-              },
-              {
-                startTime: {
-                  lt: endTime,
-                },
-                endTime: {
-                  gte: endTime,
-                },
-              },
-              {
-                startTime: {
-                  gte: startTime,
-                },
-                endTime: {
-                  lte: endTime,
-                },
-              },
-            ],
-          },
+              { startTime: { gte: startTime, lt: endTime } },
+              { endTime: { gt: startTime, lte: endTime } },
+              { startTime: { lte: startTime }, endTime: { gte: endTime } }
+            ]
+          }
         });
 
-        if (overlappingAppointment) {
-          throw new Error("This time slot is already booked");
+        if (conflictingAppointment) {
+          throw new Error(
+            "This slot was just booked by another patient. " +
+            "Please select a different time."
+          );
         }
 
+        // Also verify the Availability slot is still AVAILABLE
+        const slot = await tx.availability.findFirst({
+          where: {
+            doctorId,
+            startTime,
+            status: "AVAILABLE"
+          }
+        });
+
+        if (!slot) {
+          throw new Error(
+            "This time slot is no longer available. " +
+            "Please refresh and choose another slot."
+          );
+        }
+
+        // Mark slot as BOOKED atomically
+        await tx.availability.update({
+          where: { id: slot.id },
+          data: { status: "BOOKED" }
+        });
+
+        // Deduct credits atomically
+        const updatedUser = await tx.user.update({
+          where: { id: currentUser.id },
+          data: { credits: { decrement: APPOINTMENT_CREDIT_COST } }
+        });
+
+        if (updatedUser.credits < 0) {
+          throw new Error("Insufficient credits to book this appointment.");
+        }
+
+        // Add credits atomically to doctor
+        await tx.user.update({
+          where: { id: doctor.id },
+          data: { credits: { increment: APPOINTMENT_CREDIT_COST } }
+        });
+
+        // Create transaction records
         await tx.creditTransaction.create({
           data: {
             userId: currentUser.id,
@@ -165,28 +173,7 @@ export async function bookAppointment(formData) {
           },
         });
 
-        await tx.user.update({
-          where: {
-            id: currentUser.id,
-          },
-          data: {
-            credits: {
-              decrement: APPOINTMENT_CREDIT_COST,
-            },
-          },
-        });
-
-        await tx.user.update({
-          where: {
-            id: doctor.id,
-          },
-          data: {
-            credits: {
-              increment: APPOINTMENT_CREDIT_COST,
-            },
-          },
-        });
-
+        // Create the appointment
         return tx.appointment.create({
           data: {
             patientId: currentUser.id,
@@ -197,6 +184,7 @@ export async function bookAppointment(formData) {
             status: "SCHEDULED",
             videoSessionId: sessionId,
           },
+          include: { doctor: true, patient: true }
         });
       },
       {
@@ -239,7 +227,14 @@ export async function bookAppointment(formData) {
     return { success: true, appointment: appointment };
   } catch (error) {
     console.error("Failed to book appointment:", error);
-    throw new Error("Failed to book appointment:" + error.message);
+    if (error instanceof Error && (
+      error.message.includes("just booked") || 
+      error.message.includes("no longer available") ||
+      error.message.includes("Insufficient credits")
+    )) {
+      return { error: error.message };
+    }
+    return { error: "Failed to book appointment: " + error.message };
   }
 }
 

@@ -40,6 +40,16 @@ export function AppointmentForm({ doctorId, slot, onBack, onComplete }) {
       } else if (result.result?.success) {
         toast.success("Appointment confirmed!");
         router.push("/appointments");
+      } else if (result.result?.error) {
+        const errorMsg = result.result.error;
+        if (errorMsg.includes("just booked")) {
+          toast.warning("Slot taken! Another patient just booked this time. Refreshing available slots...");
+          setTimeout(() => {
+            router.refresh();
+          }, 1500);
+        } else {
+          toast.error(errorMsg);
+        }
       }
       onComplete();
     } catch (err) {
