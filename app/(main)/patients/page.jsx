@@ -62,6 +62,29 @@ export default async function PatientDashboard() {
     <div className="max-w-6xl mx-auto space-y-8 pb-20 px-4 sm:px-0">
       <PageHeader title="My Health Dashboard" />
 
+      {/* Quick Action QR Card Link for mobile / quick access */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-5 rounded-3xl border border-sky-100 dark:border-sky-900 bg-sky-500/5 dark:bg-sky-950/10 shadow-sm relative overflow-hidden">
+        <div className="absolute top-0 right-0 transform translate-x-8 -translate-y-8 w-24 h-24 bg-sky-500/10 rounded-full blur-2xl pointer-events-none" />
+        <div className="flex items-center gap-3.5">
+          <div className="h-10 w-10 rounded-xl bg-sky-100 dark:bg-sky-950 flex items-center justify-center border border-sky-200 dark:border-sky-800 shrink-0">
+            <QrCode className="h-5 w-5 text-sky-600 dark:text-sky-400" />
+          </div>
+          <div>
+            <h3 className="font-extrabold text-foreground text-sm">
+              Show secure QR Health Card to ASHA
+            </h3>
+            <p className="text-xs text-muted-foreground font-semibold mt-0.5 leading-relaxed">
+              Instantly share your medical vitals and history with ASHA workers during community home visits.
+            </p>
+          </div>
+        </div>
+        <Button asChild className="bg-sky-600 hover:bg-sky-700 text-white font-bold rounded-xl h-10 px-5 shrink-0 shadow-md shadow-sky-600/10 w-full sm:w-auto cursor-pointer text-center">
+          <Link href="/patient/qr-card" className="flex items-center justify-center gap-1.5">
+            <QrCode className="h-4 w-4" /> Show QR Card
+          </Link>
+        </Button>
+      </div>
+
       {/* High-Risk Pregnancy Warning Card */}
       {pregnancy && pregnancy.isHighRisk && (
         <Card className="border-rose-350 dark:border-rose-900 bg-rose-500/10 dark:bg-rose-950/20 shadow-lg shadow-rose-500/5 rounded-[2rem] overflow-hidden animate-pulse">

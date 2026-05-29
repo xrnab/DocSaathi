@@ -298,20 +298,31 @@ export default function AshaScannerPage() {
               </div>
 
               {/* Actions Box */}
-              <div className="flex gap-3 w-full">
-                <Button 
-                  onClick={handleRetry} 
-                  variant="outline" 
-                  className="flex-1 rounded-xl font-semibold border-slate-200 dark:border-slate-800"
-                >
-                  <RefreshCw className="h-4 w-4 mr-1.5" /> Scan Again
-                </Button>
+              <div className="flex flex-col gap-3 w-full">
+                <div className="flex gap-3">
+                  <Button 
+                    onClick={handleRetry} 
+                    variant="outline" 
+                    className="flex-1 rounded-xl font-semibold border-slate-200 dark:border-slate-800 h-10 cursor-pointer"
+                  >
+                    <RefreshCw className="h-4 w-4 mr-1.5" /> Scan Again
+                  </Button>
+                  
+                  <Button 
+                    onClick={handleBookAppointment} 
+                    className="flex-1 bg-sky-600 hover:bg-sky-700 text-white font-bold rounded-xl shadow-md shadow-sky-600/10 flex items-center justify-center gap-1.5 h-10 cursor-pointer"
+                  >
+                    <Plus className="h-4 w-4" /> Book Consult
+                  </Button>
+                </div>
                 
                 <Button 
-                  onClick={handleBookAppointment} 
-                  className="flex-1 bg-sky-600 hover:bg-sky-700 text-white font-bold rounded-xl shadow-md shadow-sky-600/10 flex items-center justify-center gap-1.5"
+                  asChild
+                  className="w-full bg-pink-600 hover:bg-pink-700 text-white font-bold rounded-xl shadow-md shadow-pink-600/10 flex items-center justify-center gap-1.5 h-10 cursor-pointer"
                 >
-                  <Plus className="h-4 w-4" /> Book Appointment
+                  <Link href={`/asha?prefillPregnancyName=${encodeURIComponent(scannedPatient.name)}`}>
+                    <Heart className="h-4 w-4 fill-white" /> Register/Log Pregnancy Case
+                  </Link>
                 </Button>
               </div>
             </div>

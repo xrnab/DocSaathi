@@ -275,6 +275,15 @@ export default function AshaWorkerDashboard() {
   }, [prefillName]);
 
   useEffect(() => {
+    const prefillPregName = searchParams ? searchParams.get("prefillPregnancyName") : null;
+    if (prefillPregName) {
+      setSearchQuery(prefillPregName);
+      setActiveTab("pregnancy");
+      setIsRegisterDialogOpen(true);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
     const tabParam = searchParams ? searchParams.get("tab") : null;
     if (tabParam && ["registry", "immunisation", "outbreak", "proxy", "emergency", "earnings", "profile", "pregnancy"].includes(tabParam)) {
       setActiveTab(tabParam);
@@ -676,6 +685,14 @@ export default function AshaWorkerDashboard() {
             <p className="text-sky-100 max-w-xl text-sm md:text-base leading-relaxed">
               Your dedication secures the health of <strong>{profile?.village || "Sauja"}</strong>. Track households, manage vaccines, and book doctor calls here.
             </p>
+            <div className="pt-2">
+              <Button asChild className="bg-white hover:bg-sky-50 text-sky-600 font-extrabold rounded-xl h-10 px-5 shadow-md flex items-center gap-2 w-fit cursor-pointer">
+                <Link href="/asha/scan" className="flex items-center gap-1.5">
+                  <QrCode className="w-4 h-4 text-sky-600 animate-pulse" />
+                  Scan Patient QR Card
+                </Link>
+              </Button>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4 shrink-0 bg-white/10 backdrop-blur-md p-5 rounded-2xl border border-white/15">
@@ -1527,12 +1544,13 @@ export default function AshaWorkerDashboard() {
                   Register pregnant mothers, log their routine Antenatal Care (ANC) visits, track risk conditions, and secure healthy deliveries in {profile?.village || "Sauja"}.
                 </p>
               </div>
-              <Dialog open={isRegisterDialogOpen} onOpenChange={setIsRegisterDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button className="bg-white hover:bg-pink-50 text-pink-600 font-bold rounded-xl h-10 px-5 shadow-xs cursor-pointer">
-                    <Plus className="w-4 h-4 mr-2" /> Register Pregnancy
-                  </Button>
-                </DialogTrigger>
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 shrink-0">
+                <Dialog open={isRegisterDialogOpen} onOpenChange={setIsRegisterDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button className="bg-white hover:bg-pink-50 text-pink-600 font-bold rounded-xl h-10 px-4 shadow-xs cursor-pointer flex items-center justify-center w-full sm:w-auto">
+                      <Plus className="w-4 h-4 mr-1.5" /> Register Pregnancy
+                    </Button>
+                  </DialogTrigger>
                 <DialogContent className="sm:max-w-[500px]">
                   <DialogHeader>
                     <DialogTitle className="text-xl font-bold flex items-center gap-2 text-pink-600">
@@ -1667,7 +1685,13 @@ export default function AshaWorkerDashboard() {
                     </DialogFooter>
                   </form>
                 </DialogContent>
-              </Dialog>
+                </Dialog>
+                <Button asChild variant="outline" className="border-white/40 text-white hover:bg-white/10 hover:border-white font-bold rounded-xl h-10 px-4 cursor-pointer flex items-center justify-center gap-1.5 bg-transparent shrink-0">
+                  <Link href="/asha/scan" className="flex items-center gap-1.5">
+                    <QrCode className="w-4 h-4 text-white" /> Scan Patient QR
+                  </Link>
+                </Button>
+              </div>
             </div>
           </div>
 
