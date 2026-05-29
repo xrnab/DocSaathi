@@ -48,13 +48,13 @@ export default function Header() {
                 <span className="hidden xs:inline">Doc</span><span className="text-foreground">Saathi</span>
               </span>
             </div>
-            <span className="text-[7px] sm:text-[9px] font-bold text-slate-400 dark:text-slate-500 tracking-wider pl-1 uppercase leading-none truncate">
+            <span className="text-[7px] sm:text-[9px] font-bold text-slate-400 dark:text-slate-500 tracking-wider pl-1 uppercase leading-none truncate hidden xs:block">
               Serving Nabha & surrounding villages
             </span>
           </Link>
 
           {/* Action Buttons Flex - Swipe-scrollable on mobile, static on desktop */}
-          <div className="flex items-center space-x-1.5 sm:space-x-2 overflow-x-auto no-scrollbar whitespace-nowrap max-w-[62vw] sm:max-w-none shrink-0 scroll-smooth pb-0.5">
+          <div className="flex items-center justify-end space-x-1.5 sm:space-x-2 overflow-x-auto no-scrollbar whitespace-nowrap flex-1 min-w-0 sm:flex-initial sm:max-w-none shrink-0 scroll-smooth pb-0.5">
             {/* SOS Emergency Button - Static / Instant */}
             <Button asChild variant="destructive" size="sm" className="bg-red-600 hover:bg-red-700 text-white font-bold flex items-center gap-1.5 shadow-lg shadow-red-500/20 rounded-full px-3 h-9 shrink-0 notranslate">
               <a href="tel:108">

@@ -59,27 +59,29 @@ export default function RootLayout({ children }) {
             disableTransitionOnChange
           >
             <OfflineSyncProvider>
-              <NetworkStatusBar />
-              <Suspense fallback={null}>
-                <PageProgress />
-              </Suspense>
-              <Suspense fallback={
-                <header className="fixed top-4 left-0 right-0 z-50 px-4 flex justify-center">
-                  <nav className="container max-w-7xl h-16 bg-background/70 backdrop-blur-xl border border-border rounded-[2rem] animate-pulse" />
-                </header>
-              }>
-                <Header />
-              </Suspense>
-              <main className="min-h-screen pt-18 mb-16 sm:mb-0">{children}</main>
-              <Toaster richColors />
-              <OfflineIndicator />
-              <PwaInstallBanner />
+              <div className="relative flex flex-col min-h-screen w-full max-w-[100vw] overflow-x-hidden">
+                <NetworkStatusBar />
+                <Suspense fallback={null}>
+                  <PageProgress />
+                </Suspense>
+                <Suspense fallback={
+                  <header className="fixed top-4 left-0 right-0 z-50 px-4 flex justify-center">
+                    <nav className="container max-w-7xl h-16 bg-background/70 backdrop-blur-xl border border-border rounded-[2rem] animate-pulse" />
+                  </header>
+                }>
+                  <Header />
+                </Suspense>
+                <main className="min-h-screen pt-18 mb-16 sm:mb-0">{children}</main>
+                <Toaster richColors />
+                <OfflineIndicator />
+                <PwaInstallBanner />
 
-              <footer className="bg-muted/50 py-12">
-                <div className="container mx-auto px-4 text-center text-muted-foreground">
-                  <p>&copy; {new Date().getFullYear()} DocSaathi. All rights reserved.</p>
-                </div>
-              </footer>
+                <footer className="bg-muted/50 py-12">
+                  <div className="container mx-auto px-4 text-center text-muted-foreground">
+                    <p>&copy; {new Date().getFullYear()} DocSaathi. All rights reserved.</p>
+                  </div>
+                </footer>
+              </div>
             </OfflineSyncProvider>
             <ServiceWorkerRegistrar />
           </ThemeProvider>
