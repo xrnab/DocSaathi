@@ -302,6 +302,8 @@ model EmergencyRequest {
   assignedDoctor   User?    @relation("DoctorEmergencies", fields: [assignedDoctorId], references: [id])
   assignedAshaId   String?
   assignedAsha     User?    @relation("AshaEmergencies", fields: [assignedAshaId], references: [id])
+  ashaResolved     Boolean  @default(false)
+  doctorResolved   Boolean  @default(false)
   createdAt        DateTime @default(now())
   resolvedAt       DateTime?
   @@index([status, createdAt])

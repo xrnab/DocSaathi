@@ -9,7 +9,9 @@ import {
   updateEmergencyStatus, 
   assignDoctorToEmergency,
   assignAshaToEmergency,
-  getRegisteredAshas
+  getRegisteredAshas,
+  resolveEmergencyByAsha,
+  resolveEmergencyByDoctor
 } from "@/actions/emergency";
 import { getVerifiedDoctors } from "@/actions/asha";
 import { getPusherClient } from "@/lib/pusher";
@@ -38,7 +40,10 @@ import {
   Check, 
   Stethoscope, 
   Info,
-  Clock
+  Clock,
+  Compass,
+  CheckCircle,
+  AlertCircle
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
@@ -57,7 +62,7 @@ export default function UnifiedEmergencyPage() {
   const [triggerSuccess, setTriggerSuccess] = useState(false);
   const [locationError, setLocationError] = useState(null);
 
-  // Admin/ASHA monitor states
+  // Admin/ASHA/Doctor monitor states
   const [emergencies, setEmergencies] = useState([]);
   const [emergenciesLoading, setEmergenciesLoading] = useState(true);
   const [doctors, setDoctors] = useState([]);
@@ -107,7 +112,7 @@ export default function UnifiedEmergencyPage() {
   }, [loadProfile]);
 
   useEffect(() => {
-    const isStaff = dbUser && ["ADMIN", "OWNER", "ASHA_WORKER"].includes(dbUser.role);
+    const isStaff = dbUser && ["ADMIN", "OWNER", "ASHA_WORKER", "DOCTOR"].includes(dbUser.role);
     if (isStaff) {
       fetchStaffData();
 
@@ -204,16 +209,55 @@ export default function UnifiedEmergencyPage() {
     }
   };
 
-  // Update Status
-  const handleUpdateStatus = async (emergencyId, status) => {
+  // ASHA arrives check-in
+  const handleAshaArrived = async (emergencyId) => {
     try {
-      const res = await updateEmergencyStatus(emergencyId, status);
+      const res = await resolveEmergencyByAsha(emergencyId);
       if (res.success) {
-        showToast(`Emergency status updated to ${status}`);
+        showToast("ASHA Responder reached location check-in approved!");
         fetchStaffData();
       }
     } catch (err) {
-      showToast(err.message || "Failed to update status", "error");
+      showToast(err.message || "Check-in failed", "error");
+    }
+  };
+
+  // Doctor resolution (conduct operation)
+  const handleDoctorResolved = async (emergencyId) => {
+    try {
+      const res = await resolveEmergencyByDoctor(emergencyId);
+      if (res.success) {
+        showToast("Emergency situation successfully conducted and resolved!");
+        fetchStaffData();
+      }
+    } catch (err) {
+      showToast(err.message || "Resolution failed", "error");
+    }
+  };
+
+  // Acknowledge ACTIVE emergency status
+  const handleAcknowledge = async (emergencyId) => {
+    try {
+      const res = await updateEmergencyStatus(emergencyId, "RESPONDING");
+      if (res.success) {
+        showToast("Emergency SOS successfully acknowledged!");
+        fetchStaffData();
+      }
+    } catch (err) {
+      showToast(err.message || "Acknowledge failed", "error");
+    }
+  };
+
+  // Resolve emergency overall
+  const handleForceResolve = async (emergencyId) => {
+    try {
+      const res = await updateEmergencyStatus(emergencyId, "RESOLVED");
+      if (res.success) {
+        showToast("Emergency forcefully marked as fully resolved!");
+        fetchStaffData();
+      }
+    } catch (err) {
+      showToast(err.message || "Force resolve failed", "error");
     }
   };
 
@@ -227,7 +271,7 @@ export default function UnifiedEmergencyPage() {
   }
 
   const role = dbUser?.role || "UNASSIGNED";
-  const isAdministrative = ["ADMIN", "OWNER", "ASHA_WORKER"].includes(role);
+  const isAdministrative = ["ADMIN", "OWNER", "ASHA_WORKER", "DOCTOR"].includes(role);
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-8 max-w-5xl animate-in fade-in duration-500">
@@ -244,7 +288,7 @@ export default function UnifiedEmergencyPage() {
         </div>
       )}
 
-      {/* ADMIN OR ASHA DISPATCH CENTER */}
+      {/* STAFF DISPATCH AND EMERGENCY TRACKING MONITOR */}
       {isAdministrative ? (
         <div className="space-y-6">
           <Card className="border-rose-100 dark:border-rose-950/40 bg-gradient-to-br from-rose-500/10 to-transparent shadow-md rounded-3xl overflow-hidden relative">
@@ -253,11 +297,16 @@ export default function UnifiedEmergencyPage() {
               <div className="flex items-center gap-3">
                 <HeartPulse className="h-8 w-8 text-rose-500 animate-pulse shrink-0" />
                 <CardTitle className="text-2xl font-black text-rose-900 dark:text-rose-400 uppercase tracking-wide">
-                  Live SOS Dispatch Hub
+                  {role === "DOCTOR" ? "Priority Emergency Operations" : "SOS dispatch board"}
                 </CardTitle>
               </div>
               <CardDescription className="font-semibold text-rose-800/80 dark:text-rose-300/80 mt-1">
-                Role: {role === "ASHA_WORKER" ? "ASHA Health Worker" : "Public Health Administrator"}. Coordinate active emergencies and dispatch responders immediately.
+                {role === "DOCTOR" 
+                  ? "Conduct critical operations or consultations assigned to you."
+                  : role === "ASHA_WORKER"
+                  ? "Accredited village responder board. Coordinate dispatches and resolve at scene."
+                  : "Nabha district healthcare controller. Dispatch ASHA workers and specialize refer doctor pathways."
+                }
               </CardDescription>
             </CardHeader>
           </Card>
@@ -265,157 +314,294 @@ export default function UnifiedEmergencyPage() {
           {emergenciesLoading ? (
             <div className="text-center py-16">
               <Loader2 className="h-10 w-10 text-rose-500 animate-spin mx-auto mb-3" />
-              <p className="text-sm text-muted-foreground font-semibold">Resolving live active SOS dispatches...</p>
+              <p className="text-sm text-muted-foreground font-semibold">Resolving active directives...</p>
             </div>
           ) : emergencies.length === 0 ? (
             <div className="text-center py-16 border-2 border-dashed border-border bg-slate-50/20 dark:bg-slate-900/10 rounded-3xl">
               <Activity className="w-12 h-12 text-muted-foreground/40 mx-auto mb-3" />
-              <h3 className="font-extrabold text-lg text-foreground">Zero Active SOS Alerts</h3>
-              <p className="text-muted-foreground text-sm max-w-xs mx-auto mt-1">No emergency broadcasts have been registered or active in Nabha area today.</p>
+              <h3 className="font-extrabold text-lg text-foreground">Zero ActiveSOS Cases</h3>
+              <p className="text-muted-foreground text-sm max-w-xs mx-auto mt-1">There are no critical directives registered in the region today.</p>
             </div>
           ) : (
-            <div className="space-y-4">
-              {emergencies.map((em) => (
-                <div 
-                  key={em.id} 
-                  className={`border rounded-3xl p-6 hover:shadow-md transition-all flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-card border-border relative overflow-hidden`}
-                >
-                  <div className="absolute top-0 left-0 w-1.5 h-full bg-rose-500 animate-pulse" />
-                  
-                  {/* Left patient info */}
-                  <div className="space-y-3 flex-1 min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Badge className={`text-white px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider rounded-full border-none bg-rose-600 animate-pulse`}>
-                        {em.status}
-                      </Badge>
-                      <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider flex items-center gap-1">
-                        <Clock className="w-3.5 h-3.5" /> {formatDistanceToNow(new Date(em.createdAt), { addSuffix: true })}
-                      </span>
-                    </div>
+            <div className="space-y-6">
+              {emergencies.map((em) => {
+                const canAshaCheckIn = role === "ASHA_WORKER" && em.assignedAshaId && !em.ashaResolved;
+                const canDoctorConduct = role === "DOCTOR" && em.assignedDoctorId === dbUser.id && !em.doctorResolved;
 
-                    <h4 className="text-xl font-black text-foreground">{em.patient?.name || "Patient Needs Assistance"}</h4>
+                return (
+                  <div 
+                    key={em.id} 
+                    className="border border-border/80 bg-card rounded-3xl p-6 shadow-sm hover:shadow-md transition-all flex flex-col lg:flex-row gap-6 relative overflow-hidden"
+                  >
+                    <div className="absolute top-0 left-0 w-1.5 h-full bg-rose-500 animate-pulse" />
                     
-                    <p className="text-sm font-bold text-muted-foreground flex items-center gap-1.5 capitalize">
-                      📍 Village: <strong className="text-foreground">{em.patient?.village || "Sauja"}</strong>
-                      {em.address && <span className="text-xs">({em.address})</span>}
-                    </p>
-
-                    {em.message && (
-                      <div className="bg-muted/40 border border-border/50 p-4 rounded-2xl max-w-2xl text-xs sm:text-sm font-semibold leading-relaxed text-foreground/80 italic">
-                        "{em.message}"
+                    {/* Patient Triage details */}
+                    <div className="flex-1 space-y-4 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Badge className="text-white px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider rounded-full border-none bg-rose-600 animate-pulse">
+                          {em.status}
+                        </Badge>
+                        <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider flex items-center gap-1">
+                          <Clock className="w-3.5 h-3.5" /> {formatDistanceToNow(new Date(em.createdAt), { addSuffix: true })}
+                        </span>
                       </div>
-                    )}
 
-                    {(em.latitude && em.longitude) && (
-                      <a 
-                        href={`https://www.google.com/maps?q=${em.latitude},${em.longitude}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 text-xs font-bold text-sky-600 dark:text-sky-400 hover:underline pt-1"
-                      >
-                        🗺️ View Patient Location on Google Maps →
-                      </a>
-                    )}
-                  </div>
-
-                  {/* Right Dispatches console */}
-                  <div className="flex flex-col sm:flex-row lg:flex-col items-stretch sm:items-center lg:items-end gap-4 shrink-0 w-full sm:w-auto border-t lg:border-t-0 pt-4 lg:pt-0 border-border">
-                    
-                    {/* ASHA dispatcher selector (ADMIN only) */}
-                    {["ADMIN", "OWNER"].includes(role) && (
-                      <div className="space-y-1.5 w-full sm:w-56">
-                        <label className="text-[9px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-wider">
-                          ASHA Worker Dispatch
-                        </label>
-                        
-                        {em.assignedAsha ? (
-                          <div className="p-3 bg-indigo-50 dark:bg-indigo-950/20 text-indigo-800 dark:text-indigo-300 rounded-xl border border-indigo-100 dark:border-indigo-900/30 text-xs font-bold flex flex-col gap-0.5">
-                            <span>👩‍⚕️ Assigned: {em.assignedAsha.name}</span>
-                            <span className="text-[9px] font-black opacity-80 uppercase tracking-widest mt-0.5">Block: {em.assignedAsha.block}</span>
-                          </div>
-                        ) : (
-                          <Select onValueChange={(val) => handleAssignAsha(em.id, val)}>
-                            <SelectTrigger className="bg-white dark:bg-slate-950 border border-border/80 text-xs rounded-xl shadow-xs font-bold h-10 w-full cursor-pointer">
-                              <SelectValue placeholder="Dispatch ASHA Worker..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {ashas.length === 0 ? (
-                                <SelectItem value="demo-asha">Gurpreet Kaur (Sauja)</SelectItem>
-                              ) : (
-                                ashas.map((as) => (
-                                  <SelectItem key={as.id} value={as.id}>
-                                    {as.name} ({as.village})
-                                  </SelectItem>
-                                ))
-                              )}
-                            </SelectContent>
-                          </Select>
-                        )}
+                      <div className="space-y-1">
+                        <h4 className="text-xl font-black text-foreground">{em.patient?.name || "Anonymous Patient"}</h4>
+                        <p className="text-sm font-bold text-muted-foreground flex items-center gap-1.5 capitalize">
+                          📍 Location: <strong className="text-foreground">{em.patient?.village || "Sauja"}</strong>
+                          {em.address && <span className="text-xs">({em.address})</span>}
+                        </p>
                       </div>
-                    )}
 
-                    {/* Doctor Referral Select */}
-                    <div className="space-y-1.5 w-full sm:w-56">
-                      <label className="text-[9px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-wider">
-                        Medical Specialist Refer
-                      </label>
-                      
-                      {em.assignedDoctor ? (
-                        <div className="p-3 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-300 rounded-xl border border-emerald-100 dark:border-emerald-900/30 text-xs font-bold flex flex-col gap-0.5">
-                          <span>👨‍⚕️ Referred: Dr. {em.assignedDoctor.name}</span>
-                          <span className="text-[9px] font-black opacity-80 uppercase tracking-widest mt-0.5">{em.assignedDoctor.specialty}</span>
+                      {em.message && (
+                        <div className="bg-muted/40 border border-border/50 p-4 rounded-2xl text-xs sm:text-sm font-semibold leading-relaxed text-foreground/80 italic">
+                          "{em.message}"
                         </div>
-                      ) : (
-                        <Select onValueChange={(val) => handleAssignDoctor(em.id, val)}>
-                          <SelectTrigger className="bg-white dark:bg-slate-950 border border-border/80 text-xs rounded-xl shadow-xs font-bold h-10 w-full cursor-pointer">
-                            <SelectValue placeholder="Assign Specialist..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {doctors.length === 0 ? (
-                              <SelectItem value="demo-doc">Dr. Amritpal Singh (GP)</SelectItem>
-                            ) : (
-                              doctors.map((doc) => (
-                                <SelectItem key={doc.id} value={doc.id}>
-                                  Dr. {doc.name} ({doc.specialty})
-                                </SelectItem>
-                              ))
-                            )}
-                          </SelectContent>
-                        </Select>
                       )}
-                    </div>
 
-                    {/* Actions Status buttons */}
-                    <div className="flex gap-2 w-full sm:w-auto mt-2">
-                      {em.status === "ACTIVE" && (
-                        <Button 
-                          onClick={() => handleUpdateStatus(em.id, "RESPONDING")}
-                          size="sm"
-                          className="bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl h-10 px-4 flex-1 sm:flex-initial cursor-pointer shadow-sm shadow-amber-500/10"
+                      {/* Map Location Link */}
+                      {(em.latitude && em.longitude) && (
+                        <a 
+                          href={`https://www.google.com/maps?q=${em.latitude},${em.longitude}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 text-xs font-bold text-sky-600 dark:text-sky-400 hover:underline"
                         >
-                          Respond
-                        </Button>
+                          🗺️ Location coordinates: {em.latitude.toFixed(5)}, {em.longitude.toFixed(5)} (Google Maps) →
+                        </a>
                       )}
-                      <Button 
-                        onClick={() => handleUpdateStatus(em.id, "RESOLVED")}
-                        variant="outline"
-                        size="sm"
-                        className="border-rose-200 hover:bg-rose-50 dark:border-rose-900/60 dark:hover:bg-rose-950/20 text-rose-600 font-bold rounded-xl h-10 px-4 flex-1 sm:flex-initial cursor-pointer"
-                      >
-                        Resolve
-                      </Button>
+
+                      {/* STAGE STEPPER PROCESS TRACKER (ADMIN AND ALL ROLES MONITOR) */}
+                      <div className="pt-4 border-t border-border space-y-3">
+                        <h5 className="text-[9px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-wider">Live tracking stages</h5>
+                        
+                        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
+                          {/* Step 1: SOS Triggered */}
+                          <div className="p-3 bg-emerald-500/5 dark:bg-emerald-950/10 text-emerald-600 border border-emerald-500/20 rounded-xl flex items-center gap-2 font-bold">
+                            <CheckCircle className="w-4 h-4 shrink-0 text-emerald-500" />
+                            <span>1. SOS Triggered</span>
+                          </div>
+
+                          {/* Step 2: ASHA Worker Dispatched & Arrived */}
+                          <div className={`p-3 border rounded-xl flex items-center gap-2 font-bold ${
+                            em.ashaResolved
+                              ? "bg-emerald-500/5 border-emerald-500/20 text-emerald-600"
+                              : em.assignedAsha
+                              ? "bg-amber-500/5 border-amber-500/20 text-amber-600 animate-pulse"
+                              : "bg-slate-50 dark:bg-slate-900/30 border-border text-muted-foreground"
+                          }`}>
+                            {em.ashaResolved ? (
+                              <CheckCircle className="w-4 h-4 shrink-0 text-emerald-500" />
+                            ) : em.assignedAsha ? (
+                              <Compass className="w-4 h-4 shrink-0 text-amber-500 animate-spin" />
+                            ) : (
+                              <AlertCircle className="w-4 h-4 shrink-0" />
+                            )}
+                            <div className="min-w-0">
+                              <p className="truncate">2. ASHA: {em.ashaResolved ? "Arrived" : em.assignedAsha ? "Heading" : "Pending"}</p>
+                              {em.assignedAsha && <p className="text-[9px] font-normal truncate">({em.assignedAsha.name})</p>}
+                            </div>
+                          </div>
+
+                          {/* Step 3: Doctor Refer Directive */}
+                          <div className={`p-3 border rounded-xl flex items-center gap-2 font-bold ${
+                            em.assignedDoctor
+                              ? "bg-emerald-500/5 border-emerald-500/20 text-emerald-600"
+                              : "bg-slate-50 dark:bg-slate-900/30 border-border text-muted-foreground"
+                          }`}>
+                            {em.assignedDoctor ? (
+                              <Stethoscope className="w-4 h-4 shrink-0 text-emerald-500" />
+                            ) : (
+                              <AlertCircle className="w-4 h-4 shrink-0" />
+                            )}
+                            <div className="min-w-0">
+                              <p className="truncate">3. Doctor: {em.assignedDoctor ? "Directed" : "Pending"}</p>
+                              {em.assignedDoctor && <p className="text-[9px] font-normal truncate">({em.assignedDoctor.name})</p>}
+                            </div>
+                          </div>
+
+                          {/* Step 4: Medical Operation Conducted */}
+                          <div className={`p-3 border rounded-xl flex items-center gap-2 font-bold ${
+                            em.doctorResolved
+                              ? "bg-emerald-500/5 border-emerald-500/20 text-emerald-600"
+                              : em.assignedDoctor && em.ashaResolved
+                              ? "bg-rose-500/5 border-rose-500/20 text-rose-600 animate-pulse"
+                              : "bg-slate-50 dark:bg-slate-900/30 border-border text-muted-foreground"
+                          }`}>
+                            {em.doctorResolved ? (
+                              <CheckCircle className="w-4 h-4 shrink-0 text-emerald-500" />
+                            ) : (
+                              <AlertCircle className="w-4 h-4 shrink-0" />
+                            )}
+                            <span>4. Triage Conducted</span>
+                          </div>
+                        </div>
+
+                      </div>
                     </div>
 
+                    {/* Operational Assign / Resolve console */}
+                    <div className="flex flex-col sm:flex-row lg:flex-col items-stretch sm:items-center lg:items-end gap-4 shrink-0 w-full sm:w-56 border-t lg:border-t-0 pt-4 lg:pt-0 border-border justify-center">
+                      
+                      {/* ADMIN console: Assign ASHA or Doctor */}
+                      {["ADMIN", "OWNER"].includes(role) && (
+                        <div className="space-y-4 w-full">
+                          
+                          {/* ASHA dispatcher selector */}
+                          <div className="space-y-1">
+                            <label className="text-[9px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-wider">ASHA responder</label>
+                            {em.assignedAsha ? (
+                              <div className="p-2.5 bg-indigo-50 dark:bg-indigo-950/20 text-indigo-800 dark:text-indigo-300 rounded-xl border border-indigo-100 text-xs font-bold">
+                                👩‍⚕️ Assigned: {em.assignedAsha.name}
+                              </div>
+                            ) : (
+                              <Select onValueChange={(val) => handleAssignAsha(em.id, val)}>
+                                <SelectTrigger className="bg-white dark:bg-slate-950 border border-border text-xs rounded-xl shadow-xs font-bold h-9">
+                                  <SelectValue placeholder="Dispatch ASHA..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {ashas.map((as) => (
+                                    <SelectItem key={as.id} value={as.id}>
+                                      {as.name} ({as.village})
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            )}
+                          </div>
+
+                          {/* Doctor assignment selector */}
+                          <div className="space-y-1">
+                            <label className="text-[9px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-wider">Specialist referral</label>
+                            {em.assignedDoctor ? (
+                              <div className="p-2.5 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-300 rounded-xl border border-emerald-100 text-xs font-bold">
+                                👨‍⚕️ Directed: Dr. {em.assignedDoctor.name}
+                              </div>
+                            ) : (
+                              <Select onValueChange={(val) => handleAssignDoctor(em.id, val)}>
+                                <SelectTrigger className="bg-white dark:bg-slate-950 border border-border text-xs rounded-xl shadow-xs font-bold h-9">
+                                  <SelectValue placeholder="Direct Doctor..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {doctors.map((doc) => (
+                                    <SelectItem key={doc.id} value={doc.id}>
+                                      Dr. {doc.name} ({doc.specialty})
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            )}
+                          </div>
+
+                          {/* Force Resolve */}
+                          <Button 
+                            onClick={() => handleForceResolve(em.id)}
+                            variant="destructive"
+                            size="sm"
+                            className="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl h-10 cursor-pointer shadow-sm shadow-rose-500/10"
+                          >
+                            Resolve Case
+                          </Button>
+                        </div>
+                      )}
+
+                      {/* ASHA console: Assign Doctor and Reached Scene */}
+                      {role === "ASHA_WORKER" && (
+                        <div className="space-y-4 w-full">
+                          
+                          {/* Doctor refer */}
+                          <div className="space-y-1">
+                            <label className="text-[9px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-wider">Refer doctor specialist</label>
+                            {em.assignedDoctor ? (
+                              <div className="p-2.5 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-300 rounded-xl border border-emerald-100 text-xs font-bold">
+                                👨‍⚕️ Referred: Dr. {em.assignedDoctor.name}
+                              </div>
+                            ) : (
+                              <Select onValueChange={(val) => handleAssignDoctor(em.id, val)}>
+                                <SelectTrigger className="bg-white dark:bg-slate-950 border border-border text-xs rounded-xl shadow-xs font-bold h-9 cursor-pointer">
+                                  <SelectValue placeholder="Assign priority Doctor..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {doctors.map((doc) => (
+                                    <SelectItem key={doc.id} value={doc.id}>
+                                      Dr. {doc.name} ({doc.specialty})
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            )}
+                          </div>
+
+                          {/* ASHA Arrived trigger */}
+                          {canAshaCheckIn ? (
+                            <Button 
+                              onClick={() => handleAshaArrived(em.id)}
+                              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold rounded-xl h-11 flex items-center justify-center gap-1.5 shadow-md shadow-indigo-600/10 animate-pulse cursor-pointer"
+                            >
+                              <MapPin className="w-4 h-4 shrink-0" /> I have reached location
+                            </Button>
+                          ) : (
+                            <div className="p-3 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-300 rounded-xl border border-emerald-100/50 text-xs font-bold text-center">
+                              {em.ashaResolved ? "👩‍⚕️ Checked-In at Scene" : "Pending dispatch..."}
+                            </div>
+                          )}
+
+                          {/* Status responders Acknowledge */}
+                          {em.status === "ACTIVE" && (
+                            <Button 
+                              onClick={() => handleAcknowledge(em.id)}
+                              className="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl h-9 cursor-pointer"
+                            >
+                              Acknowledge SOS
+                            </Button>
+                          )}
+                        </div>
+                      )}
+
+                      {/* DOCTOR console: Conduct and check resolved */}
+                      {role === "DOCTOR" && (
+                        <div className="space-y-4 w-full">
+                          <Card className="border-rose-100 bg-rose-500/5 p-3.5 rounded-xl border-l-4 border-l-rose-500">
+                            <h5 className="text-[10px] font-black text-rose-800 dark:text-rose-400 uppercase tracking-widest leading-none">Directive status</h5>
+                            <p className="text-xs font-bold text-muted-foreground mt-1.5 leading-relaxed">
+                              {em.ashaResolved 
+                                ? "ASHA worker has arrived at scene. You are authorized to conduct the operation." 
+                                : "Waiting for ASHA worker to arrive at location and check in first..."
+                              }
+                            </p>
+                          </Card>
+
+                          {canDoctorConduct ? (
+                            <Button 
+                              onClick={() => handleDoctorResolved(em.id)}
+                              disabled={!em.ashaResolved}
+                              className={`w-full text-white font-extrabold rounded-xl h-11 flex items-center justify-center gap-1.5 shadow-md cursor-pointer ${
+                                em.ashaResolved 
+                                  ? "bg-rose-600 hover:bg-rose-700 shadow-rose-600/10 animate-pulse" 
+                                  : "bg-slate-300 hover:bg-slate-300 dark:bg-slate-800 text-muted-foreground cursor-not-allowed shadow-none"
+                              }`}
+                            >
+                              <Stethoscope className="w-4 h-4 shrink-0" /> Conduct & Resolve
+                            </Button>
+                          ) : (
+                            <div className="p-3 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-300 rounded-xl border border-emerald-100/50 text-xs font-bold text-center">
+                              {em.doctorResolved ? "👨‍⚕️ Emergency Conducted" : "Assigned Priority Triage"}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
       ) : (
-        /* PATIENT OR PUBLIC TRIGGER TERMINAL */
+        /* PATIENT OR UNASSIGNED SOS DISPATCH TERMINAL */
         <div className="max-w-2xl mx-auto space-y-6">
-          
           <Card className="border-rose-100 dark:border-rose-950 bg-gradient-to-br from-rose-600/10 to-transparent shadow-xl rounded-[2rem] overflow-hidden relative">
             <div className="absolute top-0 right-0 p-8 opacity-5">
               <HeartPulse className="w-48 h-48 text-rose-600" />
@@ -433,7 +619,7 @@ export default function UnifiedEmergencyPage() {
               
               {triggerSuccess ? (
                 <div className="text-center py-6 space-y-4 animate-in zoom-in duration-300">
-                  <div className="bg-emerald-500/10 text-emerald-600 p-4 rounded-2xl border border-emerald-500/20 inline-flex font-bold">
+                  <div className="bg-emerald-500/10 text-emerald-600 p-4 rounded-2xl border border-emerald-500/20 inline-flex font-bold uppercase tracking-wider">
                     🚨 SOS ALERT DISPATCHED SUCCESS
                   </div>
                   <p className="text-sm text-muted-foreground leading-relaxed max-w-sm mx-auto">
@@ -446,7 +632,7 @@ export default function UnifiedEmergencyPage() {
               ) : (
                 <form onSubmit={handleSubmitSOS} className="space-y-6">
                   
-                  {/* Geolocation Lock Button */}
+                  {/* Geolocation Coordinate Lock Button */}
                   <div className="bg-slate-50/50 dark:bg-slate-900/30 p-5 rounded-2xl border border-border/80 flex flex-col items-center justify-center text-center space-y-4">
                     <div className="space-y-1">
                       <h4 className="text-sm font-bold text-foreground">Lock coordinates automatically</h4>

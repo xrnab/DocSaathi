@@ -7,6 +7,24 @@ import { pusherServer } from "@/lib/pusher";
 import { revalidatePath } from "next/cache";
 
 /**
+ * Helper to verify if caller is an admin, owner, ASHA worker, or doctor
+ */
+async function verifyAdminOrOwnerOrAshaOrDoctor() {
+  const { userId } = await auth();
+  if (!userId) return null;
+
+  const user = await db.user.findUnique({
+    where: { clerkUserId: userId },
+  });
+
+  if (!user || !["ADMIN", "OWNER", "ASHA_WORKER", "DOCTOR"].includes(user.role)) {
+    return null;
+  }
+
+  return user;
+}
+
+/**
  * Helper to verify if caller is an admin, owner, or ASHA worker
  */
 async function verifyAdminOrOwnerOrAsha() {
@@ -68,6 +86,8 @@ export async function createEmergencyRequest(latitude, longitude, address, messa
         address: address || null,
         message: message || null,
         status: "ACTIVE",
+        ashaResolved: false,
+        doctorResolved: false,
       },
       include: {
         patient: true,
@@ -122,16 +142,23 @@ export async function createEmergencyRequest(latitude, longitude, address, messa
  * Get all active and responding emergencies
  */
 export async function getActiveEmergencies() {
-  const staff = await verifyAdminOrOwnerOrAsha();
+  const staff = await verifyAdminOrOwnerOrAshaOrDoctor();
   if (!staff) {
     throw new Error("Unauthorized access. Privilege check failed.");
   }
 
   try {
+    // If doctor is calling, only return active/responding emergencies assigned to them
+    const whereClause = {
+      status: { in: ["ACTIVE", "RESPONDING"] },
+    };
+
+    if (staff.role === "DOCTOR") {
+      whereClause.assignedDoctorId = staff.id;
+    }
+
     const emergencies = await db.emergencyRequest.findMany({
-      where: {
-        status: { in: ["ACTIVE", "RESPONDING"] },
-      },
+      where: whereClause,
       include: {
         patient: {
           select: {
@@ -171,7 +198,7 @@ export async function getActiveEmergencies() {
 }
 
 /**
- * Update the status of an emergency request
+ * Update the status of an emergency request (Acknowledge / respond only)
  */
 export async function updateEmergencyStatus(id, status) {
   const staff = await verifyAdminOrOwnerOrAsha();
@@ -183,6 +210,8 @@ export async function updateEmergencyStatus(id, status) {
     const data = { status };
     if (status === "RESOLVED") {
       data.resolvedAt = new Date();
+      data.ashaResolved = true;
+      data.doctorResolved = true;
     }
 
     const updated = await db.emergencyRequest.update({
@@ -195,10 +224,9 @@ export async function updateEmergencyStatus(id, status) {
       },
     });
 
-    // Notify patient about status resolution or response
     let patientMessage = "";
     if (status === "RESPONDING") {
-      patientMessage = `Your emergency SOS alert has been acknowledged. A responder is coordinate-tracking now!`;
+      patientMessage = `Your emergency SOS alert has been acknowledged. Responders are coordinate-tracking now!`;
     } else if (status === "RESOLVED") {
       patientMessage = `Your emergency SOS alert has been marked as resolved. We hope you are safe.`;
     }
@@ -208,7 +236,6 @@ export async function updateEmergencyStatus(id, status) {
         console.error("Failed to notify patient:", err.message)
       );
 
-      // Trigger user-specific Pusher alert to update patient client states
       try {
         await pusherServer.trigger(`user-${updated.patientId}`, "appointment-updated", {
           appointmentId: updated.id,
@@ -227,6 +254,8 @@ export async function updateEmergencyStatus(id, status) {
         status: updated.status,
         assignedDoctor: updated.assignedDoctor,
         assignedAsha: updated.assignedAsha,
+        ashaResolved: updated.ashaResolved,
+        doctorResolved: updated.doctorResolved,
       });
     } catch (err) {
       console.warn("Failed to broadcast SOS update over Pusher:", err.message);
@@ -238,6 +267,147 @@ export async function updateEmergencyStatus(id, status) {
   } catch (error) {
     console.error("Failed to update emergency status:", error);
     throw new Error("Failed to update status: " + error.message);
+  }
+}
+
+/**
+ * ASHA resolution action (ASHA has reached the place and checked in)
+ */
+export async function resolveEmergencyByAsha(id) {
+  const staff = await verifyAdminOrOwnerOrAsha();
+  if (!staff) {
+    throw new Error("Unauthorized access. Privilege check failed.");
+  }
+
+  try {
+    const updated = await db.emergencyRequest.update({
+      where: { id },
+      data: {
+        ashaResolved: true,
+        status: "RESPONDING" // Ensure status reflects active response
+      },
+      include: {
+        patient: true,
+        assignedDoctor: true,
+        assignedAsha: true,
+      }
+    });
+
+    // Notify patient
+    const patientMsg = `ASHA health worker ${updated.assignedAsha?.name || "Responder"} has reached your location!`;
+    await createNotification(updated.patientId, patientMsg, "SYSTEM").catch((e) => console.error(e));
+
+    try {
+      await pusherServer.trigger(`user-${updated.patientId}`, "appointment-updated", {
+        appointmentId: updated.id,
+        status: "RESPONDING",
+        message: patientMsg,
+      });
+    } catch (e) {
+      console.warn(e);
+    }
+
+    // Notify Admins & Doctors in real-time
+    try {
+      await pusherServer.trigger("emergency-channel", "emergency-assigned", {
+        id: updated.id,
+        status: updated.status,
+        assignedDoctor: updated.assignedDoctor,
+        assignedAsha: updated.assignedAsha,
+        ashaResolved: true,
+        doctorResolved: updated.doctorResolved,
+      });
+    } catch (err) {
+      console.warn(err);
+    }
+
+    revalidatePath("/admin/emergency");
+    revalidatePath("/emergency");
+    return { success: true, emergency: updated };
+  } catch (error) {
+    console.error("Failed to check-in ASHA resolved:", error);
+    throw new Error("Failed to check-in ASHA: " + error.message);
+  }
+}
+
+/**
+ * Doctor resolution action (Doctor has conducted the operation / emergency)
+ * Strictly enforces that ASHA must have checked in first (reached location).
+ */
+export async function resolveEmergencyByDoctor(id) {
+  const doctor = await verifyAdminOrOwnerOrAshaOrDoctor();
+  if (!doctor || !["DOCTOR", "ADMIN", "OWNER"].includes(doctor.role)) {
+    throw new Error("Unauthorized. Doctor privileges required.");
+  }
+
+  try {
+    const emergency = await db.emergencyRequest.findUnique({
+      where: { id },
+    });
+
+    if (!emergency) {
+      throw new Error("Emergency request not found");
+    }
+
+    if (!emergency.ashaResolved) {
+      throw new Error("Strict Protocol Violation: ASHA worker must reach the location and resolve from their end before the Doctor can conduct the final resolution.");
+    }
+
+    // If both are resolved, update overall status to RESOLVED
+    const isFullyResolved = true; // since doctor is now clicking, and we checked ashaResolved is true
+    const data = {
+      doctorResolved: true,
+    };
+
+    if (isFullyResolved) {
+      data.status = "RESOLVED";
+      data.resolvedAt = new Date();
+    }
+
+    const updated = await db.emergencyRequest.update({
+      where: { id },
+      data,
+      include: {
+        patient: true,
+        assignedDoctor: true,
+        assignedAsha: true,
+      }
+    });
+
+    // Notify patient
+    const patientMsg = `Emergency situation successfully resolved. Your consultation/operation has been completed.`;
+    await createNotification(updated.patientId, patientMsg, "SYSTEM").catch((e) => console.error(e));
+
+    try {
+      await pusherServer.trigger(`user-${updated.patientId}`, "appointment-updated", {
+        appointmentId: updated.id,
+        status: "RESOLVED",
+        message: patientMsg,
+      });
+    } catch (e) {
+      console.warn(e);
+    }
+
+    // Broadcast live update
+    try {
+      await pusherServer.trigger("emergency-channel", "emergency-assigned", {
+        id: updated.id,
+        status: updated.status,
+        assignedDoctor: updated.assignedDoctor,
+        assignedAsha: updated.assignedAsha,
+        ashaResolved: updated.ashaResolved,
+        doctorResolved: true,
+      });
+    } catch (err) {
+      console.warn(err);
+    }
+
+    revalidatePath("/admin/emergency");
+    revalidatePath("/emergency");
+    return { success: true, emergency: updated };
+  } catch (error) {
+    console.error("Failed to complete doctor resolution:", error);
+    throw new Error("Failed to complete doctor resolution: " + error.message);
   }
 }
 
@@ -319,6 +489,8 @@ export async function assignDoctorToEmergency(emergencyId, doctorId) {
         status: updated.status,
         assignedDoctor: updated.assignedDoctor,
         assignedAsha: updated.assignedAsha,
+        ashaResolved: updated.ashaResolved,
+        doctorResolved: updated.doctorResolved,
       });
     } catch (err) {
       console.warn("Failed to broadcast SOS directive over Pusher:", err.message);
@@ -411,6 +583,8 @@ export async function assignAshaToEmergency(emergencyId, ashaId) {
         status: updated.status,
         assignedDoctor: updated.assignedDoctor,
         assignedAsha: updated.assignedAsha,
+        ashaResolved: updated.ashaResolved,
+        doctorResolved: updated.doctorResolved,
       });
     } catch (err) {
       console.warn("Failed to broadcast SOS directive over Pusher:", err.message);
