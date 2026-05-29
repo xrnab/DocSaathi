@@ -58,7 +58,7 @@ export default function HeaderScrollContainer({ children }) {
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
       onScroll={handleScroll}
-      className={`flex items-center justify-end space-x-1.5 sm:space-x-2 overflow-x-auto no-scrollbar whitespace-nowrap flex-1 min-w-0 sm:flex-initial sm:max-w-none shrink-0 scroll-smooth pb-0.5 ${
+      className={`flex items-center justify-start lg:justify-end space-x-1.5 sm:space-x-2 overflow-x-auto no-scrollbar whitespace-nowrap flex-1 min-w-0 sm:flex-initial sm:max-w-none shrink-0 scroll-smooth pb-0.5 ${
         isScrolling ? "is-scrolling" : ""
       }`}
     >
