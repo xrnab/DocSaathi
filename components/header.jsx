@@ -56,7 +56,7 @@ export default function Header() {
           </Link>
 
           {/* Right-aligned Actions & Utility Suite */}
-          <div className="flex items-center gap-2 sm:gap-3 shrink-0 z-[60]">
+          <div className="flex items-center justify-end gap-2 sm:gap-3 flex-1 min-w-0 sm:flex-initial z-[60]">
             {/* Static Emergency Button - Always Visible and Clickable */}
             <Link href="/emergency" className="shrink-0" title="SOS Emergency">
               <Button 
