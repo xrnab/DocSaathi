@@ -127,10 +127,11 @@ export function HeaderActions({ dbUser }) {
           <Link href="/asha">
             <Button
               variant="outline"
-              className="hidden md:inline-flex items-center gap-2 border-sky-200 dark:border-sky-800 bg-sky-50/50 dark:bg-sky-900/20 font-bold text-sky-600 dark:text-sky-400"
+              size="icon"
+              className="md:w-auto md:px-4 items-center gap-2 rounded-full h-8 w-8 sm:h-9 sm:w-9 border-sky-200 dark:border-sky-800 bg-sky-50/50 dark:bg-sky-900/20 font-bold text-sky-600 dark:text-sky-400 shrink-0"
             >
-              <Heart className="h-4 w-4 text-sky-500 fill-sky-500/20 animate-pulse" />
-              ASHA Dashboard
+              <Heart className="h-4 w-4 text-sky-500 fill-sky-500/20 animate-pulse shrink-0" />
+              <span className="hidden md:inline">ASHA Dashboard</span>
             </Button>
           </Link>
         )}
