@@ -55,27 +55,26 @@ export default function Header() {
             </span>
           </Link>
 
+          {/* Static Emergency Button - Always Visible and Clickable */}
+          <Link href="/emergency" className="shrink-0 z-[60]">
+            <Button variant="destructive" size="sm" className="bg-red-600 hover:bg-red-700 text-white font-extrabold flex items-center gap-1.5 shadow-md shadow-red-500/20 rounded-full px-3 sm:px-4 h-9 cursor-pointer notranslate">
+              <PhoneCall className="h-4 w-4 animate-pulse shrink-0" />
+              <span>SOS Emergency</span>
+            </Button>
+          </Link>
+
           {/* Action Buttons Flex - Swipe-scrollable on mobile, static on desktop */}
           <HeaderScrollContainer>
-            {/* SOS Emergency Button - Static / Instant */}
-            <Button asChild variant="destructive" size="sm" className="bg-red-600 hover:bg-red-700 text-white font-bold flex items-center gap-1.5 shadow-lg shadow-red-500/20 rounded-full px-3 h-9 shrink-0 notranslate">
-              <a href="tel:108">
-                <PhoneCall className="h-4 w-4" />
-                <span className="hidden xl:inline">Emergency SOS</span>
-                <span className="hidden sm:inline xl:hidden">SOS</span>
-              </a>
-            </Button>
-
             {/* Live SOS Board Link */}
             <Link 
-              href="/admin/emergency" 
+              href="/emergency" 
               className="px-3 h-9 rounded-full bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-600 dark:text-red-400 text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 shrink-0 relative transition-all"
             >
               <span className="absolute top-1 right-1 flex h-1.5 w-1.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-red-500"></span>
               </span>
-              <span>Emergency</span>
+              <span>Emergency Board</span>
             </Link>
 
             {/* Suspended User Logic - Prevents blocking the shell */}
@@ -89,7 +88,6 @@ export default function Header() {
             </div>
             
             <div className="hidden sm:inline-flex shrink-0 gap-2">
-              <AccessibilityToggle />
               <ModeToggle />
             </div>
           </HeaderScrollContainer>

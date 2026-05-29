@@ -25,6 +25,24 @@ async function verifyAdminOrOwnerOrAsha() {
 }
 
 /**
+ * Helper to verify if caller is an admin or owner
+ */
+async function verifyAdminOrOwner() {
+  const { userId } = await auth();
+  if (!userId) return null;
+
+  const user = await db.user.findUnique({
+    where: { clerkUserId: userId },
+  });
+
+  if (!user || !["ADMIN", "OWNER"].includes(user.role)) {
+    return null;
+  }
+
+  return user;
+}
+
+/**
  * Create a new emergency SOS request
  */
 export async function createEmergencyRequest(latitude, longitude, address, message) {
@@ -92,6 +110,7 @@ export async function createEmergencyRequest(latitude, longitude, address, messa
     }
 
     revalidatePath("/admin/emergency");
+    revalidatePath("/emergency");
     return { success: true, id: emergency.id };
   } catch (error) {
     console.error("Failed to create emergency request:", error);
@@ -116,6 +135,7 @@ export async function getActiveEmergencies() {
       include: {
         patient: {
           select: {
+            id: true,
             name: true,
             email: true,
             imageUrl: true,
@@ -128,6 +148,13 @@ export async function getActiveEmergencies() {
             id: true,
             name: true,
             specialty: true,
+          }
+        },
+        assignedAsha: {
+          select: {
+            id: true,
+            name: true,
+            block: true,
           }
         }
       },
@@ -164,6 +191,7 @@ export async function updateEmergencyStatus(id, status) {
       include: {
         patient: true,
         assignedDoctor: true,
+        assignedAsha: true,
       },
     });
 
@@ -198,12 +226,14 @@ export async function updateEmergencyStatus(id, status) {
         id: updated.id,
         status: updated.status,
         assignedDoctor: updated.assignedDoctor,
+        assignedAsha: updated.assignedAsha,
       });
     } catch (err) {
       console.warn("Failed to broadcast SOS update over Pusher:", err.message);
     }
 
     revalidatePath("/admin/emergency");
+    revalidatePath("/emergency");
     return { success: true, emergency: updated };
   } catch (error) {
     console.error("Failed to update emergency status:", error);
@@ -253,6 +283,12 @@ export async function assignDoctorToEmergency(emergencyId, doctorId) {
             name: true,
             specialty: true,
           }
+        },
+        assignedAsha: {
+          select: {
+            id: true,
+            name: true,
+          }
         }
       }
     });
@@ -282,15 +318,135 @@ export async function assignDoctorToEmergency(emergencyId, doctorId) {
         id: updated.id,
         status: updated.status,
         assignedDoctor: updated.assignedDoctor,
+        assignedAsha: updated.assignedAsha,
       });
     } catch (err) {
       console.warn("Failed to broadcast SOS directive over Pusher:", err.message);
     }
 
     revalidatePath("/admin/emergency");
+    revalidatePath("/emergency");
     return { success: true, emergency: updated };
   } catch (error) {
     console.error("Failed to assign doctor to emergency:", error);
     throw new Error("Failed to assign doctor: " + error.message);
+  }
+}
+
+/**
+ * Assign/direct an ASHA worker to an active emergency (Admin/Owner only)
+ */
+export async function assignAshaToEmergency(emergencyId, ashaId) {
+  const admin = await verifyAdminOrOwner();
+  if (!admin) {
+    throw new Error("Unauthorized access. Admin privileges required.");
+  }
+
+  try {
+    const emergency = await db.emergencyRequest.findUnique({
+      where: { id: emergencyId },
+      include: { patient: true },
+    });
+
+    if (!emergency) {
+      throw new Error("Emergency request not found");
+    }
+
+    const asha = await db.user.findUnique({
+      where: { id: ashaId },
+    });
+
+    if (!asha || asha.role !== "ASHA_WORKER") {
+      throw new Error("Target ASHA worker not found or invalid role");
+    }
+
+    const updated = await db.emergencyRequest.update({
+      where: { id: emergencyId },
+      data: {
+        assignedAshaId: ashaId,
+        status: emergency.status === "ACTIVE" ? "RESPONDING" : emergency.status,
+      },
+      include: {
+        patient: true,
+        assignedDoctor: {
+          select: {
+            id: true,
+            name: true,
+            specialty: true,
+          }
+        },
+        assignedAsha: {
+          select: {
+            id: true,
+            name: true,
+            block: true,
+          }
+        }
+      }
+    });
+
+    // Notify ASHA worker
+    const locationString = updated.address || (updated.latitude && updated.longitude ? `${updated.latitude}, ${updated.longitude}` : "Unknown Location");
+    const ashaAlertMessage = `🚨 EMERGENCY DISPATCH DIRECTIVE: You have been assigned to coordinate-assist patient ${updated.patient.name || "Patient"} immediately at ${locationString}. Notes: ${updated.message || "None"}`;
+
+    await createNotification(ashaId, ashaAlertMessage, "SYSTEM").catch((err) =>
+      console.error("Failed to write directive notification for ASHA:", err.message)
+    );
+
+    // Notify ASHA in real-time
+    try {
+      await pusherServer.trigger(`user-${ashaId}`, "appointment-updated", {
+        appointmentId: updated.id,
+        status: "RESPONDING",
+        message: ashaAlertMessage,
+      });
+    } catch (pusherErr) {
+      console.warn("Pusher notification for SOS directive to ASHA failed:", pusherErr.message);
+    }
+
+    // Trigger update on general emergency channel for live dashboards
+    try {
+      await pusherServer.trigger("emergency-channel", "emergency-assigned", {
+        id: updated.id,
+        status: updated.status,
+        assignedDoctor: updated.assignedDoctor,
+        assignedAsha: updated.assignedAsha,
+      });
+    } catch (err) {
+      console.warn("Failed to broadcast SOS directive over Pusher:", err.message);
+    }
+
+    revalidatePath("/admin/emergency");
+    revalidatePath("/emergency");
+    return { success: true, emergency: updated };
+  } catch (error) {
+    console.error("Failed to assign ASHA to emergency:", error);
+    throw new Error("Failed to assign ASHA: " + error.message);
+  }
+}
+
+/**
+ * Fetch all registered ASHA workers (for Admin assignment)
+ */
+export async function getRegisteredAshas() {
+  const admin = await verifyAdminOrOwner();
+  if (!admin) {
+    throw new Error("Unauthorized access. Admin privileges required.");
+  }
+
+  try {
+    const ashas = await db.user.findMany({
+      where: { role: "ASHA_WORKER" },
+      select: {
+        id: true,
+        name: true,
+        block: true,
+        village: true,
+      }
+    });
+    return { ashas };
+  } catch (err) {
+    console.error("Failed to fetch ASHA workers:", err);
+    return { ashas: [] };
   }
 }

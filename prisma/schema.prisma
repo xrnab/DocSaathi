@@ -61,6 +61,7 @@ model User {
   patientEmergencies  EmergencyRequest[]  @relation("PatientEmergencies")
   doctorQueue         DoctorQueue?        @relation("DoctorQueue")
   doctorEmergencies   EmergencyRequest[]  @relation("DoctorEmergencies")
+  ashaEmergencies     EmergencyRequest[]  @relation("AshaEmergencies")
 }
 
 model Prescription {
@@ -299,6 +300,8 @@ model EmergencyRequest {
   respondedBy      String?
   assignedDoctorId String?
   assignedDoctor   User?    @relation("DoctorEmergencies", fields: [assignedDoctorId], references: [id])
+  assignedAshaId   String?
+  assignedAsha     User?    @relation("AshaEmergencies", fields: [assignedAshaId], references: [id])
   createdAt        DateTime @default(now())
   resolvedAt       DateTime?
   @@index([status, createdAt])
