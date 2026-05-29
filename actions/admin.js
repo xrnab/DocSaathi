@@ -583,3 +583,66 @@ export async function resetDemoSurveillanceData() {
   }
 }
 
+/**
+ * Gets maternal health active cases and key platform statistics
+ */
+export async function getMaternalHealthStats() {
+  const isAdmin = await verifyAdmin();
+  if (!isAdmin) throw new Error("Unauthorized");
+
+  try {
+    const pregnancies = await db.pregnancyRecord.findMany({
+      where: { status: "ACTIVE" },
+      include: {
+        patient: { select: { name: true, village: true, age: true } },
+        asha: { select: { name: true } },
+        ancVisits: { orderBy: { visitDate: "desc" } }
+      },
+      orderBy: { edd: "asc" }
+    });
+
+    const activeCases = pregnancies.length;
+    const highRiskCases = pregnancies.filter(p => p.isHighRisk).length;
+    const zeroAncCount = pregnancies.filter(p => p.ancVisits.length === 0).length;
+    
+    const thirtyDaysAgo = new Date();
+    const thirtyDaysLater = new Date();
+    thirtyDaysLater.setDate(thirtyDaysLater.getDate() + 30);
+    const dueSoonCount = pregnancies.filter(p => {
+      const eddDate = new Date(p.edd);
+      return eddDate >= thirtyDaysAgo && eddDate <= thirtyDaysLater;
+    }).length;
+
+    // Convert dates to ISO strings for Next.js Client Component compliance if needed, 
+    // but Prisma already does Date objects. Next.js server components can pass them safely,
+    // or we can convert them to plain JSON values.
+    const plainPregnancies = pregnancies.map(p => ({
+      ...p,
+      lmp: p.lmp.toISOString(),
+      edd: p.edd.toISOString(),
+      createdAt: p.createdAt.toISOString(),
+      updatedAt: p.updatedAt.toISOString(),
+      ancVisits: p.ancVisits.map(v => ({
+        ...v,
+        visitDate: v.visitDate.toISOString(),
+        createdAt: v.createdAt.toISOString(),
+        updatedAt: v.updatedAt.toISOString()
+      }))
+    }));
+
+    return {
+      success: true,
+      stats: {
+        activeCases,
+        highRiskCases,
+        zeroAncCount,
+        dueSoonCount
+      },
+      pregnancies: plainPregnancies
+    };
+  } catch (error) {
+    console.error("Failed to fetch maternal health stats:", error);
+    throw new Error("Failed to fetch maternal health stats");
+  }
+}
+

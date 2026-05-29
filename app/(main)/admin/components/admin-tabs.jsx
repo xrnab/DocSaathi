@@ -70,6 +70,13 @@ export function AdminTabs({ isOwner, usersCount = 0, activeEmergenciesCount = 0,
           <span>Users ({usersCount})</span>
         </TabsTrigger>
         <TabsTrigger
+          value="maternal_health"
+          className="flex-shrink-0 md:flex-1 md:flex md:items-center md:justify-start md:px-4 md:py-3 w-auto md:w-full px-3 text-sm whitespace-nowrap text-pink-600 dark:text-pink-400 font-bold"
+        >
+          <Heart className="h-4 w-4 mr-1.5 md:mr-2 shrink-0 text-pink-500 fill-pink-500/20" />
+          <span>Maternal Health</span>
+        </TabsTrigger>
+        <TabsTrigger
           value="emergency"
           className="flex-shrink-0 md:flex-1 md:flex md:items-center md:justify-start md:px-4 md:py-3 w-auto md:w-full px-3 text-sm whitespace-nowrap text-red-600 dark:text-red-400 font-bold"
         >

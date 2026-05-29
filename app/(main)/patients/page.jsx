@@ -18,7 +18,8 @@ import {
   Star,
   FileText,
   QrCode,
-  Eye
+  Eye,
+  AlertTriangle
 } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
@@ -48,6 +49,11 @@ export default async function PatientDashboard() {
     take: 5,
   });
 
+  // Fetch active pregnancy record
+  const pregnancy = await db.pregnancyRecord.findFirst({
+    where: { patientId: user.id, status: "ACTIVE" },
+  });
+
   // Calculate some stats from report card
   const gradedAppointments = appointments.filter(a => a.grading);
   const latestFeedback = gradedAppointments[0];
@@ -55,6 +61,30 @@ export default async function PatientDashboard() {
   return (
     <div className="max-w-6xl mx-auto space-y-8 pb-20 px-4 sm:px-0">
       <PageHeader title="My Health Dashboard" />
+
+      {/* High-Risk Pregnancy Warning Card */}
+      {pregnancy && pregnancy.isHighRisk && (
+        <Card className="border-rose-350 dark:border-rose-900 bg-rose-500/10 dark:bg-rose-950/20 shadow-lg shadow-rose-500/5 rounded-[2rem] overflow-hidden animate-pulse">
+          <CardContent className="p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="h-6 w-6 text-rose-600 dark:text-rose-450 shrink-0" />
+              <div>
+                <h3 className="font-bold text-rose-700 dark:text-rose-400 text-sm sm:text-base">
+                  Your pregnancy needs attention — {pregnancy.riskFactors[0] || "High risk factors detected"}
+                </h3>
+                <p className="text-xs text-muted-foreground font-semibold mt-0.5">
+                  Please consult a clinical specialist or your village ASHA worker today.
+                </p>
+              </div>
+            </div>
+            <Button asChild className="bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl h-10 px-5 shrink-0 shadow-md shadow-rose-600/10">
+              <Link href="/pregnancy">
+                View Details &rarr;
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Accessibility Alert Card */}
       <div className="flex items-center justify-between gap-3 p-4 rounded-2xl border border-amber-200 bg-amber-50/50 dark:border-amber-900/40 dark:bg-amber-950/10">

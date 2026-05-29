@@ -5,6 +5,7 @@ import { PendingPayouts } from "./components/pending-payouts";
 import { VerifiedPatients } from "./components/verified-patients";
 import { UserManagement } from "./components/user-management";
 import { NabhaImpact } from "./components/nabha-impact";
+import { MaternalHealth } from "./components/maternal-health";
 import UsersTable from "./_components/users-table-wrapper";
 import {
   getPendingDoctors,
@@ -14,6 +15,7 @@ import {
   getAllUsers,
   verifyOwner,
   getNabhaImpactStats,
+  getMaternalHealthStats,
 } from "@/actions/admin";
 
 export default async function AdminPage() {
@@ -27,6 +29,7 @@ export default async function AdminPage() {
     patientsData,
     allUsersData,
     nabhaStatsData,
+    maternalData,
   ] = await Promise.all([
     getPendingDoctors(),
     getVerifiedDoctors(),
@@ -34,6 +37,7 @@ export default async function AdminPage() {
     getPatients(),
     getAllUsers().catch(() => ({ users: [] })), // accessible to any admin now
     getNabhaImpactStats(),
+    getMaternalHealthStats().catch(() => ({ pregnancies: [], stats: { activeCases: 0, highRiskCases: 0, dueSoonCount: 0, zeroAncCount: 0 } })),
   ]);
 
   return (
@@ -60,6 +64,10 @@ export default async function AdminPage() {
 
       <TabsContent value="all_users" className="border-none p-0">
         <UsersTable users={allUsersData.users || []} />
+      </TabsContent>
+
+      <TabsContent value="maternal_health" className="border-none p-0">
+        <MaternalHealth pregnancies={maternalData.pregnancies || []} stats={maternalData.stats || { activeCases: 0, highRiskCases: 0, dueSoonCount: 0, zeroAncCount: 0 }} />
       </TabsContent>
 
       {isOwner && (

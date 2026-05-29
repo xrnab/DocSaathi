@@ -19,6 +19,22 @@ import {
   assignDoctorToEmergency 
 } from "@/actions/emergency";
 import { getAshaEarnings, getAshaPayouts } from "@/actions/payout";
+import { 
+  getAshaPregnancies, 
+  registerPregnancy, 
+  searchPatientsForPregnancy, 
+  logANCVisit 
+} from "@/actions/pregnancy";
+import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter
+} from "@/components/ui/dialog";
 import { AshaEarnings } from "./_components/asha-earnings";
 import { AshaProfile } from "./_components/asha-profile";
 import { getPusherClient } from "@/lib/pusher";
@@ -116,6 +132,75 @@ export default function AshaWorkerDashboard() {
   const [emergencies, setEmergencies] = useState([]);
   const [emergencyLoading, setEmergencyLoading] = useState(true);
 
+  // Pregnancy States
+  const [pregnancies, setPregnancies] = useState([]);
+  const [pregnanciesLoading, setPregnanciesLoading] = useState(true);
+  const [highRiskCount, setHighRiskCount] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchedPatients, setSearchedPatients] = useState([]);
+  const [searchingPatients, setSearchingPatients] = useState(false);
+  const [selectedPatientForPregnancy, setSelectedPatientForPregnancy] = useState(null);
+  const [registerPregnancyForm, setRegisterPregnancyForm] = useState({
+    lmpDate: "",
+    weight: "",
+    bloodPressure: "",
+    hemoglobin: ""
+  });
+  const [submittingPregnancy, setSubmittingPregnancy] = useState(false);
+  const [selectedPregnancyForANC, setSelectedPregnancyForANC] = useState(null);
+  const [ancVisitForm, setAncVisitForm] = useState({
+    visitNumber: "1",
+    visitDate: format(new Date(), "yyyy-MM-dd"),
+    weight: "",
+    bloodPressure: "",
+    hemoglobin: "",
+    bloodSugar: "",
+    fundalHeight: "",
+    fetalHeartRate: "",
+    notes: ""
+  });
+  const [submittingANC, setSubmittingANC] = useState(false);
+  const [isRegisterDialogOpen, setIsRegisterDialogOpen] = useState(false);
+  const [isANCDialogOpen, setIsANCDialogOpen] = useState(false);
+
+  const fetchPregnancies = useCallback(async () => {
+    if (!isOnline) return;
+    setPregnanciesLoading(true);
+    try {
+      const res = await getAshaPregnancies();
+      if (res && !res.error) {
+        setPregnancies(res);
+        setHighRiskCount(res.filter(p => p.isHighRisk).length);
+      }
+    } catch (e) {
+      console.error("Failed to load pregnancies:", e);
+    } finally {
+      setPregnanciesLoading(false);
+    }
+  }, [isOnline]);
+
+  useEffect(() => {
+    if (searchQuery.trim().length < 2) {
+      setSearchedPatients([]);
+      return;
+    }
+    const delayDebounceFn = setTimeout(async () => {
+      setSearchingPatients(true);
+      try {
+        const res = await searchPatientsForPregnancy(searchQuery);
+        if (res?.patients) {
+          setSearchedPatients(res.patients);
+        }
+      } catch (err) {
+        console.error("Error searching patients:", err);
+      } finally {
+        setSearchingPatients(false);
+      }
+    }, 450);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchQuery]);
+
   const fetchEmergencies = useCallback(async () => {
     try {
       const res = await getActiveEmergencies();
@@ -191,7 +276,7 @@ export default function AshaWorkerDashboard() {
 
   useEffect(() => {
     const tabParam = searchParams ? searchParams.get("tab") : null;
-    if (tabParam && ["registry", "immunisation", "outbreak", "proxy", "emergency", "earnings", "profile"].includes(tabParam)) {
+    if (tabParam && ["registry", "immunisation", "outbreak", "proxy", "emergency", "earnings", "profile", "pregnancy"].includes(tabParam)) {
       setActiveTab(tabParam);
     }
   }, [searchParams]);
@@ -216,6 +301,7 @@ export default function AshaWorkerDashboard() {
         let apps = [];
         let docs = [];
         if (isOnline) {
+          fetchPregnancies();
           try {
             apps = await getAshaAppointments();
           } catch (e) {
@@ -261,7 +347,7 @@ export default function AshaWorkerDashboard() {
     }
 
     loadData();
-  }, [isOnline]);
+  }, [isOnline, fetchPregnancies]);
 
   const showNotification = (text, type = "success") => {
     setMessage({ text, type });
@@ -453,6 +539,91 @@ export default function AshaWorkerDashboard() {
     }
   };
 
+  const handleRegisterPregnancy = async (e) => {
+    e.preventDefault();
+    if (!selectedPatientForPregnancy) {
+      showNotification("Please select a patient first", "error");
+      return;
+    }
+    setSubmittingPregnancy(true);
+    try {
+      const payload = {
+        patientId: selectedPatientForPregnancy.id,
+        lmpDate: registerPregnancyForm.lmpDate,
+        weight: registerPregnancyForm.weight || null,
+        bloodPressure: registerPregnancyForm.bloodPressure || null,
+        hemoglobin: registerPregnancyForm.hemoglobin || null,
+      };
+
+      const res = await registerPregnancy(payload);
+      if (res.success) {
+        showNotification("Maternal health registry created successfully!");
+        setIsRegisterDialogOpen(false);
+        setRegisterPregnancyForm({
+          lmpDate: "",
+          weight: "",
+          bloodPressure: "",
+          hemoglobin: ""
+        });
+        setSelectedPatientForPregnancy(null);
+        fetchPregnancies();
+      } else {
+        showNotification(res.error || "Failed to register pregnancy", "error");
+      }
+    } catch (err) {
+      showNotification(err.message || "Failed to register pregnancy", "error");
+    } finally {
+      setSubmittingPregnancy(false);
+    }
+  };
+
+  const handleLogANCSubmit = async (e) => {
+    e.preventDefault();
+    if (!selectedPregnancyForANC) {
+      showNotification("No pregnancy case selected", "error");
+      return;
+    }
+    setSubmittingANC(true);
+    try {
+      const payload = {
+        visitNumber: ancVisitForm.visitNumber,
+        visitDate: ancVisitForm.visitDate,
+        weight: ancVisitForm.weight || null,
+        bloodPressure: ancVisitForm.bloodPressure || null,
+        hemoglobin: ancVisitForm.hemoglobin || null,
+        bloodSugar: ancVisitForm.bloodSugar || null,
+        fundalHeight: ancVisitForm.fundalHeight || null,
+        fetalHeartRate: ancVisitForm.fetalHeartRate || null,
+        notes: ancVisitForm.notes || null,
+      };
+
+      const res = await logANCVisit(selectedPregnancyForANC.id, payload);
+      if (res.success) {
+        showNotification("Antenatal checkup logged successfully!");
+        setIsANCDialogOpen(false);
+        setAncVisitForm({
+          visitNumber: "1",
+          visitDate: format(new Date(), "yyyy-MM-dd"),
+          weight: "",
+          bloodPressure: "",
+          hemoglobin: "",
+          bloodSugar: "",
+          fundalHeight: "",
+          fetalHeartRate: "",
+          notes: ""
+        });
+        setSelectedPregnancyForANC(null);
+        fetchPregnancies();
+      } else {
+        showNotification(res.error || "Failed to log checkup", "error");
+      }
+    } catch (err) {
+      showNotification(err.message || "Failed to log checkup", "error");
+    } finally {
+      setSubmittingANC(false);
+    }
+  };
+
   if (loading || offlineAshaLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
@@ -611,6 +782,22 @@ export default function AshaWorkerDashboard() {
           Emergency SOS Alerts
           {emergencies.filter(e => e.status === "ACTIVE").length > 0 && (
             <span className="h-2.5 w-2.5 rounded-full bg-rose-500 animate-ping shrink-0" />
+          )}
+        </button>
+        <button 
+          onClick={() => setActiveTab("pregnancy")}
+          className={`pb-4 px-4 text-sm font-bold border-b-2 transition-all shrink-0 flex items-center gap-1.5 ${
+            activeTab === "pregnancy" 
+              ? "border-pink-500 text-pink-600 dark:text-pink-400 font-extrabold" 
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Heart className="w-4 h-4 text-pink-500 fill-pink-500/20" />
+          Pregnancy Cases
+          {highRiskCount > 0 && (
+            <span className="bg-pink-100 text-pink-800 text-[10px] font-bold px-1.5 py-0.5 rounded-full dark:bg-pink-900/30 dark:text-pink-300">
+              {highRiskCount} High Risk
+            </span>
           )}
         </button>
         <button 
@@ -1321,6 +1508,463 @@ export default function AshaWorkerDashboard() {
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Pregnancy Cases Tab Content */}
+      {activeTab === "pregnancy" && (
+        <div className="space-y-6 animate-in fade-in duration-300">
+          
+          {/* Header Action Card */}
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-pink-500 to-rose-600 text-white p-6 shadow-md border border-pink-400/20">
+            <div className="absolute top-0 right-0 transform translate-x-20 -translate-y-20 w-80 h-80 bg-white/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h3 className="text-xl font-bold flex items-center gap-2">
+                  <Heart className="h-5 w-5 fill-white" /> Maternal Care & Case Tracker
+                </h3>
+                <p className="text-pink-100 text-xs sm:text-sm mt-1 max-w-2xl">
+                  Register pregnant mothers, log their routine Antenatal Care (ANC) visits, track risk conditions, and secure healthy deliveries in {profile?.village || "Sauja"}.
+                </p>
+              </div>
+              <Dialog open={isRegisterDialogOpen} onOpenChange={setIsRegisterDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button className="bg-white hover:bg-pink-50 text-pink-600 font-bold rounded-xl h-10 px-5 shadow-xs cursor-pointer">
+                    <Plus className="w-4 h-4 mr-2" /> Register Pregnancy
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[500px]">
+                  <DialogHeader>
+                    <DialogTitle className="text-xl font-bold flex items-center gap-2 text-pink-600">
+                      <Heart className="w-5 h-5 fill-pink-500" /> New Pregnancy Registration
+                    </DialogTitle>
+                    <DialogDescription>
+                      Search for a registered village citizen, then specify pregnancy and baseline health details.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <form onSubmit={handleRegisterPregnancy} className="space-y-4 pt-2">
+                    {/* Search Patient */}
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-bold text-foreground">Find Village Patient</Label>
+                      <Input
+                        placeholder="Search patient by name..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="bg-slate-50/50 dark:bg-slate-900/30"
+                      />
+                      {searchingPatients && (
+                        <p className="text-xs text-muted-foreground italic flex items-center gap-1.5 mt-1">
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" /> Searching patients...
+                        </p>
+                      )}
+                      {searchedPatients.length > 0 && (
+                        <div className="mt-2 max-h-40 overflow-y-auto border border-border rounded-lg bg-card divide-y divide-border">
+                          {searchedPatients.map((p) => {
+                            const isSelected = selectedPatientForPregnancy?.id === p.id;
+                            return (
+                              <button
+                                key={p.id}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedPatientForPregnancy(p);
+                                  setSearchQuery("");
+                                  setSearchedPatients([]);
+                                }}
+                                className={`w-full text-left p-2.5 text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-900 flex justify-between items-center ${
+                                  isSelected ? "bg-pink-500/5 text-pink-600" : "text-foreground"
+                                }`}
+                              >
+                                <div>
+                                  <p className="font-extrabold">{p.name}</p>
+                                  <p className="text-muted-foreground text-[10px] mt-0.5">{p.village} • Age: {p.age}</p>
+                                </div>
+                                {isSelected && <Check className="w-4 h-4 text-pink-500" />}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+
+                    {selectedPatientForPregnancy && (
+                      <div className="p-3 bg-pink-500/5 border border-pink-200 dark:border-pink-900/40 rounded-xl text-xs flex justify-between items-center animate-in fade-in duration-300">
+                        <div>
+                          <p className="font-bold text-pink-700 dark:text-pink-300">Selected: {selectedPatientForPregnancy.name}</p>
+                          <p className="text-muted-foreground text-[10px] mt-0.5">Village: {selectedPatientForPregnancy.village} • Age: {selectedPatientForPregnancy.age}</p>
+                        </div>
+                        <Button 
+                          type="button" 
+                          variant="ghost" 
+                          size="xs" 
+                          onClick={() => setSelectedPatientForPregnancy(null)}
+                          className="text-muted-foreground hover:text-red-500 font-bold h-6 cursor-pointer"
+                        >
+                          Clear
+                        </Button>
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="lmpDate">Last Menstrual Period (LMP)</Label>
+                        <Input
+                          id="lmpDate"
+                          type="date"
+                          required
+                          value={registerPregnancyForm.lmpDate}
+                          onChange={(e) => setRegisterPregnancyForm(p => ({ ...p, lmpDate: e.target.value }))}
+                          className="bg-slate-50/50 dark:bg-slate-900/30"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="pregWeight">Baseline Weight (kg)</Label>
+                        <Input
+                          id="pregWeight"
+                          type="number"
+                          step="0.1"
+                          placeholder="e.g. 54.5"
+                          value={registerPregnancyForm.weight}
+                          onChange={(e) => setRegisterPregnancyForm(p => ({ ...p, weight: e.target.value }))}
+                          className="bg-slate-50/50 dark:bg-slate-900/30"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="pregBP">Baseline Blood Pressure</Label>
+                        <Input
+                          id="pregBP"
+                          placeholder="e.g. 120/80"
+                          value={registerPregnancyForm.bloodPressure}
+                          onChange={(e) => setRegisterPregnancyForm(p => ({ ...p, bloodPressure: e.target.value }))}
+                          className="bg-slate-50/50 dark:bg-slate-900/30"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="pregHb">Baseline Hemoglobin (g/dL)</Label>
+                        <Input
+                          id="pregHb"
+                          type="number"
+                          step="0.1"
+                          placeholder="e.g. 11.2"
+                          value={registerPregnancyForm.hemoglobin}
+                          onChange={(e) => setRegisterPregnancyForm(p => ({ ...p, hemoglobin: e.target.value }))}
+                          className="bg-slate-50/50 dark:bg-slate-900/30"
+                        />
+                      </div>
+                    </div>
+
+                    <DialogFooter className="pt-2">
+                      <Button 
+                        type="submit" 
+                        disabled={submittingPregnancy || !selectedPatientForPregnancy} 
+                        className="bg-pink-600 hover:bg-pink-700 text-white font-bold w-full"
+                      >
+                        {submittingPregnancy ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : <Plus className="w-4 h-4 mr-2" />}
+                        Create Maternal Registry
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </div>
+
+          {/* Maternal Stats Row */}
+          <div className="grid grid-cols-3 gap-4">
+            {[
+              { title: "Total Active Cases", count: pregnancies.length, color: "pink" },
+              { title: "High-Risk Cases", count: highRiskCount, color: "rose" },
+              { title: "Due in 30 Days", count: pregnancies.filter(p => p.daysUntilDue <= 30 && p.daysUntilDue >= 0).length, color: "amber" }
+            ].map((stat, idx) => (
+              <div 
+                key={idx} 
+                className={`bg-card border border-border rounded-xl p-4 border-l-4 border-l-${stat.color}-500 flex flex-col justify-between`}
+              >
+                <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">{stat.title}</span>
+                <span className={`text-2xl font-black text-${stat.color}-600 dark:text-${stat.color}-400 mt-2`}>
+                  {pregnanciesLoading ? <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /> : stat.count}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          {/* Pregnancy Cases Grid */}
+          <Card className="border-border bg-card shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="text-xl font-bold text-foreground">Active Case Directories</CardTitle>
+                <CardDescription>Maternal details, gestational progress, and critical risks for registered patients.</CardDescription>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {pregnanciesLoading ? (
+                <div className="text-center py-12">
+                  <Loader2 className="h-8 w-8 text-pink-500 animate-spin mx-auto mb-3" />
+                  <p className="text-sm text-muted-foreground font-semibold">Loading active cases...</p>
+                </div>
+              ) : pregnancies.length === 0 ? (
+                <div className="text-center py-16 border-2 border-dashed border-border rounded-2xl">
+                  <Heart className="w-12 h-12 text-pink-200 dark:text-pink-900 mx-auto mb-3" />
+                  <h3 className="font-extrabold text-lg text-foreground">No active cases assigned</h3>
+                  <p className="text-muted-foreground text-sm max-w-xs mx-auto mt-1">Register a patient to track their gestational health progress.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {pregnancies.map((preg) => (
+                    <div 
+                      key={preg.id} 
+                      className={`border rounded-2xl p-5 hover:border-pink-400/40 transition-colors bg-slate-50/20 dark:bg-slate-900/10 space-y-4 border-l-4 ${
+                        preg.isHighRisk 
+                          ? "border-l-rose-500 border-rose-100 dark:border-rose-950/40" 
+                          : "border-l-pink-500 border-border/80"
+                      }`}
+                    >
+                      <div className="flex justify-between items-start border-b border-border/60 pb-3 gap-2">
+                        <div>
+                          <h4 className="text-base font-extrabold text-foreground">{preg.patient.name}</h4>
+                          <p className="text-xs text-muted-foreground font-semibold mt-0.5">Village: {preg.patient.village} • Age: {preg.patient.age} years</p>
+                        </div>
+                        <div className="flex flex-col items-end gap-1.5 shrink-0">
+                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase border tracking-wider ${
+                            preg.isHighRisk
+                              ? "bg-rose-50 border-rose-200 text-rose-700 dark:bg-rose-950/40 dark:border-rose-900 dark:text-rose-400 animate-pulse"
+                              : "bg-pink-50 border-pink-200 text-pink-700 dark:bg-pink-950/40 dark:border-pink-900 dark:text-pink-400"
+                          }`}>
+                            {preg.isHighRisk ? "High Risk" : "Normal Risk"}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">
+                            Due in {preg.daysUntilDue} days
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Trimester progress */}
+                      <div className="space-y-1.5">
+                        <div className="flex justify-between text-xs font-bold text-foreground leading-none">
+                          <span>Trimester {preg.trimester}</span>
+                          <span className="text-pink-600 dark:text-pink-400">{preg.weeksPregnant} / 40 Weeks</span>
+                        </div>
+                        <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-gradient-to-r from-pink-500 to-rose-500 transition-all rounded-full"
+                            style={{ width: `${Math.min((preg.weeksPregnant / 40) * 100, 100)}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Vitals overview */}
+                      <div className="grid grid-cols-3 gap-2 py-1">
+                        <div className="bg-white dark:bg-slate-950 p-2 rounded-xl border border-border/50 text-center">
+                          <p className="text-[9px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-wider">Weight</p>
+                          <p className="text-xs font-extrabold text-foreground mt-0.5">{preg.weight ? `${preg.weight} kg` : "—"}</p>
+                        </div>
+                        <div className="bg-white dark:bg-slate-950 p-2 rounded-xl border border-border/50 text-center">
+                          <p className="text-[9px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-wider">BP</p>
+                          <p className="text-xs font-extrabold text-foreground mt-0.5">{preg.bloodPressure || "—"}</p>
+                        </div>
+                        <div className="bg-white dark:bg-slate-950 p-2 rounded-xl border border-border/50 text-center">
+                          <p className="text-[9px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-wider">Hemoglobin</p>
+                          <p className={`text-xs font-extrabold mt-0.5 ${preg.hemoglobin && preg.hemoglobin < 10 ? "text-rose-600" : "text-foreground"}`}>
+                            {preg.hemoglobin ? `${preg.hemoglobin} g/dL` : "—"}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Risk factors list */}
+                      {preg.isHighRisk && preg.riskFactors?.length > 0 && (
+                        <div className="bg-rose-50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/40 p-2.5 rounded-xl text-[11px] font-bold text-rose-800 dark:text-rose-400 space-y-1">
+                          <p className="text-[10px] font-black text-rose-900 dark:text-rose-300 uppercase tracking-wider flex items-center gap-1">
+                            ⚠️ Risk Factors Detected:
+                          </p>
+                          <ul className="list-disc pl-3.5 space-y-0.5">
+                            {preg.riskFactors.map((rf, idx) => (
+                              <li key={idx}>{rf}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {/* Last Checkup log */}
+                      <div className="text-xs font-semibold text-muted-foreground flex justify-between items-center py-1">
+                        <span>Completed Visits: <strong className="text-foreground">{preg.ancVisits?.length || 0}</strong></span>
+                        <span>
+                          Last ANC: <strong className="text-foreground">
+                            {preg.ancVisits?.[0] ? format(new Date(preg.ancVisits[0].visitDate), "MMM dd, yyyy") : "None recorded"}
+                          </strong>
+                        </span>
+                      </div>
+
+                      {/* Action buttons */}
+                      <div className="flex gap-2.5 pt-2">
+                        <Button 
+                          onClick={() => {
+                            setSelectedPregnancyForANC(preg);
+                            setAncVisitForm(f => ({
+                              ...f,
+                              visitNumber: String((preg.ancVisits?.length || 0) + 1),
+                              weight: preg.weight ? String(preg.weight) : "",
+                              bloodPressure: preg.bloodPressure || "",
+                              hemoglobin: preg.hemoglobin ? String(preg.hemoglobin) : "",
+                            }));
+                            setIsANCDialogOpen(true);
+                          }}
+                          className="flex-1 bg-pink-600 hover:bg-pink-700 text-white font-bold rounded-xl text-xs h-9 cursor-pointer"
+                        >
+                          <Plus className="w-3.5 h-3.5 mr-1.5" /> Log ANC Visit
+                        </Button>
+                        <Link href="/pregnancy" className="flex-1">
+                          <Button 
+                            variant="outline"
+                            className="w-full border-pink-200 hover:bg-pink-50 dark:border-pink-900/60 dark:hover:bg-pink-950/20 text-pink-600 font-bold rounded-xl text-xs h-9 cursor-pointer"
+                          >
+                            AI Risk Report
+                          </Button>
+                        </Link>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Log ANC Visit Dialog */}
+          <Dialog open={isANCDialogOpen} onOpenChange={setIsANCDialogOpen}>
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle className="text-xl font-bold flex items-center gap-2 text-pink-600">
+                  <Heart className="w-5 h-5 fill-pink-500" /> Log Antenatal Care (ANC) Visit
+                </DialogTitle>
+                <DialogDescription>
+                  Log ANC parameters and vitals for <strong className="text-foreground">{selectedPregnancyForANC?.patient?.name}</strong>.
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleLogANCSubmit} className="space-y-4 pt-2">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="ancNum">Visit Number</Label>
+                    <Input
+                      id="ancNum"
+                      type="number"
+                      required
+                      value={ancVisitForm.visitNumber}
+                      onChange={(e) => setAncVisitForm(p => ({ ...p, visitNumber: e.target.value }))}
+                      className="bg-slate-50/50 dark:bg-slate-900/30"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="ancDate">Visit Date</Label>
+                    <Input
+                      id="ancDate"
+                      type="date"
+                      required
+                      value={ancVisitForm.visitDate}
+                      onChange={(e) => setAncVisitForm(p => ({ ...p, visitDate: e.target.value }))}
+                      className="bg-slate-50/50 dark:bg-slate-900/30"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="ancWeight">Weight (kg)</Label>
+                    <Input
+                      id="ancWeight"
+                      type="number"
+                      step="0.1"
+                      placeholder="e.g. 56.2"
+                      value={ancVisitForm.weight}
+                      onChange={(e) => setAncVisitForm(p => ({ ...p, weight: e.target.value }))}
+                      className="bg-slate-50/50 dark:bg-slate-900/30"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="ancBP">Blood Pressure</Label>
+                    <Input
+                      id="ancBP"
+                      placeholder="e.g. 130/85"
+                      value={ancVisitForm.bloodPressure}
+                      onChange={(e) => setAncVisitForm(p => ({ ...p, bloodPressure: e.target.value }))}
+                      className="bg-slate-50/50 dark:bg-slate-900/30"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="ancHb">Hemoglobin (g/dL)</Label>
+                    <Input
+                      id="ancHb"
+                      type="number"
+                      step="0.1"
+                      placeholder="e.g. 10.5"
+                      value={ancVisitForm.hemoglobin}
+                      onChange={(e) => setAncVisitForm(p => ({ ...p, hemoglobin: e.target.value }))}
+                      className="bg-slate-50/50 dark:bg-slate-900/30"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="ancSugar">Blood Sugar (mg/dL)</Label>
+                    <Input
+                      id="ancSugar"
+                      type="number"
+                      placeholder="e.g. 110"
+                      value={ancVisitForm.bloodSugar}
+                      onChange={(e) => setAncVisitForm(p => ({ ...p, bloodSugar: e.target.value }))}
+                      className="bg-slate-50/50 dark:bg-slate-900/30"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="ancFundal">Fundal Height (cm)</Label>
+                    <Input
+                      id="ancFundal"
+                      type="number"
+                      step="0.1"
+                      placeholder="e.g. 24"
+                      value={ancVisitForm.fundalHeight}
+                      onChange={(e) => setAncVisitForm(p => ({ ...p, fundalHeight: e.target.value }))}
+                      className="bg-slate-50/50 dark:bg-slate-900/30"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="ancFHR">FHR (bpm)</Label>
+                    <Input
+                      id="ancFHR"
+                      type="number"
+                      placeholder="e.g. 140"
+                      value={ancVisitForm.fetalHeartRate}
+                      onChange={(e) => setAncVisitForm(p => ({ ...p, fetalHeartRate: e.target.value }))}
+                      className="bg-slate-50/50 dark:bg-slate-900/30"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="ancNotes">Consultation Field Notes</Label>
+                  <Textarea
+                    id="ancNotes"
+                    placeholder="E.g. complaint of edema, taking IFA tablets daily..."
+                    value={ancVisitForm.notes}
+                    onChange={(e) => setAncVisitForm(p => ({ ...p, notes: e.target.value }))}
+                    className="bg-slate-50/50 dark:bg-slate-900/30 min-h-[80px]"
+                  />
+                </div>
+
+                <DialogFooter className="pt-2">
+                  <Button 
+                    type="submit" 
+                    disabled={submittingANC} 
+                    className="bg-pink-600 hover:bg-pink-700 text-white font-bold w-full"
+                  >
+                    {submittingANC ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : <Plus className="w-4 h-4 mr-2" />}
+                    Confirm & Save ANC Record
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
         </div>
       )}
 
