@@ -18,9 +18,9 @@ export function ImpactStatistics() {
         const data = await res.json();
         if (data.success) {
           setMetrics({
-            consultations: `${142 + data.totalAppointments}+`,
-            families: `${38 + data.totalFamilies}`,
-            villages: `${7 + data.totalOutbreakReports}+`
+            consultations: `${data.totalAppointments}+`,
+            families: `${data.totalFamilies}`,
+            villages: `${data.totalOutbreakReports}+`
           });
         }
       } catch (err) {

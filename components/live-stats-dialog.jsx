@@ -37,13 +37,13 @@ export default function LiveStatsDialog() {
   }, [isOpen]);
 
   const displayStats = {
-    patients: stats ? 284 + stats.totalPatients : 284,
-    doctors: stats ? 12 + stats.totalDoctors : 12,
-    consultations: stats ? 142 + stats.totalAppointments : 142,
-    families: stats ? 38 + stats.totalFamilies : 38,
-    outbreaks: stats ? 7 + stats.totalOutbreakReports : 7,
-    vaccinations: stats ? 89 + stats.totalVaccinations : 89,
-    symptomChecks: stats ? 203 + stats.totalSymptomChecks : 203,
+    patients: stats ? stats.totalPatients : 0,
+    doctors: stats ? stats.totalDoctors : 0,
+    consultations: stats ? stats.totalAppointments : 0,
+    families: stats ? stats.totalFamilies : 0,
+    outbreaks: stats ? stats.totalOutbreakReports : 0,
+    vaccinations: stats ? stats.totalVaccinations : 0,
+    symptomChecks: stats ? stats.totalSymptomChecks : 0,
   };
 
   return (
