@@ -50,7 +50,7 @@ export default function LiveStatsDialog() {
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button
-          className="fixed bottom-20 right-4 sm:bottom-6 sm:right-6 z-40 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full p-4 h-12 w-32 sm:h-14 sm:w-36 font-black shadow-2xl hover:scale-105 active:scale-95 transition-all text-xs sm:text-sm gap-2 border border-emerald-500/20"
+          className="fixed bottom-40 right-4 sm:bottom-6 sm:right-48 z-40 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full p-4 h-12 w-32 sm:h-14 sm:w-36 font-black shadow-2xl hover:scale-105 active:scale-95 transition-all text-xs sm:text-sm gap-2 border border-emerald-500/20 animate-in fade-in duration-300"
         >
           <BarChart3 className="h-5 w-5 animate-pulse text-emerald-100" />
           <span>📊 Impact</span>
