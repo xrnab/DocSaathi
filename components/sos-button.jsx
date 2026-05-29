@@ -77,7 +77,7 @@ export default function SOSButton() {
         <DialogTrigger asChild>
           <button
             id="global-sos-btn"
-            className="fixed bottom-6 right-6 z-[99] w-16 h-16 rounded-full bg-red-600 hover:bg-red-700 text-white font-black text-[10px] flex flex-col items-center justify-center shadow-2xl border-4 border-white dark:border-slate-900 cursor-pointer transition-all duration-300 hover:scale-110 active:scale-95 group focus:outline-none"
+            className="fixed bottom-24 sm:bottom-6 right-6 z-[99] w-16 h-16 rounded-full bg-red-600 hover:bg-red-700 text-white font-black text-[10px] flex flex-col items-center justify-center shadow-2xl border-4 border-white dark:border-slate-900 cursor-pointer transition-all duration-300 hover:scale-110 active:scale-95 group focus:outline-none"
           >
             {/* Pulsing red ring behind button */}
             <span className="absolute inset-0 rounded-full bg-red-600/50 animate-ping group-hover:animate-none opacity-75" />
