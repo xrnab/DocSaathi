@@ -274,7 +274,7 @@ export async function getSmsBookedAppointments() {
         patientId: user.id,
         status: "SCHEDULED",
         endTime: {
-          gte: new Date(),
+          gte: new Date(Date.now() - 30 * 60 * 1000), // Keep active on the page until 30 minutes after scheduled end time
         },
       },
       include: {
