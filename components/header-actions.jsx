@@ -143,22 +143,22 @@ export function HeaderActions({ dbUser }) {
               <Button
                 variant="outline"
                 size="icon"
-                className="md:w-auto md:px-4 items-center gap-2 rounded-full h-8 w-8 sm:h-9 sm:w-9 shrink-0"
+                className="md:w-auto md:px-4 items-center gap-2 rounded-full h-8 w-8 sm:h-9 sm:w-9 border-indigo-200 dark:border-indigo-800 bg-indigo-50/50 dark:bg-indigo-900/20 font-bold text-indigo-600 dark:text-indigo-400 hover:scale-102 active:scale-98 transition-all shadow-md shadow-indigo-500/5 cursor-pointer shrink-0"
               >
-                <Stethoscope className="h-4 w-4" />
+                <Stethoscope className="h-4 w-4 text-indigo-500 animate-pulse shrink-0" />
                 <span className="hidden md:inline">Doctor Dashboard</span>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuItem asChild>
-                <Link href="/doctor" className="cursor-pointer">
-                  <ShieldCheck className="h-4 w-4 mr-2" />
+            <DropdownMenuContent align="end" className="w-56 rounded-2xl border-slate-200 dark:border-slate-800 p-1.5 shadow-xl bg-card/95 backdrop-blur-xl animate-in fade-in slide-in-from-top-2 duration-200 z-[60]">
+              <DropdownMenuItem asChild className="rounded-xl cursor-pointer hover:bg-indigo-500/10 focus:bg-indigo-500/10 transition-colors">
+                <Link href="/doctor" className="flex items-center gap-2.5 px-2.5 py-2 text-xs sm:text-sm font-semibold text-foreground">
+                  <ShieldCheck className="h-4 w-4 text-indigo-500" />
                   Main Dashboard
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/doctor/profile" className="cursor-pointer">
-                  <User className="h-4 w-4 mr-2" />
+              <DropdownMenuItem asChild className="rounded-xl cursor-pointer hover:bg-sky-500/10 focus:bg-sky-500/10 transition-colors">
+                <Link href="/doctor/profile" className="flex items-center gap-2.5 px-2.5 py-2 text-xs sm:text-sm font-semibold text-foreground">
+                  <User className="h-4 w-4 text-sky-500" />
                   Manage Profile
                 </Link>
               </DropdownMenuItem>
@@ -172,9 +172,13 @@ export function HeaderActions({ dbUser }) {
             <Button
               variant="outline"
               size="icon"
-              className={`md:w-auto md:px-4 items-center gap-2 rounded-full h-8 w-8 sm:h-9 sm:w-9 shrink-0 ${!isProfileComplete ? "border-amber-200 bg-amber-50 dark:bg-amber-900/10 text-amber-600 animate-pulse" : ""}`}
+              className={`md:w-auto md:px-4 items-center gap-2 rounded-full h-8 w-8 sm:h-9 sm:w-9 shrink-0 transition-all shadow-md hover:scale-102 active:scale-98 cursor-pointer ${
+                isProfileComplete
+                  ? "border-emerald-250 dark:border-emerald-900/40 bg-emerald-50/50 dark:bg-emerald-950/20 font-bold text-emerald-600 dark:text-emerald-400 shadow-emerald-500/5"
+                  : "border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/10 text-amber-600 dark:text-amber-400 shadow-amber-500/5 animate-pulse"
+              }`}
             >
-              <Calendar className="h-4 w-4" />
+              <Calendar className={`h-4 w-4 shrink-0 ${isProfileComplete ? "text-emerald-500" : "text-amber-500 animate-bounce"}`} />
               <span className="hidden md:inline">{isProfileComplete ? "Patient Dashboard" : "Complete Profile"}</span>
             </Button>
           </Link>
@@ -186,9 +190,9 @@ export function HeaderActions({ dbUser }) {
             <Button
               variant="outline"
               size="icon"
-              className="md:w-auto md:px-4 items-center gap-2 rounded-full h-8 w-8 sm:h-9 sm:w-9 shrink-0"
+              className="md:w-auto md:px-4 items-center gap-2 rounded-full h-8 w-8 sm:h-9 sm:w-9 border-amber-250 dark:border-amber-900 bg-amber-50/50 dark:bg-amber-900/20 font-bold text-amber-600 dark:text-amber-400 animate-pulse hover:scale-102 active:scale-98 transition-all shadow-md shadow-amber-500/5 cursor-pointer shrink-0"
             >
-              <User className="h-4 w-4" />
+              <User className="h-4 w-4 text-amber-500 shrink-0" />
               <span className="hidden md:inline">Complete Profile</span>
             </Button>
           </Link>

@@ -11,7 +11,7 @@ export default function OfflineFirstBadge() {
     <div className="flex items-center gap-1.5 shrink-0 select-none">
       <Badge
         variant="outline"
-        className="hidden md:inline-flex items-center gap-1.5 px-3 py-1 font-bold text-xs bg-slate-100/70 dark:bg-slate-900/60 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 rounded-full shadow-sm"
+        className="hidden md:inline-flex items-center gap-1.5 px-3 py-1 font-bold text-xs bg-slate-100/70 dark:bg-slate-900/60 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 rounded-full shadow-sm shrink-0"
       >
         ⚡ Works Offline
       </Badge>
