@@ -65,6 +65,18 @@ export default function Header() {
               </a>
             </Button>
 
+            {/* Live SOS Board Link */}
+            <Link 
+              href="/admin/emergency" 
+              className="px-3 h-9 rounded-full bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-600 dark:text-red-400 text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 shrink-0 relative transition-all"
+            >
+              <span className="absolute top-1 right-1 flex h-1.5 w-1.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-red-500"></span>
+              </span>
+              <span>Emergency</span>
+            </Link>
+
             {/* Suspended User Logic - Prevents blocking the shell */}
             <Suspense fallback={<div className="h-8 w-8 sm:h-9 sm:w-20 bg-muted/50 animate-pulse rounded-full shrink-0" />}>
               <UserAuthSection />

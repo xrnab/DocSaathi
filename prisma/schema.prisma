@@ -58,6 +58,7 @@ model User {
   vaccinations        Vaccination[]       @relation("PatientVaccinations")
   ashaFamilies        AshaFamily[]        @relation("AshaFamilies")
   outbreakReports     OutbreakReport[]    @relation("AshaOutbreaks")
+  patientEmergencies  EmergencyRequest[]  @relation("PatientEmergencies")
 }
 
 model Prescription {
@@ -281,3 +282,25 @@ model ChatMessage {
   text          String      @db.Text
   createdAt     DateTime    @default(now())
 }
+
+model EmergencyRequest {
+  id          String   @id @default(uuid())
+  patientId   String
+  patient     User     @relation("PatientEmergencies", fields: [patientId], references: [id])
+  latitude    Float?
+  longitude   Float?
+  address     String?
+  status      EmergencyStatus @default(ACTIVE)
+  message     String?  @db.Text
+  respondedBy String?
+  createdAt   DateTime @default(now())
+  resolvedAt  DateTime?
+  @@index([status, createdAt])
+}
+
+enum EmergencyStatus {
+  ACTIVE
+  RESPONDING
+  RESOLVED
+}
+

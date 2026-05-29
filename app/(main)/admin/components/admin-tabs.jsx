@@ -1,18 +1,23 @@
 "use client";
 
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertCircle, Users, CreditCard, UserCog, Heart, Activity } from "lucide-react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { AlertCircle, Users, CreditCard, UserCog, Heart, Activity, Siren } from "lucide-react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 
-export function AdminTabs({ isOwner, usersCount = 0, children }) {
+export function AdminTabs({ isOwner, usersCount = 0, activeEmergenciesCount = 0, children }) {
   const searchParams = useSearchParams();
+  const pathname = usePathname();
   const router = useRouter();
-  const currentTab = searchParams.get("tab") || "pending";
+  const currentTab = pathname.includes("/admin/emergency") ? "emergency" : (searchParams.get("tab") || "pending");
 
   const handleTabChange = (value) => {
-    const params = new URLSearchParams(searchParams);
-    params.set("tab", value);
-    router.push(`/admin?${params.toString()}`);
+    if (value === "emergency") {
+      router.push("/admin/emergency");
+    } else {
+      const params = new URLSearchParams(searchParams);
+      params.set("tab", value);
+      router.push(`/admin?${params.toString()}`);
+    }
   };
 
   return (
@@ -63,6 +68,18 @@ export function AdminTabs({ isOwner, usersCount = 0, children }) {
         >
           <Users className="h-4 w-4 mr-1.5 md:mr-2 shrink-0" />
           <span>Users ({usersCount})</span>
+        </TabsTrigger>
+        <TabsTrigger
+          value="emergency"
+          className="flex-shrink-0 md:flex-1 md:flex md:items-center md:justify-start md:px-4 md:py-3 w-auto md:w-full px-3 text-sm whitespace-nowrap text-red-600 dark:text-red-400 font-bold"
+        >
+          <Siren className="h-4 w-4 mr-1.5 md:mr-2 shrink-0 animate-pulse text-red-500" />
+          <span>Live SOS</span>
+          {activeEmergenciesCount > 0 && (
+            <span className="ml-2 bg-red-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full animate-bounce">
+              {activeEmergenciesCount}
+            </span>
+          )}
         </TabsTrigger>
         {isOwner && (
           <TabsTrigger
