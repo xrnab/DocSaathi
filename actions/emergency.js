@@ -471,6 +471,12 @@ export async function assignDoctorToEmergency(emergencyId, doctorId) {
       console.error("Failed to write directive notification for doctor:", err.message)
     );
 
+    // Create system notification for patient
+    const patientAlertMessage = `👨‍⚕️ SPECIALIST DIRECTIVE: Dr. ${doctor.name} (${doctor.specialty || "Specialist"}) has been assigned to your emergency request!`;
+    await createNotification(updated.patientId, patientAlertMessage, "SYSTEM").catch((err) =>
+      console.error("Failed to write notification for patient:", err.message)
+    );
+
     // Notify doctor in real-time
     try {
       await pusherServer.trigger(`user-${doctorId}`, "appointment-updated", {
@@ -480,6 +486,17 @@ export async function assignDoctorToEmergency(emergencyId, doctorId) {
       });
     } catch (pusherErr) {
       console.warn("Pusher notification for SOS directive to doctor failed:", pusherErr.message);
+    }
+
+    // Notify patient in real-time
+    try {
+      await pusherServer.trigger(`user-${updated.patientId}`, "appointment-updated", {
+        appointmentId: updated.id,
+        status: "RESPONDING",
+        message: patientAlertMessage,
+      });
+    } catch (pusherErr) {
+      console.warn("Pusher notification for SOS directive to patient failed:", pusherErr.message);
     }
 
     // Trigger update on general emergency channel for live dashboards
@@ -565,6 +582,12 @@ export async function assignAshaToEmergency(emergencyId, ashaId) {
       console.error("Failed to write directive notification for ASHA:", err.message)
     );
 
+    // Create system notification for patient
+    const patientAshaAlertMessage = `👩‍⚕️ ASHA WORKER DISPATCHED: Community worker ${asha.name} has been dispatched to coordinate your case at the scene.`;
+    await createNotification(updated.patientId, patientAshaAlertMessage, "SYSTEM").catch((err) =>
+      console.error("Failed to write ASHA notification for patient:", err.message)
+    );
+
     // Notify ASHA in real-time
     try {
       await pusherServer.trigger(`user-${ashaId}`, "appointment-updated", {
@@ -574,6 +597,17 @@ export async function assignAshaToEmergency(emergencyId, ashaId) {
       });
     } catch (pusherErr) {
       console.warn("Pusher notification for SOS directive to ASHA failed:", pusherErr.message);
+    }
+
+    // Notify patient in real-time
+    try {
+      await pusherServer.trigger(`user-${updated.patientId}`, "appointment-updated", {
+        appointmentId: updated.id,
+        status: "RESPONDING",
+        message: patientAshaAlertMessage,
+      });
+    } catch (pusherErr) {
+      console.warn("Pusher notification for ASHA directive to patient failed:", pusherErr.message);
     }
 
     // Trigger update on general emergency channel for live dashboards

@@ -144,46 +144,54 @@ export default function UnifiedEmergencyPage() {
   }, [loadProfile]);
 
   useEffect(() => {
-    const isStaff = dbUser && ["ADMIN", "OWNER", "ASHA_WORKER", "DOCTOR"].includes(dbUser.role);
+    if (!dbUser) return;
+
+    const isStaff = ["ADMIN", "OWNER", "ASHA_WORKER", "DOCTOR"].includes(dbUser.role);
+    
+    // Initial data fetch based on role
     if (isStaff) {
       fetchStaffData();
+    } else {
+      fetchActiveEmergency();
+    }
 
-      const pusher = getPusherClient();
-      if (pusher) {
-        const channel = pusher.subscribe("emergency-channel");
+    const pusher = getPusherClient();
+    if (pusher) {
+      // 1. Subscribe to personal channel for direct updates/notifications (applicable for all roles)
+      const personalChannel = pusher.subscribe(`user-${dbUser.id}`);
+      
+      personalChannel.bind("appointment-updated", (data) => {
+        showToast(`🚨 STATUS UPDATE: ${data.message || "Emergency status updated!"}`);
+        if (isStaff) {
+          fetchStaffData();
+        } else {
+          fetchActiveEmergency();
+        }
+      });
 
-        channel.bind("new-emergency", (data) => {
+      // 2. Staff members additionally subscribe to the global emergency-channel for dispatches
+      let globalChannel = null;
+      if (isStaff) {
+        globalChannel = pusher.subscribe("emergency-channel");
+
+        globalChannel.bind("new-emergency", (data) => {
           showToast(`🚨 ALERT: New critical emergency from ${data.patientName}!`, "error");
           fetchStaffData();
         });
 
-        channel.bind("emergency-assigned", () => {
+        globalChannel.bind("emergency-assigned", () => {
           fetchStaffData();
         });
+      }
 
-        return () => {
-          channel.unbind_all();
+      return () => {
+        personalChannel.unbind_all();
+        pusher.unsubscribe(`user-${dbUser.id}`);
+        if (globalChannel) {
+          globalChannel.unbind_all();
           pusher.unsubscribe("emergency-channel");
-        };
-      }
-    } else if (dbUser) {
-      // Fetch initial data
-      fetchActiveEmergency();
-
-      const pusher = getPusherClient();
-      if (pusher) {
-        const channel = pusher.subscribe(`user-${dbUser.id}`);
-
-        channel.bind("appointment-updated", (data) => {
-          showToast(`🚨 STATUS UPDATE: ${data.message || "Emergency status updated!"}`);
-          fetchActiveEmergency();
-        });
-
-        return () => {
-          channel.unbind_all();
-          pusher.unsubscribe(`user-${dbUser.id}`);
-        };
-      }
+        }
+      };
     }
   }, [dbUser, fetchStaffData, fetchActiveEmergency]);
 
