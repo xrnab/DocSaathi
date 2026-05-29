@@ -125,6 +125,9 @@ export default async function PatientRecordScreen({ searchParams }) {
         {/* Left Column: Prescriptions and Vaccinations */}
         <div className="lg:col-span-1 space-y-6">
           
+          {/* Prescription Stats */}
+          <PrescriptionStats prescriptions={prescriptions} />
+
           {/* Current Prescriptions */}
           <Card className="border-sky-100 dark:border-sky-900 shadow-sm rounded-xl sm:rounded-2xl h-fit">
             <CardHeader className="bg-sky-50/50 dark:bg-sky-900/10 border-b border-sky-100 dark:border-sky-900 pb-3 sm:pb-4 py-3 sm:py-4">
@@ -166,12 +169,6 @@ export default async function PatientRecordScreen({ searchParams }) {
             </CardContent>
           </Card>
 
-          {/* Prescription Stats */}
-          <PrescriptionStats prescriptions={prescriptions} />
-
-          {/* Health Timeline */}
-          <HealthTimeline visits={visits} />
-
           {/* Vaccination History */}
           <Card className="border-sky-100 dark:border-sky-900 shadow-sm rounded-xl sm:rounded-2xl h-fit">
             <CardHeader className="bg-sky-50/50 dark:bg-sky-900/10 border-b border-sky-100 dark:border-sky-900 pb-3 sm:pb-4 py-3 sm:py-4">
@@ -202,6 +199,21 @@ export default async function PatientRecordScreen({ searchParams }) {
               )}
             </CardContent>
           </Card>
+
+          {/* Consultation History */}
+          <div className="animate-in fade-in duration-300">
+            <Card className="border-sky-100 dark:border-sky-900 shadow-sm rounded-xl sm:rounded-2xl h-fit">
+              <CardHeader className="bg-sky-50/50 dark:bg-sky-900/10 border-b border-sky-100 dark:border-sky-900 pb-3 sm:pb-4 py-3 sm:py-4">
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                  <Calendar className="h-4 w-4 sm:h-5 w-5 text-sky-500" />
+                  Consultation History
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-5">
+                <HealthTimeline visits={visits} />
+              </CardContent>
+            </Card>
+          </div>
 
         </div>
 

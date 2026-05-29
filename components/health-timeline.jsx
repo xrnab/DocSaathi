@@ -2,117 +2,99 @@
 
 import { useState } from "react";
 import { format } from "date-fns";
-import { Calendar, User, Eye, EyeOff } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 export default function HealthTimeline({ visits = [] }) {
-  const [expanded, setExpanded] = useState(false);
+  const [showAll, setShowAll] = useState(false);
 
-  // Filter completed and cancelled visits or display all with correct dot coloring
-  const validVisits = visits.filter(
-    (v) => v.status === "COMPLETED" || v.status === "CANCELLED"
-  );
+  const displayedVisits = showAll ? visits : visits.slice(0, 5);
 
-  const displayedVisits = expanded ? validVisits : validVisits.slice(0, 5);
+  if (visits.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
+        <Calendar className="h-10 w-10 text-muted-foreground/60 mb-2" />
+        <p className="text-sm font-medium">No consultation history yet</p>
+      </div>
+    );
+  }
 
   return (
-    <Card className="border-sky-100 dark:border-sky-900 shadow-sm rounded-xl sm:rounded-2xl bg-card hover:shadow-md transition-all">
-      <CardHeader className="bg-sky-50/50 dark:bg-sky-900/10 border-b border-sky-100 dark:border-sky-900 pb-3 py-3">
-        <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-          <Calendar className="h-4 w-4 sm:h-5 w-5 text-sky-500" />
-          Health Consultation Timeline
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="p-5">
-        {validVisits.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground text-sm font-semibold">
-            No consultation history yet
-          </div>
-        ) : (
-          <div className="space-y-6 relative before:absolute before:inset-y-0 before:left-3.5 before:w-0.5 before:bg-muted dark:before:bg-slate-800">
-            {displayedVisits.map((visit, index) => {
-              const dateStr = visit.startTime
-                ? format(new Date(visit.startTime), "MMM d, yyyy")
-                : "N/A";
-              
-              const isCompleted = visit.status === "COMPLETED";
-              const dotColor = isCompleted ? "bg-emerald-500" : "bg-amber-500";
-              const dotRing = isCompleted ? "ring-emerald-100 dark:ring-emerald-950" : "ring-amber-100 dark:ring-amber-950";
+    <div className="space-y-6">
+      <div className="space-y-6">
+        {displayedVisits.map((visit, index) => {
+          const dateStr = visit.startTime
+            ? format(new Date(visit.startTime), "MMM d, yyyy")
+            : "N/A";
 
-              // Truncate notes to 80 chars
-              const notesRaw = visit.notes || "No consultation notes recorded.";
-              const notesSnippet =
-                notesRaw.length > 80
-                  ? `${notesRaw.substring(0, 80)}...`
-                  : notesRaw;
+          // Dot color mappings
+          let dotColor = "bg-sky-500";
+          if (visit.status === "COMPLETED") dotColor = "bg-emerald-500";
+          if (visit.status === "CANCELLED") dotColor = "bg-rose-500";
 
-              return (
-                <div
-                  key={visit.id || index}
-                  className="relative pl-8 animate-in fade-in slide-in-from-top-3 duration-300 select-none"
-                  style={{ animationDelay: `${index * 50}ms` }}
-                >
-                  {/* Timeline indicator dot */}
-                  <div className={`absolute left-1.5 top-1.5 w-4 h-4 rounded-full ${dotColor} ring-4 ${dotRing} z-10`} />
+          // Badge mappings
+          const getStatusBadge = (status) => {
+            switch (status) {
+              case "COMPLETED":
+                return <Badge className="bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 text-[10px] hover:bg-emerald-100">COMPLETED</Badge>;
+              case "CANCELLED":
+                return <Badge className="bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800 text-[10px] hover:bg-red-100">CANCELLED</Badge>;
+              default:
+                return <Badge className="bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800 text-[10px] hover:bg-blue-100">{status}</Badge>;
+            }
+          };
 
-                  <div className="space-y-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-xs font-bold text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/40 px-2 py-0.5 rounded-md border border-sky-100/30">
-                        {dateStr}
-                      </span>
-                      <span
-                        className={`text-[9px] uppercase font-black px-1.5 py-0.5 rounded-md ${
-                          isCompleted
-                            ? "bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 border border-emerald-100/20"
-                            : "bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 border border-amber-100/20"
-                        }`}
-                      >
-                        {visit.status}
-                      </span>
-                    </div>
+          // Notes snippet (first 100 chars)
+          const notesRaw = visit.notes || "No consultation notes recorded.";
+          const notesSnippet =
+            notesRaw.length > 100
+              ? `${notesRaw.substring(0, 100)}...`
+              : notesRaw;
 
-                    <h4 className="font-extrabold text-foreground text-sm flex items-center gap-1.5 mt-1">
-                      <User className="h-3.5 w-3.5 text-muted-foreground" />
-                      {visit.doctor?.name || "General Practitioner"}
-                      {visit.doctor?.specialty && (
-                        <span className="text-xs font-normal text-muted-foreground">
-                          ({visit.doctor.specialty})
-                        </span>
-                      )}
-                    </h4>
+          const isLastItem = index === displayedVisits.length - 1;
 
-                    <p className="text-xs text-muted-foreground leading-relaxed pl-5 italic mt-1 border-l-2 border-slate-100 dark:border-slate-800">
-                      &ldquo;{notesSnippet}&rdquo;
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
-
-            {validVisits.length > 5 && (
-              <div className="pt-2 pl-8">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setExpanded(!expanded)}
-                  className="text-xs font-extrabold text-sky-600 dark:text-sky-400 hover:text-sky-700 hover:bg-sky-50 dark:hover:bg-sky-950/30 flex items-center gap-1.5 rounded-xl cursor-pointer"
-                >
-                  {expanded ? (
-                    <>
-                      <EyeOff className="w-3.5 h-3.5" /> Collapse Timeline
-                    </>
-                  ) : (
-                    <>
-                      <Eye className="w-3.5 h-3.5" /> Show all {validVisits.length} visits
-                    </>
-                  )}
-                </Button>
+          return (
+            <div key={visit.id || index} className="flex gap-4 relative">
+              {/* Left Column (40px wide) */}
+              <div className="w-10 flex flex-col items-center shrink-0">
+                <div className={`w-3 h-3 rounded-full mt-1.5 ${dotColor}`} />
+                {!isLastItem && (
+                  <div className="absolute left-4.5 top-4 bottom-0 w-px bg-border" />
+                )}
               </div>
-            )}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+
+              {/* Right Column */}
+              <div className="flex-1 pb-4 space-y-1.5">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-xs font-bold text-muted-foreground">{dateStr}</span>
+                  {getStatusBadge(visit.status)}
+                </div>
+                <h4 className="text-sm font-semibold text-foreground">
+                  Dr. {visit.doctor?.name || "General Practitioner"}
+                  {visit.doctor?.specialty && ` · ${visit.doctor.specialty}`}
+                </h4>
+                <p className="text-xs text-muted-foreground italic leading-relaxed">
+                  &ldquo;{notesSnippet}&rdquo;
+                </p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {!showAll && visits.length > 5 && (
+        <div className="pt-2 flex justify-start pl-10">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => setShowAll(true)}
+            className="text-xs font-bold text-sky-600 dark:text-sky-400 hover:text-sky-700 cursor-pointer"
+          >
+            Show all {visits.length} visits ↓
+          </Button>
+        </div>
+      )}
+    </div>
   );
 }
