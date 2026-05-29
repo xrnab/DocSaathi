@@ -624,3 +624,55 @@ export async function getRegisteredAshas() {
     return { ashas: [] };
   }
 }
+
+/**
+ * Get the latest active or responding emergency request for the current user (patient)
+ */
+export async function getLatestPatientEmergency() {
+  const { userId } = await auth();
+  if (!userId) {
+    throw new Error("Unauthorized");
+  }
+
+  try {
+    const user = await db.user.findUnique({
+      where: { clerkUserId: userId },
+    });
+
+    if (!user) {
+      throw new Error("User profile not found");
+    }
+
+    const emergency = await db.emergencyRequest.findFirst({
+      where: {
+        patientId: user.id,
+        status: { in: ["ACTIVE", "RESPONDING"] },
+      },
+      include: {
+        assignedDoctor: {
+          select: {
+            id: true,
+            name: true,
+            specialty: true,
+          }
+        },
+        assignedAsha: {
+          select: {
+            id: true,
+            name: true,
+            block: true,
+          }
+        }
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    return { emergency };
+  } catch (error) {
+    console.error("Failed to get patient emergency:", error);
+    throw new Error("Failed to get emergency: " + error.message);
+  }
+}
+
