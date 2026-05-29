@@ -15,6 +15,7 @@ import { format } from "date-fns";
 import dynamic from "next/dynamic";
 
 const PatientBriefingCard = dynamic(() => import("@/components/patient-briefing-card"), { ssr: false });
+const QueueStatusCard = dynamic(() => import("@/components/queue-status-card"), { ssr: false });
 
 export default function TelemedicineChatPage({ params }) {
   const [isOffline, setIsOffline] = useState(false);
@@ -208,6 +209,12 @@ export default function TelemedicineChatPage({ params }) {
             )}
           </div>
         </div>
+
+        {userRole === "PATIENT" && appointment?.status === "SCHEDULED" && appointment?.doctorId && (
+          <div className="p-4 bg-background border-b border-border">
+            <QueueStatusCard doctorId={appointment.doctorId} appointmentId={appointmentId} />
+          </div>
+        )}
 
         {/* Chat Feed */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50 dark:bg-slate-900/50 relative">

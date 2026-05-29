@@ -21,8 +21,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 
 const PrescriptionOCR = dynamic(() => import("@/components/prescription-ocr"), { ssr: false });
 const PatientBriefingCard = dynamic(() => import("@/components/patient-briefing-card"), { ssr: false });
+const DoctorQueuePanel = dynamic(() => import("@/components/doctor-queue-panel"), { ssr: false });
 
-export default function TelemedicineDashboardClient({ initialAppointments }) {
+export default function TelemedicineDashboardClient({ initialAppointments, doctorId }) {
   const router = useRouter();
   const [activeAppointment, setActiveAppointment] = useState(initialAppointments[0] || null);
   const [isPrescribing, setIsPrescribing] = useState(false);
@@ -30,6 +31,7 @@ export default function TelemedicineDashboardClient({ initialAppointments }) {
   const [rxForm, setRxForm] = useState({ name: "", dosage: "", frequency: "", duration: "" });
   const [isOcrDialogOpen, setIsOcrDialogOpen] = useState(false);
   const [expandedBriefings, setExpandedBriefings] = useState({});
+  const [isQueuePanelOpen, setIsQueuePanelOpen] = useState(true);
   
   const [currentDate, setCurrentDate] = useState("");
 
@@ -105,11 +107,29 @@ export default function TelemedicineDashboardClient({ initialAppointments }) {
           </h1>
           <p className="text-muted-foreground mt-1 text-sm sm:text-base">Manage your live consultations and patients</p>
         </div>
-        <div className="hidden sm:flex items-center gap-2 bg-sky-50 dark:bg-sky-900/20 px-4 py-2 rounded-full border border-sky-100 dark:border-sky-800">
-          <Clock className="h-4 w-4 text-sky-600 dark:text-sky-400" />
-          <span className="text-sm font-semibold text-sky-700 dark:text-sky-300">
-            {currentDate}
-          </span>
+        <div className="flex items-center gap-3">
+          {doctorId && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setIsQueuePanelOpen(!isQueuePanelOpen)}
+              className={`font-bold rounded-full h-9 px-4 text-xs gap-2 cursor-pointer transition-all border ${
+                isQueuePanelOpen
+                  ? "bg-sky-100 border-sky-300 text-sky-700 dark:bg-sky-900/30 dark:border-sky-800 dark:text-sky-300"
+                  : "border-sky-200 text-sky-600 dark:text-sky-400"
+              }`}
+            >
+              <Users className="h-3.5 w-3.5" />
+              {isQueuePanelOpen ? "Hide Queue" : "Live Queue"}
+            </Button>
+          )}
+          <div className="hidden sm:flex items-center gap-2 bg-sky-50 dark:bg-sky-900/20 px-4 py-2 rounded-full border border-sky-100 dark:border-sky-800">
+            <Clock className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+            <span className="text-sm font-semibold text-sky-700 dark:text-sky-300">
+              {currentDate}
+            </span>
+          </div>
         </div>
       </div>
 
@@ -121,12 +141,20 @@ export default function TelemedicineDashboardClient({ initialAppointments }) {
         </Card>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
-          
-          {/* PATIENT QUEUE: Horizontal on mobile, Vertical on LG */}
+
+          {/* LIVE TOKEN QUEUE PANEL + PATIENT LIST (LEFT SIDEBAR) */}
           <div className="lg:col-span-3 flex flex-col gap-4 order-2 lg:order-1">
+
+            {/* DoctorQueuePanel — collapsible */}
+            {doctorId && isQueuePanelOpen && (
+              <div className="animate-in slide-in-from-left duration-300">
+                <DoctorQueuePanel doctorId={doctorId} />
+              </div>
+            )}
+
             <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
               <Users className="h-4 w-4" />
-              Waiting Queue ({initialAppointments.length})
+              Today&apos;s Patients ({initialAppointments.length})
             </h2>
             <div className="flex flex-row lg:flex-col gap-3 overflow-x-auto lg:overflow-y-auto pb-4 lg:pb-0 no-scrollbar" style={{ maxHeight: "calc(100vh - 250px)" }}>
               {initialAppointments.map((app) => {

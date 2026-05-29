@@ -2,6 +2,7 @@
 
 import { db } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
+import { pusherServer } from "@/lib/pusher";
 
 export async function getDoctorQueue() {
   const { userId } = await auth();
@@ -299,5 +300,245 @@ export async function getChatMessages(appointmentId) {
   } catch (error) {
     console.error("Error fetching chat messages:", error);
     return [];
+  }
+}
+
+/**
+ * Join telemedicine queue for a scheduled appointment
+ */
+export async function joinQueue(appointmentId) {
+  const { userId } = await auth();
+  if (!userId) return { error: "Unauthorized" };
+
+  try {
+    const user = await db.user.findUnique({
+      where: { clerkUserId: userId }
+    });
+
+    if (!user) return { error: "User profile not found" };
+
+    const appointment = await db.appointment.findUnique({
+      where: { id: appointmentId },
+      include: { patient: true }
+    });
+
+    if (!appointment) return { error: "Appointment not found" };
+    if (appointment.patientId !== user.id && user.role !== "ADMIN") {
+      return { error: "Access Denied. You do not own this appointment." };
+    }
+
+    // Get or create doctor's queue settings
+    const queue = await db.doctorQueue.upsert({
+      where: { doctorId: appointment.doctorId },
+      update: {
+        totalTokens: { increment: 1 }
+      },
+      create: {
+        doctorId: appointment.doctorId,
+        totalTokens: 1,
+        isActive: true
+      }
+    });
+
+    const assignedToken = queue.totalTokens + 1; // Since update runs first, or we incremented it
+
+    // Update appointment with assigned queue token
+    const currentToken = queue.currentToken;
+    const position = Math.max(0, assignedToken - currentToken - 1);
+    const estimatedWait = position * queue.avgMinutes;
+
+    const updatedAppointment = await db.appointment.update({
+      where: { id: appointmentId },
+      data: {
+        queueToken: assignedToken,
+        queuePosition: position
+      }
+    });
+
+    // Notify Pusher channel about patient joining
+    try {
+      await pusherServer.trigger(`queue-${appointment.doctorId}`, "patient-joined", {
+        token: assignedToken,
+        patientName: user.name || "Anonymous Patient"
+      });
+    } catch (pushErr) {
+      console.warn("Pusher trigger failed in joinQueue:", pushErr.message);
+    }
+
+    return {
+      success: true,
+      token: assignedToken,
+      position,
+      estimatedWait,
+      currentToken: queue.currentToken
+    };
+  } catch (error) {
+    console.error("Error joining queue:", error);
+    return { error: "Failed to join queue: " + error.message };
+  }
+}
+
+/**
+ * Get queue status for doctor
+ */
+export async function getQueueStatus(doctorId) {
+  try {
+    const queue = await db.doctorQueue.findUnique({
+      where: { doctorId }
+    });
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const appointments = await db.appointment.findMany({
+      where: {
+        doctorId,
+        status: "SCHEDULED",
+        queueToken: { not: null },
+        startTime: {
+          gte: today,
+          lt: tomorrow
+        }
+      },
+      include: {
+        patient: {
+          select: { name: true }
+        }
+      },
+      orderBy: {
+        queueToken: "asc"
+      }
+    });
+
+    return {
+      success: true,
+      currentToken: queue?.currentToken || 0,
+      totalTokens: queue?.totalTokens || 0,
+      avgMinutes: queue?.avgMinutes || 10,
+      isActive: queue?.isActive || false,
+      queue: appointments.map(app => ({
+        id: app.id,
+        token: app.queueToken,
+        patientName: app.patient?.name || "Anonymous Patient",
+        position: Math.max(0, (app.queueToken || 0) - (queue?.currentToken || 0) - 1)
+      }))
+    };
+  } catch (error) {
+    console.error("Error fetching queue status:", error);
+    return { error: "Failed to fetch queue status" };
+  }
+}
+
+/**
+ * Call the next patient in queue
+ */
+export async function callNextPatient(doctorId) {
+  const { userId } = await auth();
+  if (!userId) return { error: "Unauthorized" };
+
+  try {
+    const doctor = await db.user.findUnique({
+      where: { clerkUserId: userId }
+    });
+
+    if (!doctor || doctor.role !== "DOCTOR" || doctor.id !== doctorId) {
+      return { error: "Access Denied. Doctors only." };
+    }
+
+    const queue = await db.doctorQueue.findUnique({
+      where: { doctorId }
+    });
+
+    if (!queue) {
+      return { error: "No active queue found for this doctor" };
+    }
+
+    const newCurrentToken = queue.currentToken + 1;
+
+    // Update serving token
+    await db.doctorQueue.update({
+      where: { doctorId },
+      data: { currentToken: newCurrentToken }
+    });
+
+    // Find next patient's appointment with this token today
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const nextAppointment = await db.appointment.findFirst({
+      where: {
+        doctorId,
+        queueToken: newCurrentToken,
+        startTime: {
+          gte: today,
+          lt: tomorrow
+        }
+      },
+      include: {
+        patient: true
+      }
+    });
+
+    // Notify Pusher channel that token has been called
+    try {
+      await pusherServer.trigger(`queue-${doctorId}`, "token-called", {
+        token: newCurrentToken
+      });
+
+      if (nextAppointment && nextAppointment.patient) {
+        await pusherServer.trigger(`user-${nextAppointment.patientId}`, "your-turn", {
+          message: "It's your turn! Join the video call now."
+        });
+      }
+    } catch (pushErr) {
+      console.warn("Pusher trigger failed in callNextPatient:", pushErr.message);
+    }
+
+    return {
+      success: true,
+      calledToken: newCurrentToken,
+      patientName: nextAppointment?.patient?.name || null
+    };
+  } catch (error) {
+    console.error("Error calling next patient:", error);
+    return { error: "Failed to call next patient: " + error.message };
+  }
+}
+
+/**
+ * Toggle queue active status
+ */
+export async function toggleQueueActive(doctorId, isActive) {
+  const { userId } = await auth();
+  if (!userId) return { error: "Unauthorized" };
+
+  try {
+    const doctor = await db.user.findUnique({
+      where: { clerkUserId: userId }
+    });
+
+    if (!doctor || doctor.role !== "DOCTOR" || doctor.id !== doctorId) {
+      return { error: "Access Denied." };
+    }
+
+    const queue = await db.doctorQueue.upsert({
+      where: { doctorId },
+      update: { isActive },
+      create: { doctorId, isActive }
+    });
+
+    // Notify Pusher channel about queue status change
+    try {
+      await pusherServer.trigger(`queue-${doctorId}`, "queue-active-changed", { isActive });
+    } catch (e) {}
+
+    return { success: true, isActive: queue.isActive };
+  } catch (error) {
+    console.error("Error toggling queue:", error);
+    return { error: "Failed to toggle queue" };
   }
 }

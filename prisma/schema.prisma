@@ -59,6 +59,7 @@ model User {
   ashaFamilies        AshaFamily[]        @relation("AshaFamilies")
   outbreakReports     OutbreakReport[]    @relation("AshaOutbreaks")
   patientEmergencies  EmergencyRequest[]  @relation("PatientEmergencies")
+  doctorQueue         DoctorQueue?        @relation("DoctorQueue")
 }
 
 model Prescription {
@@ -136,6 +137,8 @@ model Appointment {
   videoSessionId    String? // Vonage Video API Session ID
   videoSessionToken String? // Optional: Can store tokens if needed
   reminderSent      Boolean           @default(false)
+  queueToken        Int?     // Token number assigned when queued
+  queuePosition     Int?     // Current position in queue
 
   // Voice Notes
   voiceNotes        VoiceNote[]
@@ -302,5 +305,17 @@ enum EmergencyStatus {
   ACTIVE
   RESPONDING
   RESOLVED
+}
+
+model DoctorQueue {
+  id            String   @id @default(uuid())
+  doctorId      String   @unique
+  doctor        User     @relation("DoctorQueue", fields: [doctorId], references: [id])
+  currentToken  Int      @default(0)  // Token being served right now
+  totalTokens   Int      @default(0)  // Tokens issued today
+  avgMinutes    Int      @default(10) // Avg consultation minutes
+  isActive      Boolean  @default(false)
+  date          DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
 

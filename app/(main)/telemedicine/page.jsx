@@ -1,4 +1,6 @@
 import { getDoctorQueue } from "@/actions/telemedicine";
+import { db } from "@/lib/prisma";
+import { auth } from "@clerk/nextjs/server";
 import TelemedicineDashboardClient from "./client-dashboard";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardTitle } from "@/components/ui/card";
@@ -22,5 +24,17 @@ export default async function TelemedicinePage() {
     );
   }
 
-  return <TelemedicineDashboardClient initialAppointments={result.data || []} />;
+  // Get the doctor's internal user ID for queue management
+  const { userId } = await auth();
+  let doctorId = null;
+  if (userId) {
+    const { db: prisma } = await import("@/lib/prisma");
+    const doctor = await prisma.user.findUnique({
+      where: { clerkUserId: userId },
+      select: { id: true },
+    });
+    doctorId = doctor?.id || null;
+  }
+
+  return <TelemedicineDashboardClient initialAppointments={result.data || []} doctorId={doctorId} />;
 }
