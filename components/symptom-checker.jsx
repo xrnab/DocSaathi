@@ -340,7 +340,21 @@ export default function SymptomChecker() {
       let isDeviceOffline = typeof navigator !== "undefined" ? !navigator.onLine : false;
 
       if (isDeviceOffline) {
-        triageReport = `URGENCY: YELLOW\n\nPOSSIBLE CONDITIONS:\n- Unable to analyze online (Device Offline)\n\nRECOMMENDED ACTION:\n- Your symptoms have been securely saved offline and will automatically be triaged once your network is restored.\n- For immediate assistance in Nabha, consult a GP or go to Rajindra Hospital Patiala.\n\nHOME REMEDIES:\n- Rest, drink plenty of water, and isolate if showing contagious symptoms.\n\nDISCLAIMER: This is an offline placeholder assessment. Real-time AI triage will complete once you are back online.`;
+        const redSymptomIds = ["snake_scorpion_bite", "pesticide_exposure", "heat_stroke", "chest_pain", "breathlessness"];
+        const yellowSymptomIds = ["fever", "diarrhea", "vomiting", "stomach_pain", "waterborne_illness", "dizziness"];
+        
+        let localUrgency = "GREEN";
+        let localAction = "Monitor symptoms at home and rest. Ensure you stay well hydrated.";
+        
+        if (selectedSymptoms.some(id => redSymptomIds.includes(id))) {
+          localUrgency = "RED";
+          localAction = "SEEK MEDICAL CARE IMMEDIATELY. Go to the nearest clinic or Rajindra Hospital Patiala now! If you have an Ayushman Bharat card, show it at the hospital for free treatment.";
+        } else if (selectedSymptoms.some(id => yellowSymptomIds.includes(id)) || selectedSymptoms.includes("muscle_cramps") || selectedSymptoms.includes("eye_irritation")) {
+          localUrgency = "YELLOW";
+          localAction = "Consult a GP or your local ASHA worker today. If symptoms worsen, go to a medical facility.";
+        }
+
+        triageReport = `URGENCY: ${localUrgency}\n\nPOSSIBLE CONDITIONS:\n- Unable to analyze online (Device Offline)\n\nRECOMMENDED ACTION:\n- ${localAction}\n- Your symptoms have been securely saved offline and will automatically be triaged once your network is restored.\n- For immediate assistance in Nabha, consult a GP or go to Rajindra Hospital Patiala.\n\nHOME REMEDIES:\n- Rest, drink plenty of water, and consult local ASHA workers in your village.\n\nDISCLAIMER: This is an offline placeholder assessment. Real-time AI triage will complete once you are back online.`;
         setReport(triageReport);
       } else {
         const result = await analyzeSymptoms({
