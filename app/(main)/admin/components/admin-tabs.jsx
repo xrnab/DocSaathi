@@ -4,7 +4,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertCircle, Users, CreditCard, UserCog, Heart, Activity } from "lucide-react";
 import { useSearchParams, useRouter } from "next/navigation";
 
-export function AdminTabs({ isOwner, children }) {
+export function AdminTabs({ isOwner, usersCount = 0, children }) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const currentTab = searchParams.get("tab") || "pending";
@@ -62,7 +62,7 @@ export function AdminTabs({ isOwner, children }) {
           className="flex-shrink-0 md:flex-1 md:flex md:items-center md:justify-start md:px-4 md:py-3 w-auto md:w-full px-3 text-sm whitespace-nowrap text-sky-600 dark:text-sky-400 font-bold"
         >
           <Users className="h-4 w-4 mr-1.5 md:mr-2 shrink-0" />
-          <span>Users</span>
+          <span>Users ({usersCount})</span>
         </TabsTrigger>
         {isOwner && (
           <TabsTrigger

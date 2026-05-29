@@ -5,7 +5,7 @@ import { PendingPayouts } from "./components/pending-payouts";
 import { VerifiedPatients } from "./components/verified-patients";
 import { UserManagement } from "./components/user-management";
 import { NabhaImpact } from "./components/nabha-impact";
-import UsersTable from "./_components/users-table";
+import UsersTable from "./_components/users-table-wrapper";
 import {
   getPendingDoctors,
   getVerifiedDoctors,

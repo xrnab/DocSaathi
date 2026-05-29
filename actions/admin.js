@@ -73,32 +73,63 @@ export async function getAllUsers() {
   if (!isAdmin) throw new Error("Unauthorized: Access Denied");
 
   try {
-    const users = await db.user.findMany({
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        verificationStatus: true,
-        createdAt: true,
-        credits: true,
-        _count: {
-          select: {
-            patientAppointments: true,
-            doctorAppointments: true,
+    const [users, patients, doctors, asha, admins] = await Promise.all([
+      db.user.findMany({
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          verificationStatus: true,
+          createdAt: true,
+          credits: true,
+          village: true,
+          _count: {
+            select: {
+              patientAppointments: true,
+              doctorAppointments: true,
+              ashaFamilies: true,
+            },
           },
         },
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-      take: 50,
-    });
+        orderBy: {
+          createdAt: "desc",
+        },
+        take: 100,
+      }),
+      db.user.count({ where: { role: "PATIENT" } }).catch(() => 0),
+      db.user.count({ where: { role: "DOCTOR" } }).catch(() => 0),
+      db.user.count({ where: { role: "ASHA_WORKER" } }).catch(() => 0),
+      db.user.count({ where: { role: "ADMIN" } }).catch(() => 0),
+    ]);
 
-    return { users };
+    return {
+      users,
+      counts: { patients, doctors, asha, admins },
+    };
   } catch (error) {
     console.error("Failed to fetch all users:", error);
     throw new Error("Failed to fetch all users");
+  }
+}
+
+/**
+ * Changes a user's role (Owner only)
+ */
+export async function changeUserRole(userId, newRole) {
+  const isOwner = await verifyOwner();
+  if (!isOwner) throw new Error("Unauthorized: Only the Owner can modify user roles");
+
+  try {
+    await db.user.update({
+      where: { id: userId },
+      data: { role: newRole },
+    });
+    revalidatePath("/admin");
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to change user role:", error);
+    throw new Error(`Failed to change user role: ${error.message}`);
   }
 }
 
