@@ -1,7 +1,7 @@
 // /app/doctors/[id]/_components/doctor-profile.jsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -29,11 +29,53 @@ import { SlotPicker } from "./slot-picker";
 import { AppointmentForm } from "./appointment-form";
 import { formatDoctorName } from "@/lib/utils";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { getPusherClient } from "@/lib/pusher";
+import { toast } from "sonner";
+import { getAvailableTimeSlots } from "@/actions/appointments";
 
-export function DoctorProfile({ doctor, availableDays, viewer }) {
+export function DoctorProfile({ doctor, availableDays: initialAvailableDays, viewer }) {
   const [showBooking, setShowBooking] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState(null);
+  const [availableDays, setAvailableDays] = useState(initialAvailableDays);
   const router = useRouter();
+
+  useEffect(() => {
+    const pusher = getPusherClient();
+    if (!pusher) return;
+
+    const channel = pusher.subscribe(`doctor-${doctor.id}`);
+
+    channel.bind("slot-booked", (data) => {
+      // Remove the booked slot from local slots state
+      setAvailableDays((prev) =>
+        prev.map((day) => ({
+          ...day,
+          slots: day.slots.filter((slot) => slot.startTime !== data.startTime),
+        }))
+      );
+      toast.info("A slot was just booked. Availability updated.");
+    });
+
+    channel.bind("slot-released", (data) => {
+      // Refetch available slots for this doctor
+      const fetchAvailability = async (id) => {
+        try {
+          const res = await getAvailableTimeSlots(id);
+          if (res && res.days) {
+            setAvailableDays(res.days);
+          }
+        } catch (e) {
+          console.error("Failed to refetch availability:", e);
+        }
+      };
+      fetchAvailability(doctor.id);
+    });
+
+    return () => {
+      channel.unbind_all();
+      pusher.unsubscribe(`doctor-${doctor.id}`);
+    };
+  }, [doctor.id]);
 
   const viewerRole = viewer?.role || null;
   const canBookAppointments =

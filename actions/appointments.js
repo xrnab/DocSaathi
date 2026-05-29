@@ -9,6 +9,7 @@ import { revalidatePath } from "next/cache";
 import { createNotification } from "@/actions/notifications";
 import { getVideoCallSession, createVideoSession } from "@/lib/video";
 import { sendAppointmentReminder } from "@/lib/mail";
+import { pusherServer } from "@/lib/pusher";
 
 const APPOINTMENT_CREDIT_COST = 2;
 import {
@@ -223,6 +224,21 @@ export async function bookAppointment(formData) {
       startTime: appointment.startTime,
       endTime: appointment.endTime
     }, true).catch(err => console.error("Failed to send booking confirmation email:", err));
+
+    // Trigger real-time slot invalidation via Pusher
+    try {
+      await pusherServer.trigger(
+        `doctor-${doctorId}`,
+        "slot-booked",
+        {
+          startTime: startTime.toISOString(),
+          endTime: endTime.toISOString(),
+          doctorId
+        }
+      );
+    } catch (pusherErr) {
+      console.warn("Pusher slot update failed:", pusherErr.message);
+    }
 
     return { success: true, appointment: appointment };
   } catch (error) {

@@ -4,6 +4,7 @@ import { db } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 import { createNotification } from "@/actions/notifications";
+import { pusherServer } from "@/lib/pusher";
 
 /**
  * Set doctor's availability slots
@@ -280,6 +281,44 @@ export async function cancelAppointment(formData) {
       ).catch(err => console.error("Failed to notify doctor:", err));
     }
 
+    // Trigger slot-released Pusher event
+    try {
+      await pusherServer.trigger(
+        `doctor-${appointment.doctorId}`,
+        "slot-released",
+        { startTime: appointment.startTime.toISOString() }
+      );
+    } catch (err) {
+      console.warn("Pusher slot-released trigger failed:", err.message);
+    }
+
+    // Trigger user notification Pusher events
+    try {
+      // Notify patient
+      await pusherServer.trigger(
+        `user-${appointment.patientId}`,
+        "appointment-updated",
+        {
+          appointmentId: appointment.id,
+          status: "CANCELLED",
+          message: `Your appointment with Dr. ${appointment.doctor.name} has been cancelled`
+        }
+      );
+
+      // Notify doctor
+      await pusherServer.trigger(
+        `user-${appointment.doctorId}`,
+        "appointment-updated",
+        {
+          appointmentId: appointment.id,
+          status: "CANCELLED",
+          message: `The appointment with ${appointment.patient.name || "Patient"} has been cancelled`
+        }
+      );
+    } catch (err) {
+      console.warn("Pusher notification trigger failed:", err.message);
+    }
+
     return { success: true };
   } catch (error) {
     console.error("Failed to cancel appointment:", error);
@@ -513,6 +552,32 @@ export async function rejectAppointment(formData) {
       "APPOINTMENT"
     ).catch(err => console.error("Failed to notify patient:", err));
 
+    // Trigger slot-released Pusher event
+    try {
+      await pusherServer.trigger(
+        `doctor-${appointment.doctorId}`,
+        "slot-released",
+        { startTime: appointment.startTime.toISOString() }
+      );
+    } catch (err) {
+      console.warn("Pusher slot-released trigger failed:", err.message);
+    }
+
+    // Trigger user notification Pusher event
+    try {
+      await pusherServer.trigger(
+        `user-${appointment.patientId}`,
+        "appointment-updated",
+        {
+          appointmentId: appointment.id,
+          status: "REJECTED",
+          message: `Your appointment request with Dr. ${doctor.name} has been rejected`
+        }
+      );
+    } catch (err) {
+      console.warn("Pusher notification trigger failed:", err.message);
+    }
+
     return { success: true };
   } catch (error) {
     console.error("Failed to reject appointment:", error);
@@ -603,6 +668,21 @@ export async function markAppointmentCompleted(formData) {
       `Dr. ${doctor.name} has completed your appointment. You can view your record details.`,
       "APPOINTMENT"
     ).catch(err => console.error("Failed to notify patient:", err));
+
+    // Trigger user notification Pusher event
+    try {
+      await pusherServer.trigger(
+        `user-${appointment.patientId}`,
+        "appointment-updated",
+        {
+          appointmentId: appointment.id,
+          status: "COMPLETED",
+          message: `Dr. ${doctor.name} has completed your appointment. You can view your record details.`
+        }
+      );
+    } catch (err) {
+      console.warn("Pusher notification trigger failed:", err.message);
+    }
 
     return { success: true, appointment: updatedAppointment };
   } catch (error) {
