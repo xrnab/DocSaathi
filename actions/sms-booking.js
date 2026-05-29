@@ -5,6 +5,32 @@ import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 
 /**
+ * Formats a Date object into a timezone-aware (Asia/Kolkata) string for SMS.
+ */
+function formatSmsDateTime(date) {
+  const now = new Date();
+  
+  const isToday = date.toDateString() === now.toDateString();
+  const tomorrow = new Date();
+  tomorrow.setDate(now.getDate() + 1);
+  const isTomorrow = date.toDateString() === tomorrow.toDateString();
+
+  const timeOptions = { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' };
+  let timeStr = date.toLocaleTimeString('en-US', timeOptions);
+  timeStr = timeStr.replace(/\s+/g, ' ');
+
+  if (isToday) {
+    return `today at ${timeStr}`;
+  } else if (isTomorrow) {
+    return `tomorrow at ${timeStr}`;
+  } else {
+    const dateOptions = { month: 'short', day: 'numeric', timeZone: 'Asia/Kolkata' };
+    const dateStr = date.toLocaleDateString('en-US', dateOptions);
+    return `on ${dateStr} at ${timeStr}`;
+  }
+}
+
+/**
  * Parses and processes a simulated SMS booking message
  */
 export async function processIncomingSMS(messageText, lastDocId = null) {
@@ -37,6 +63,16 @@ export async function processIncomingSMS(messageText, lastDocId = null) {
           role: "DOCTOR",
           verificationStatus: "VERIFIED",
         },
+        include: {
+          availabilities: {
+            where: {
+              status: "AVAILABLE",
+            },
+            orderBy: {
+              startTime: "asc",
+            },
+          }
+        },
         take: 2,
       });
 
@@ -51,7 +87,11 @@ export async function processIncomingSMS(messageText, lastDocId = null) {
 
       let replyText = `DocSaathi Nabha: Found ${doctors.length} specialist(s) available today:\n`;
       doctors.forEach((doc, idx) => {
-        replyText += `${idx + 1}. ${doc.name} (${doc.specialty || "General"}) today at 10:30 AM.\n`;
+        let timeLabel = "today at 10:30 AM";
+        if (doc.availabilities && doc.availabilities.length > 0) {
+          timeLabel = formatSmsDateTime(doc.availabilities[0].startTime);
+        }
+        replyText += `${idx + 1}. ${doc.name} (${doc.specialty || "General"}) ${timeLabel}.\n`;
       });
       replyText += "Reply with the number (e.g. '1') to book instantly.";
 
@@ -70,22 +110,41 @@ export async function processIncomingSMS(messageText, lastDocId = null) {
           role: "DOCTOR",
           verificationStatus: "VERIFIED",
         },
+        include: {
+          availabilities: {
+            where: {
+              status: "AVAILABLE",
+            },
+            orderBy: {
+              startTime: "asc",
+            },
+          }
+        },
         take: 2,
       });
 
       let doctorToBook = null;
+      let selectedSlot = null;
       if (doctors.length > 0) {
         const index = parseInt(query, 10) - 1;
         doctorToBook = doctors[index] || doctors[0];
+        if (doctorToBook.availabilities && doctorToBook.availabilities.length > 0) {
+          selectedSlot = doctorToBook.availabilities[0];
+        }
       }
 
       const APPOINTMENT_CREDIT_COST = 2;
 
       // Setup booking times
-      const startTime = new Date();
+      let startTime = new Date();
       startTime.setDate(startTime.getDate() + 1); // tomorrow
-      startTime.setHours(10, 30, 0, 0); // 10:30 AM
-      const endTime = new Date(startTime.getTime() + 30 * 60 * 1000); // 11:00 AM
+      startTime.setHours(10, 30, 0, 0); // 10:30 AM fallback
+      let endTime = new Date(startTime.getTime() + 30 * 60 * 1000); // 11:00 AM fallback
+
+      if (selectedSlot) {
+        startTime = selectedSlot.startTime;
+        endTime = selectedSlot.endTime;
+      }
 
       let bookResult = null;
 
@@ -141,6 +200,14 @@ export async function processIncomingSMS(messageText, lastDocId = null) {
             }
           });
 
+          // If a database slot exists, mark it as BOOKED
+          if (selectedSlot) {
+            await tx.availability.update({
+              where: { id: selectedSlot.id },
+              data: { status: "BOOKED" }
+            });
+          }
+
           // Create appointment
           return tx.appointment.create({
             data: {
@@ -157,8 +224,10 @@ export async function processIncomingSMS(messageText, lastDocId = null) {
         revalidatePath("/appointments");
         revalidatePath("/sms-demo");
 
+        const formattedTimeLabel = formatSmsDateTime(startTime);
+
         return {
-          reply: `DocSaathi SUCCESS: Consultation scheduled with ${doctorToBook.name} for tomorrow at 10:30 AM. Video booth link SMS sent to ASHA worker. Booking ID: ${bookResult.id.substring(0,8)}`,
+          reply: `DocSaathi SUCCESS: Consultation scheduled with ${doctorToBook.name} for ${formattedTimeLabel}. Video booth link SMS sent to ASHA worker. Booking ID: ${bookResult.id.substring(0,8)}`,
           success: true
         };
       } else {
