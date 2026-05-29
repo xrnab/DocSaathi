@@ -8,6 +8,7 @@ import { ModeToggle } from "./mode-toggle";
 import GoogleTranslate from "./google-translate";
 import { HeaderActions } from "./header-actions";
 import { BottomNav } from "./bottom-nav";
+import HeaderScrollContainer from "./header-scroll-container";
 
 /**
  * Async component to handle user authentication and credit allocation
@@ -54,7 +55,7 @@ export default function Header() {
           </Link>
 
           {/* Action Buttons Flex - Swipe-scrollable on mobile, static on desktop */}
-          <div className="flex items-center justify-end space-x-1.5 sm:space-x-2 overflow-x-auto no-scrollbar whitespace-nowrap flex-1 min-w-0 sm:flex-initial sm:max-w-none shrink-0 scroll-smooth pb-0.5">
+          <HeaderScrollContainer>
             {/* SOS Emergency Button - Static / Instant */}
             <Button asChild variant="destructive" size="sm" className="bg-red-600 hover:bg-red-700 text-white font-bold flex items-center gap-1.5 shadow-lg shadow-red-500/20 rounded-full px-3 h-9 shrink-0 notranslate">
               <a href="tel:108">
@@ -77,7 +78,7 @@ export default function Header() {
             <div className="hidden sm:inline-flex shrink-0">
               <ModeToggle />
             </div>
-          </div>
+          </HeaderScrollContainer>
         </nav>
       </header>
 
