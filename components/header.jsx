@@ -55,29 +55,32 @@ export default function Header() {
             </span>
           </Link>
 
-          {/* Static Emergency Button - Always Visible and Clickable */}
-          <Link href="/emergency" className="shrink-0 z-[60]" title="SOS Emergency">
-            <Button variant="destructive" size="icon" className="w-9 h-9 bg-red-600 hover:bg-red-700 text-white shadow-md shadow-red-500/25 rounded-full flex items-center justify-center cursor-pointer notranslate">
-              <PhoneCall className="h-4.5 w-4.5 animate-pulse shrink-0" />
-            </Button>
-          </Link>
+          {/* Right-aligned Actions & Utility Suite */}
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0 z-[60]">
+            {/* Static Emergency Button - Always Visible and Clickable */}
+            <Link href="/emergency" className="shrink-0" title="SOS Emergency">
+              <Button variant="destructive" size="icon" className="w-9 h-9 bg-red-600 hover:bg-red-700 text-white shadow-md shadow-red-500/25 rounded-full flex items-center justify-center cursor-pointer notranslate">
+                <PhoneCall className="h-4.5 w-4.5 animate-pulse shrink-0" />
+              </Button>
+            </Link>
 
-          {/* Action Buttons Flex - Swipe-scrollable on mobile, static on desktop */}
-          <HeaderScrollContainer>
-            {/* Suspended User Logic - Prevents blocking the shell */}
-            <Suspense fallback={<div className="h-8 w-8 sm:h-9 sm:w-20 bg-muted/50 animate-pulse rounded-full shrink-0" />}>
-              <UserAuthSection />
-            </Suspense>
+            {/* Action Buttons Flex - Swipe-scrollable on mobile, static on desktop */}
+            <HeaderScrollContainer>
+              {/* Suspended User Logic - Prevents blocking the shell */}
+              <Suspense fallback={<div className="h-8 w-8 sm:h-9 sm:w-20 bg-muted/50 animate-pulse rounded-full shrink-0" />}>
+                <UserAuthSection />
+              </Suspense>
 
-            {/* Utilities - Static / Instant */}
-            <div className="shrink-0 flex items-center">
-              <GoogleTranslate />
-            </div>
-            
-            <div className="hidden sm:inline-flex shrink-0 gap-2">
-              <ModeToggle />
-            </div>
-          </HeaderScrollContainer>
+              {/* Utilities - Static / Instant */}
+              <div className="shrink-0 flex items-center">
+                <GoogleTranslate />
+              </div>
+              
+              <div className="hidden sm:inline-flex shrink-0 gap-2">
+                <ModeToggle />
+              </div>
+            </HeaderScrollContainer>
+          </div>
         </nav>
       </header>
 
