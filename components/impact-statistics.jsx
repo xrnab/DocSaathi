@@ -70,7 +70,7 @@ export function ImpactStatistics() {
         </div>
 
         {/* Mobile: Horizontal Scroll with Pop-up effect | Desktop: Standard Grid */}
-        <div className="flex flex-row md:grid md:grid-cols-3 gap-6 sm:gap-10 md:gap-8 overflow-x-auto md:overflow-visible snap-x snap-mandatory no-scrollbar pb-10 pt-2 md:py-0 px-10 md:px-0 -mx-10 md:mx-0">
+        <div className="flex flex-row md:grid md:grid-cols-3 gap-6 sm:gap-10 md:gap-8 overflow-x-auto md:overflow-visible snap-x snap-mandatory no-scrollbar pb-10 pt-2 md:py-0 w-full">
           {stats.map((stat, index) => (
             <motion.div
               key={index}

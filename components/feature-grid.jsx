@@ -10,7 +10,7 @@ export function FeatureGrid({ features, userRole }) {
   return (
     <div className="w-full relative overflow-hidden">
       {/* Mobile: Horizontal Scroll with Pop-up effect | Desktop: Standard Grid */}
-      <div className="flex flex-row md:grid md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 overflow-x-auto md:overflow-visible snap-x snap-mandatory no-scrollbar pb-10 pt-4 md:py-0 px-10 md:px-0 -mx-10 md:mx-0">
+      <div className="flex flex-row md:grid md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 overflow-x-auto md:overflow-visible snap-x snap-mandatory no-scrollbar pb-10 pt-4 md:py-0 w-full">
         {features.map((feature, index) => {
           let href = feature.href;
           let title = feature.title;
