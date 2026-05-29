@@ -228,6 +228,7 @@ export async function processIncomingSMS(messageText, lastDocId = null) {
 
         return {
           reply: `DocSaathi SUCCESS: Consultation scheduled with ${doctorToBook.name} for ${formattedTimeLabel}. Video booth link SMS sent to ASHA worker. Booking ID: ${bookResult.id.substring(0,8)}`,
+          appointmentId: bookResult.id,
           success: true
         };
       } else {
@@ -251,5 +252,42 @@ export async function processIncomingSMS(messageText, lastDocId = null) {
       reply: `DocSaathi: Failed to process request. ${error.message || "Please check network connection."}`,
       success: false
     };
+  }
+}
+
+/**
+ * Fetches all active/scheduled appointments booked for the currently logged-in patient
+ */
+export async function getSmsBookedAppointments() {
+  const { userId } = await auth();
+  if (!userId) return [];
+
+  try {
+    const user = await db.user.findUnique({
+      where: { clerkUserId: userId },
+    });
+
+    if (!user) return [];
+
+    return await db.appointment.findMany({
+      where: {
+        patientId: user.id,
+        status: "SCHEDULED",
+      },
+      include: {
+        doctor: {
+          select: {
+            name: true,
+            specialty: true,
+          }
+        }
+      },
+      orderBy: {
+        startTime: "asc",
+      }
+    });
+  } catch (error) {
+    console.error("Failed to fetch SMS booked appointments:", error);
+    return [];
   }
 }
