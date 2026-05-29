@@ -14,6 +14,7 @@ import {
   MicOff,
   PhoneOff,
   User,
+  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -542,11 +543,11 @@ export default function VideoCall({
                 <DialogTrigger asChild>
                   <Button
                     variant="outline"
-                    size="icon"
-                    className="rounded-full h-12 w-12 sm:h-16 sm:w-16 border-2 border-sky-400 bg-sky-50 hover:bg-sky-100 text-sky-600 dark:bg-sky-950/20 dark:border-sky-800 dark:text-sky-400 dark:hover:bg-sky-900/30 transition-all active:scale-90 shadow-lg shadow-sky-500/10 cursor-pointer"
+                    className="h-12 sm:h-16 px-4 sm:px-6 rounded-full border-2 border-sky-400 bg-gradient-to-r from-sky-500/10 to-blue-600/10 hover:from-sky-500/20 hover:to-blue-600/20 text-sky-600 dark:text-sky-400 dark:border-sky-850 dark:from-sky-950/40 dark:to-blue-950/40 dark:hover:from-sky-950/60 dark:hover:to-blue-950/60 transition-all active:scale-90 shadow-lg shadow-sky-500/15 cursor-pointer flex items-center gap-2 font-black text-[11px] sm:text-xs tracking-wider uppercase"
                     title="Record AI Voice Consultation Note"
                   >
-                    <Mic className="h-5 w-5 sm:h-6 sm:w-6 text-sky-500" />
+                    <Sparkles className="h-4.5 w-4.5 sm:h-5 sm:w-5 text-sky-500 animate-pulse shrink-0" />
+                    <span className="hidden xs:inline">AI Notes</span>
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-md rounded-3xl border-sky-100 dark:border-sky-900/30 bg-slate-950 p-6 shadow-2xl">
