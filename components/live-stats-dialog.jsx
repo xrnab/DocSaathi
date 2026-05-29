@@ -61,17 +61,17 @@ export default function LiveStatsDialog() {
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-xl rounded-3xl border-slate-200 dark:border-slate-800 bg-card p-6 shadow-2xl">
+      <DialogContent className="sm:max-w-xl rounded-3xl border-slate-200/80 dark:border-slate-800 bg-background/98 dark:bg-slate-950/98 p-6 shadow-2xl backdrop-blur-xl">
         <DialogHeader className="space-y-1">
           <div className="flex items-center justify-between">
-            <Badge variant="outline" className="bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full select-none flex items-center gap-1">
+            <Badge variant="outline" className="bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full select-none flex items-center gap-1">
               <span className="relative flex h-1.5 w-1.5 shrink-0">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
               </span>
               Live Impact Registry
             </Badge>
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">
+            <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none">
               Nabha Regional Hub
             </span>
           </div>
@@ -79,7 +79,7 @@ export default function LiveStatsDialog() {
             <Award className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
             DocSaathi Dynamic Impact
           </DialogTitle>
-          <DialogDescription className="text-xs text-muted-foreground leading-relaxed leading-normal">
+          <DialogDescription className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
             Real-time verified health stats logged directly in our decentralized databases across ASHA workers, clinical specialist consultation channels, and patient registries.
           </DialogDescription>
         </DialogHeader>
@@ -93,59 +93,65 @@ export default function LiveStatsDialog() {
           <div className="grid grid-cols-2 gap-4 pt-4">
             
             {/* Stat: Completed Consults */}
-            <div className="bg-emerald-500/5 dark:bg-emerald-950/10 border border-emerald-500/10 p-4 rounded-2xl flex flex-col justify-between shadow-xs">
+            <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/40 p-4 rounded-2xl flex flex-col justify-between shadow-sm">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] uppercase font-bold text-emerald-600 dark:text-emerald-400 tracking-wider">Tele-Consults</span>
-                <Activity className="h-4 w-4 text-emerald-500" />
+                <span className="text-[10px] uppercase font-extrabold text-emerald-700 dark:text-emerald-300 tracking-wider">Tele-Consults</span>
+                <Activity className="h-4.5 w-4.5 text-emerald-600 dark:text-emerald-400" />
               </div>
-              <div className="pt-2">
-                <h3 className="text-2xl font-black tracking-tight text-foreground">{displayStats.consultations}</h3>
-                <p className="text-[10px] text-muted-foreground mt-0.5">Completed consultations</p>
+              <div className="pt-3">
+                <h3 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">{displayStats.consultations}</h3>
+                <p className="text-[10px] text-slate-600 dark:text-slate-400 font-bold mt-0.5">Completed consultations</p>
               </div>
             </div>
 
             {/* Stat: Registered Families */}
-            <div className="bg-amber-500/5 dark:bg-amber-950/10 border border-amber-500/10 p-4 rounded-2xl flex flex-col justify-between shadow-xs">
+            <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 p-4 rounded-2xl flex flex-col justify-between shadow-sm">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] uppercase font-bold text-amber-600 dark:text-amber-400 tracking-wider">ASHA Families</span>
-                <Heart className="h-4 w-4 text-amber-500" />
+                <span className="text-[10px] uppercase font-extrabold text-amber-700 dark:text-amber-300 tracking-wider">ASHA Families</span>
+                <Heart className="h-4.5 w-4.5 text-amber-600 dark:text-amber-400" />
               </div>
-              <div className="pt-2">
-                <h3 className="text-2xl font-black tracking-tight text-foreground">{displayStats.families}</h3>
-                <p className="text-[10px] text-muted-foreground mt-0.5">Registered family profiles</p>
+              <div className="pt-3">
+                <h3 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">{displayStats.families}</h3>
+                <p className="text-[10px] text-slate-600 dark:text-slate-400 font-bold mt-0.5">Registered family profiles</p>
               </div>
             </div>
 
             {/* Stat: Outbreaks Surveillance */}
-            <div className="bg-rose-500/5 dark:bg-rose-950/10 border border-rose-500/10 p-4 rounded-2xl flex flex-col justify-between shadow-xs">
+            <div className="bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-800/40 p-4 rounded-2xl flex flex-col justify-between shadow-sm">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] uppercase font-bold text-rose-600 dark:text-rose-400 tracking-wider">Outbreak Alerts</span>
-                <Sparkles className="h-4 w-4 text-rose-500" />
+                <span className="text-[10px] uppercase font-extrabold text-rose-700 dark:text-rose-300 tracking-wider">Outbreak Alerts</span>
+                <Sparkles className="h-4.5 w-4.5 text-rose-600 dark:text-rose-400" />
               </div>
-              <div className="pt-2">
-                <h3 className="text-2xl font-black tracking-tight text-foreground">{displayStats.outbreaks}</h3>
-                <p className="text-[10px] text-muted-foreground mt-0.5">Surveillance logs filed</p>
+              <div className="pt-3">
+                <h3 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">{displayStats.outbreaks}</h3>
+                <p className="text-[10px] text-slate-600 dark:text-slate-400 font-bold mt-0.5">Surveillance logs filed</p>
               </div>
             </div>
 
             {/* Stat: Vaccinations Tracked */}
-            <div className="bg-blue-500/5 dark:bg-blue-950/10 border border-blue-500/10 p-4 rounded-2xl flex flex-col justify-between shadow-xs">
+            <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800/40 p-4 rounded-2xl flex flex-col justify-between shadow-sm">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] uppercase font-bold text-blue-600 dark:text-blue-400 tracking-wider">Immunisations</span>
-                <Pill className="h-4 w-4 text-blue-500" />
+                <span className="text-[10px] uppercase font-extrabold text-blue-700 dark:text-blue-300 tracking-wider">Immunisations</span>
+                <Pill className="h-4.5 w-4.5 text-blue-600 dark:text-blue-400" />
               </div>
-              <div className="pt-2">
-                <h3 className="text-2xl font-black tracking-tight text-foreground">{displayStats.vaccinations}</h3>
-                <p className="text-[10px] text-muted-foreground mt-0.5">Vaccinations tracked</p>
+              <div className="pt-3">
+                <h3 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">{displayStats.vaccinations}</h3>
+                <p className="text-[10px] text-slate-600 dark:text-slate-400 font-bold mt-0.5">Vaccinations tracked</p>
               </div>
             </div>
 
             {/* Sub-registry elements */}
-            <div className="col-span-2 border-t border-slate-100 dark:border-slate-800 pt-4 mt-2">
-              <div className="flex justify-between items-center text-xs px-2 text-muted-foreground font-medium">
-                <span className="flex items-center gap-1"><Users className="h-3.5 w-3.5" /> Patients: <strong>{displayStats.patients}</strong></span>
-                <span className="flex items-center gap-1"><Stethoscope className="h-3.5 w-3.5" /> Verified Doctors: <strong>{displayStats.doctors}</strong></span>
-                <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" /> Symptom Checks: <strong>{displayStats.symptomChecks}</strong></span>
+            <div className="col-span-2 border-t border-slate-200 dark:border-slate-800/80 pt-4 mt-2">
+              <div className="flex flex-col sm:flex-row justify-between items-center gap-3 text-[11px] px-1 text-slate-600 dark:text-slate-300 font-black">
+                <span className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-900/50 px-3 py-2 rounded-full border border-slate-200/50 dark:border-slate-800/50 w-full sm:w-auto justify-center select-none shadow-2xs">
+                  <Users className="h-3.5 w-3.5 text-slate-500" /> Patients: <strong className="text-foreground">{displayStats.patients}</strong>
+                </span>
+                <span className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-900/50 px-3 py-2 rounded-full border border-slate-200/50 dark:border-slate-800/50 w-full sm:w-auto justify-center select-none shadow-2xs">
+                  <Stethoscope className="h-3.5 w-3.5 text-slate-500" /> Verified Doctors: <strong className="text-foreground">{displayStats.doctors}</strong>
+                </span>
+                <span className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-900/50 px-3 py-2 rounded-full border border-slate-200/50 dark:border-slate-800/50 w-full sm:w-auto justify-center select-none shadow-2xs">
+                  <Calendar className="h-3.5 w-3.5 text-slate-500" /> Checks: <strong className="text-foreground">{displayStats.symptomChecks}</strong>
+                </span>
               </div>
             </div>
 

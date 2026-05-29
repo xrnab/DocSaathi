@@ -3,11 +3,11 @@ import { NextResponse } from "next/server";
 export async function POST(request) {
   try {
     const formData = await request.formData();
-    const file = formData.get("file");
+    const file = formData.get("audio");
 
     if (!file) {
       return NextResponse.json(
-        { error: "No audio file provided in the request." },
+        { error: "No audio file provided — field 'audio' is missing" },
         { status: 400 }
       );
     }
@@ -22,8 +22,11 @@ export async function POST(request) {
     }
 
     // Prepare FormData specifically for Groq's transcription endpoint
+    const ext = file.type?.includes("mp4") ? "mp4" : "webm";
+    const audioFile = new File([await file.arrayBuffer()], `recording.${ext}`, { type: file.type || "audio/webm" });
+
     const groqFormData = new FormData();
-    groqFormData.append("file", file);
+    groqFormData.append("file", audioFile);
     groqFormData.append("model", "whisper-large-v3");
 
     // Make the external request to Groq API

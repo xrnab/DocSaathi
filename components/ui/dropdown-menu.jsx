@@ -19,9 +19,61 @@ function DropdownMenuPortal({
 }
 
 function DropdownMenuTrigger({
+  children,
   ...props
 }) {
-  return (<DropdownMenuPrimitive.Trigger data-slot="dropdown-menu-trigger" {...props} />);
+  const isTouchRef = React.useRef(false);
+  const touchStartRef = React.useRef({ x: 0, y: 0 });
+  const hasMovedRef = React.useRef(false);
+
+  return (
+    <DropdownMenuPrimitive.Trigger
+      data-slot="dropdown-menu-trigger"
+      onPointerDown={(e) => {
+        if (e.pointerType === "touch" || isTouchRef.current) {
+          e.preventDefault();
+          isTouchRef.current = true;
+        } else {
+          isTouchRef.current = false;
+        }
+        if (props.onPointerDown) props.onPointerDown(e);
+      }}
+      onTouchStart={(e) => {
+        isTouchRef.current = true;
+        const touch = e.touches[0];
+        touchStartRef.current = { x: touch.clientX, y: touch.clientY };
+        hasMovedRef.current = false;
+        if (props.onTouchStart) props.onTouchStart(e);
+      }}
+      onTouchMove={(e) => {
+        const touch = e.touches[0];
+        const diffX = Math.abs(touch.clientX - touchStartRef.current.x);
+        const diffY = Math.abs(touch.clientY - touchStartRef.current.y);
+        if (diffX > 8 || diffY > 8) {
+          hasMovedRef.current = true;
+        }
+        if (props.onTouchMove) props.onTouchMove(e);
+      }}
+      onTouchEnd={(e) => {
+        if (isTouchRef.current && !hasMovedRef.current) {
+          const target = e.currentTarget;
+          // Dispatch a click event to trigger the button's action if any, and open the menu
+          setTimeout(() => {
+            const event = new KeyboardEvent("keydown", {
+              key: "Enter",
+              bubbles: true,
+              cancelable: true,
+            });
+            target.dispatchEvent(event);
+          }, 0);
+        }
+        if (props.onTouchEnd) props.onTouchEnd(e);
+      }}
+      {...props}
+    >
+      {children}
+    </DropdownMenuPrimitive.Trigger>
+  );
 }
 
 function DropdownMenuContent({

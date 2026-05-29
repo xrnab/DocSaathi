@@ -41,7 +41,13 @@ export default function VoiceNoteRecorder({ appointmentId, fromRole = "PATIENT",
       // Request microphone access
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       
-      const mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
+      const mimeType = MediaRecorder.isTypeSupported("audio/webm") 
+        ? "audio/webm" 
+        : MediaRecorder.isTypeSupported("audio/mp4") 
+          ? "audio/mp4" 
+          : "";
+
+      const mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : {});
       mediaRecorderRef.current = mediaRecorder;
 
       mediaRecorder.ondataavailable = (event) => {
@@ -51,7 +57,7 @@ export default function VoiceNoteRecorder({ appointmentId, fromRole = "PATIENT",
       };
 
       mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType || "audio/webm" });
         await uploadAudio(audioBlob);
         
         // Stop audio tracks to release the hardware mic
@@ -86,8 +92,10 @@ export default function VoiceNoteRecorder({ appointmentId, fromRole = "PATIENT",
 
   const uploadAudio = async (audioBlob) => {
     try {
+      const isMp4 = audioBlob.type?.includes("mp4");
+      const filename = isMp4 ? "recording.mp4" : "recording.webm";
       const formData = new FormData();
-      formData.append("file", audioBlob, "consultation_voice.webm");
+      formData.append("audio", audioBlob, filename);
 
       const response = await fetch("/api/voice-transcribe", {
         method: "POST",
