@@ -59,8 +59,12 @@ export default function Header() {
           <div className="flex items-center gap-2 sm:gap-3 shrink-0 z-[60]">
             {/* Static Emergency Button - Always Visible and Clickable */}
             <Link href="/emergency" className="shrink-0" title="SOS Emergency">
-              <Button variant="destructive" size="icon" className="w-9 h-9 bg-red-600 hover:bg-red-700 text-white shadow-md shadow-red-500/25 rounded-full flex items-center justify-center cursor-pointer notranslate">
-                <PhoneCall className="h-4.5 w-4.5 animate-pulse shrink-0" />
+              <Button 
+                variant="destructive" 
+                className="w-9 h-9 sm:w-auto sm:px-3 sm:py-1.5 gap-1 bg-red-600 hover:bg-red-700 text-white shadow-md shadow-red-500/25 rounded-full flex items-center justify-center cursor-pointer notranslate font-black text-[10px]"
+              >
+                <PhoneCall className="h-4 w-4 animate-pulse shrink-0" />
+                <span className="hidden sm:inline tracking-wider leading-none">SOS</span>
               </Button>
             </Link>
 
