@@ -45,9 +45,12 @@ import {
   Heart, 
   Stethoscope, 
   CheckCircle,
-  Loader2
+  Loader2,
+  QrCode
 } from "lucide-react";
 import { format } from "date-fns";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 
 const VACCINE_LIST = [
   { name: "BCG (Tuberculosis)", code: "BCG" },
@@ -60,6 +63,9 @@ const VACCINE_LIST = [
 ];
 
 export default function AshaWorkerDashboard() {
+  const searchParams = useSearchParams();
+  const prefillName = searchParams ? searchParams.get("prefillName") : null;
+
   const { isOnline, enqueue } = useOfflineSyncCtx();
   const {
     families,
@@ -88,6 +94,16 @@ export default function AshaWorkerDashboard() {
   const [submittingOutbreak, setSubmittingOutbreak] = useState(false);
   const [submittingBooking, setSubmittingBooking] = useState(false);
   const [message, setMessage] = useState(null);
+
+  useEffect(() => {
+    if (prefillName) {
+      setAppointmentForm(prev => ({
+        ...prev,
+        memberName: prefillName
+      }));
+      setActiveTab("proxy");
+    }
+  }, [prefillName]);
 
   useEffect(() => {
     async function loadData() {
@@ -150,7 +166,7 @@ export default function AshaWorkerDashboard() {
       const res = await createFamily(familyPayload);
 
       if (res.queued) {
-        showNotification("Household registry saved offline! Will sync when connection returns.");
+        showNotification("Saved locally, will sync when online");
       } else if (res.result?.success) {
         showNotification("Household registry created successfully!");
       }
@@ -181,9 +197,9 @@ export default function AshaWorkerDashboard() {
       const res = await addMember(selectedFamilyId, memberPayload);
 
       if (res.queued) {
-        showNotification(`${newMember.name} added offline! Will sync when connection returns.`);
+        showNotification("Saved locally, will sync when online");
       } else if (res.result?.success) {
-        showNotification(`${newMember.name} added to family registry!`);
+        showNotification("All updates successfully synced!");
       }
       setNewMember({ name: "", age: "", gender: "Male", relation: "Son", immunisations: [] });
     } catch (err) {
@@ -212,9 +228,9 @@ export default function AshaWorkerDashboard() {
       });
 
       if (res.queued) {
-        showNotification(`Vaccination record updated offline for ${member.name}`);
+        showNotification("Saved locally, will sync when online");
       } else if (res.result?.success) {
-        showNotification(`Immunisation records updated for ${member.name}`);
+        showNotification("Vaccination record updated successfully!");
       }
     } catch (err) {
       showNotification("Failed to update immunisation", "error");
@@ -252,7 +268,7 @@ export default function AshaWorkerDashboard() {
         }
       } else {
         await enqueue("CREATE_OUTBREAK_REPORT", outbreakPayload);
-        showNotification("Outbreak Alert saved offline! Will dispatch automatically when back online.");
+        showNotification("Saved locally, will sync when online");
       }
       setOutbreak({ symptoms: [], village: "", block: "", caseCount: "", notes: "" });
     } catch (err) {
@@ -288,7 +304,7 @@ export default function AshaWorkerDashboard() {
         }
       } else {
         await enqueue("BOOK_ASHA_APPOINTMENT", bookingPayload);
-        showNotification("Proxy booking saved offline! Doctor consultation will schedule once online.");
+        showNotification("Saved locally, will sync when online");
         
         const optimisticApp = {
           id: `local-app-${Date.now()}`,
@@ -321,6 +337,16 @@ export default function AshaWorkerDashboard() {
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-8 max-w-7xl animate-in fade-in duration-300">
+      
+      {/* Offline Alert Banner */}
+      {!isOnline && (
+        <div className="bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-400 p-4 rounded-2xl flex items-start gap-3 shadow-xs select-none animate-in slide-in-from-top duration-300">
+          <AlertCircle className="w-5 h-5 mt-0.5 shrink-0 text-amber-500 animate-pulse" />
+          <div className="text-xs sm:text-sm font-semibold">
+            You're offline. Family registry, vaccinations, and outbreak reports are saved locally and will sync automatically.
+          </div>
+        </div>
+      )}
       
       {/* Toast Notification */}
       {message && (
@@ -417,10 +443,10 @@ export default function AshaWorkerDashboard() {
       </div>
 
       {/* Tabs Switcher */}
-      <div className="flex flex-wrap border-b border-border/80 gap-2">
+      <div className="flex overflow-x-auto no-scrollbar border-b border-border/80 gap-2 scroll-smooth whitespace-nowrap pb-1">
         <button 
           onClick={() => setActiveTab("registry")}
-          className={`pb-4 px-4 text-sm font-bold border-b-2 transition-all ${
+          className={`pb-4 px-4 text-sm font-bold border-b-2 transition-all shrink-0 ${
             activeTab === "registry" 
               ? "border-sky-500 text-sky-600 dark:text-sky-400" 
               : "border-transparent text-muted-foreground hover:text-foreground"
@@ -430,7 +456,7 @@ export default function AshaWorkerDashboard() {
         </button>
         <button 
           onClick={() => setActiveTab("immunisation")}
-          className={`pb-4 px-4 text-sm font-bold border-b-2 transition-all ${
+          className={`pb-4 px-4 text-sm font-bold border-b-2 transition-all shrink-0 ${
             activeTab === "immunisation" 
               ? "border-sky-500 text-sky-600 dark:text-sky-400" 
               : "border-transparent text-muted-foreground hover:text-foreground"
@@ -440,7 +466,7 @@ export default function AshaWorkerDashboard() {
         </button>
         <button 
           onClick={() => setActiveTab("outbreak")}
-          className={`pb-4 px-4 text-sm font-bold border-b-2 transition-all ${
+          className={`pb-4 px-4 text-sm font-bold border-b-2 transition-all shrink-0 ${
             activeTab === "outbreak" 
               ? "border-sky-500 text-sky-600 dark:text-sky-400" 
               : "border-transparent text-muted-foreground hover:text-foreground"
@@ -450,7 +476,7 @@ export default function AshaWorkerDashboard() {
         </button>
         <button 
           onClick={() => setActiveTab("proxy")}
-          className={`pb-4 px-4 text-sm font-bold border-b-2 transition-all ${
+          className={`pb-4 px-4 text-sm font-bold border-b-2 transition-all shrink-0 ${
             activeTab === "proxy" 
               ? "border-sky-500 text-sky-600 dark:text-sky-400" 
               : "border-transparent text-muted-foreground hover:text-foreground"
@@ -458,6 +484,11 @@ export default function AshaWorkerDashboard() {
         >
           Proxy Book Doctor
         </button>
+        <Link href="/asha/scan" className="pb-4 px-4 text-sm font-bold text-muted-foreground hover:text-foreground flex items-center gap-1.5 ml-auto shrink-0">
+          <Button size="sm" className="bg-sky-600 hover:bg-sky-700 text-white gap-1.5 font-bold rounded-xl h-8 cursor-pointer shadow-md shadow-sky-600/10">
+            <QrCode className="w-4 h-4" /> Scan Patient
+          </Button>
+        </Link>
       </div>
 
       {/* Registry Tab Content */}

@@ -11,6 +11,7 @@ import { Suspense } from "react";
 import { PwaInstallBanner } from "@/components/pwa-install-banner";
 import { OfflineSyncProvider } from "@/components/offline-sync-provider";
 import { ServiceWorkerRegistrar } from "@/components/sw-registrar";
+import NetworkStatusBar from "@/components/network-status-bar";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -58,6 +59,7 @@ export default function RootLayout({ children }) {
             disableTransitionOnChange
           >
             <OfflineSyncProvider>
+              <NetworkStatusBar />
               <Suspense fallback={null}>
                 <PageProgress />
               </Suspense>

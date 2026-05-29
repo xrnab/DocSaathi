@@ -35,7 +35,7 @@ async function BottomNavSection() {
 export default function Header() {
   return (
     <>
-      <header className="absolute top-2 left-0 right-0 z-50 px-2 sm:px-4 flex justify-center">
+      <header className="absolute top-2 left-0 right-0 z-50 px-2 sm:px-4 flex justify-center transition-all duration-500 [.status-bar-active_&]:top-11 sm:[.status-bar-active_&]:top-12">
         <nav className="container max-w-7xl min-h-[3.25rem] sm:min-h-[3.5rem] flex items-center justify-between bg-background/70 backdrop-blur-xl border border-border shadow-lg shadow-sky-500/5 rounded-[2rem] px-3 sm:px-6 py-1 sm:py-1.5 gap-2 transition-all">
           
           {/* Logo - Static / Fast Load */}

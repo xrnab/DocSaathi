@@ -16,11 +16,14 @@ import { OfflineEmergencyCard } from "@/components/offline-emergency-card";
 import { ImpactStatistics } from "@/components/impact-statistics";
 import { FeatureGrid } from "@/components/feature-grid";
 import { SeasonalReportGrid } from "@/components/seasonal-report-grid";
+import LiveStatsBanner from "@/components/live-stats-banner";
+import LiveStatsDialog from "@/components/live-stats-dialog";
 
 export default async function Home() {
   const userRole = await getUserRole();
   return (
     <div className="bg-background">
+      <LiveStatsBanner />
       <HomeAiAssistantButton />
       {/* Refactored Hero Section into a Card Layout */}
       <section className="container mx-auto px-4 pt-3 sm:pt-4 pb-6 flex flex-col items-center">
@@ -309,6 +312,7 @@ export default async function Home() {
           </Card>
         </div>
       </section>
+      <LiveStatsDialog />
     </div>
   );
 }

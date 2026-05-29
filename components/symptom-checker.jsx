@@ -197,6 +197,14 @@ export default function SymptomChecker() {
       if (!hasSeen) {
         setShowTooltip(true);
       }
+      
+      // Prefill for Ram Singh judging scenario
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("prefill") === "ram-singh") {
+        setSelectedSymptoms(["fever", "dizziness"]);
+        setCustomSymptom("Patient is a 62-year-old diabetic reporting sudden fever and severe dizziness after stubble burning exposure.");
+        setIsSymptomsOpen(true);
+      }
     }
   }, []);
 

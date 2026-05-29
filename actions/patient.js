@@ -1,5 +1,8 @@
+"use server";
+
 import { db } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
+import QRCode from "qrcode";
 
 /**
  * Get all appointments for the authenticated patient
@@ -68,5 +71,72 @@ export async function getPatientAppointments() {
   } catch (error) {
     console.error("Failed to get patient appointments:", error);
     return { error: "Failed to fetch appointments" };
+  }
+}
+
+export async function generatePatientQR(patientId = null) {
+  const { userId } = await auth();
+  if (!userId) {
+    throw new Error("Unauthorized");
+  }
+
+  try {
+    const currentUser = await db.user.findUnique({
+      where: { clerkUserId: userId },
+      select: { id: true, role: true }
+    });
+
+    if (!currentUser) {
+      throw new Error("User not found");
+    }
+
+    let targetId = patientId || currentUser.id;
+
+    // Check permissions
+    if (patientId && currentUser.role !== "ASHA_WORKER" && currentUser.role !== "ADMIN" && currentUser.role !== "OWNER") {
+      if (currentUser.id !== patientId) {
+        throw new Error("Unauthorized to access this patient QR code details.");
+      }
+    }
+
+    const patient = await db.user.findUnique({
+      where: { id: targetId },
+      select: {
+        id: true,
+        name: true,
+        bloodType: true,
+        allergies: true,
+        medications: true,
+        dateOfBirth: true,
+        village: true,
+        role: true,
+      }
+    });
+
+    if (!patient || patient.role !== "PATIENT") {
+      throw new Error("Patient profile not found.");
+    }
+
+    // Pack compact JSON payload
+    const payload = JSON.stringify({
+      id: patient.id,
+      name: patient.name,
+      bloodType: patient.bloodType,
+      allergies: patient.allergies || "None",
+      dob: patient.dateOfBirth,
+      village: patient.village || "Not specified"
+    });
+
+    // Generate Base64 PNG QR code
+    const qrDataUrl = await QRCode.toDataURL(payload, {
+      margin: 1,
+      width: 256,
+      errorCorrectionLevel: 'M'
+    });
+
+    return { qrDataUrl, patient };
+  } catch (error) {
+    console.error("Error generating patient QR:", error);
+    return { error: error.message || "Failed to generate QR card metadata." };
   }
 }

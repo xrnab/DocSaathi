@@ -8,6 +8,7 @@ import { getPatientRecords } from "@/actions/records";
 import { OfflineBadge } from "@/components/offline-badge";
 import { format } from "date-fns";
 import PunjabiVoiceReader from "@/components/punjabi-voice-reader";
+import CollapsiblePrescriptionOCR from "@/components/collapsible-prescription-ocr";
 
 
 export default async function PatientRecordScreen({ searchParams }) {
@@ -44,6 +45,9 @@ export default async function PatientRecordScreen({ searchParams }) {
         <PageHeader title="Patient Health Record" backLink="/" backLabel="Home" />
         <OfflineBadge />
       </div>
+
+      {/* Upload & Scan Prescription Drawer */}
+      <CollapsiblePrescriptionOCR patientId={patient.id} />
 
       {/* Patient Profile Header Card */}
       <Card className="border-sky-200 dark:border-sky-800 bg-card shadow-md rounded-2xl sm:rounded-3xl overflow-hidden relative">

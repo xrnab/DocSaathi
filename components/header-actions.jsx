@@ -11,6 +11,7 @@ import {
   Heart,
   MessageSquare,
   Activity,
+  Sparkles,
 } from "lucide-react";
 import Link from "next/link";
 import { SignInButton, useUser } from "@clerk/nextjs";
@@ -23,6 +24,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import NotificationBell from "./notification-bell";
+import OfflineFirstBadge from "./offline-first-badge";
 
 export function HeaderActions({ dbUser }) {
   const { user: clerkUser, isLoaded } = useUser();
@@ -43,6 +45,34 @@ export function HeaderActions({ dbUser }) {
 
   return (
     <>
+      {/* Live Demo Scenario Page */}
+      <Link href="/demo">
+        <Button
+          variant="outline"
+          size="icon"
+          className="lg:hidden flex items-center justify-center rounded-full h-8 w-8 sm:h-9 sm:w-9 border-none bg-emerald-50/30 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 font-bold relative"
+        >
+          <Sparkles className="h-4 w-4 animate-pulse" />
+          <span className="absolute top-0.5 right-0.5 flex h-1.5 w-1.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+          </span>
+        </Button>
+        <Button
+          variant="outline"
+          className="hidden lg:inline-flex items-center gap-1.5 border-none bg-emerald-50/30 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 font-bold relative"
+        >
+          <Sparkles className="h-4 w-4 text-emerald-500 animate-pulse" />
+          Live Demo
+          <span className="absolute top-0.5 right-1 flex h-1.5 w-1.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+          </span>
+        </Button>
+      </Link>
+
+      <OfflineFirstBadge />
+
       {/* SMS Simulator Demo - responsive visibility */}
       <Link href="/sms-demo">
         <Button

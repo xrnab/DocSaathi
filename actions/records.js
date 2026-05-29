@@ -2,6 +2,7 @@
 
 import { db } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
+import { revalidatePath } from "next/cache";
 
 export async function getUserRole() {
   const { userId } = await auth();
@@ -121,5 +122,57 @@ export async function getDoctorPatients() {
   } catch (error) {
     console.error("Error fetching doctor patients:", error);
     return { error: "Failed to fetch patients" };
+  }
+}
+
+export async function saveScannedPrescriptions(medicines, patientId = null) {
+  const { userId } = await auth();
+  if (!userId) {
+    return { error: "Unauthorized" };
+  }
+
+  try {
+    const currentUser = await db.user.findUnique({
+      where: { clerkUserId: userId },
+      select: { id: true, role: true }
+    });
+
+    if (!currentUser) {
+      return { error: "User not found" };
+    }
+
+    let targetPatientId = patientId;
+
+    if (!targetPatientId) {
+      if (currentUser.role !== "PATIENT") {
+        return { error: "Only patient accounts can save scanned prescriptions to their own files." };
+      }
+      targetPatientId = currentUser.id;
+    } else {
+      if (currentUser.role !== "DOCTOR" && currentUser.role !== "ADMIN" && currentUser.role !== "OWNER" && currentUser.id !== targetPatientId) {
+        return { error: "Unauthorized to upload prescriptions on behalf of this patient." };
+      }
+    }
+
+    const createdData = medicines.map((m) => ({
+      patientId: targetPatientId,
+      name: m.name || "Unknown Medicine",
+      dosage: m.dosage || "As directed",
+      frequency: m.frequency || "Once daily",
+      duration: m.duration || "unclear",
+      active: true
+    }));
+
+    await db.prescription.createMany({
+      data: createdData
+    });
+
+    revalidatePath("/records");
+    revalidatePath("/patients");
+
+    return { success: true, count: createdData.length };
+  } catch (error) {
+    console.error("Error saving scanned prescriptions:", error);
+    return { error: error.message || "Failed to save scanned prescriptions." };
   }
 }

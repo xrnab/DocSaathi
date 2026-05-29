@@ -5,6 +5,9 @@ import {
   getOutbreakDashboardData, 
   resolveOutbreakAlert 
 } from "@/actions/outbreak";
+import dynamic from "next/dynamic";
+
+const OutbreakHeatmap = dynamic(() => import("@/components/outbreak-heatmap"), { ssr: false });
 import {
   Select,
   SelectContent,
@@ -44,6 +47,7 @@ export default function OutbreakSurveillancePage() {
   const [resolving, setResolving] = useState({});
   const [selectedVillageFilter, setSelectedVillageFilter] = useState("ALL");
   const [selectedSymptomFilter, setSelectedSymptomFilter] = useState("ALL");
+  const [view, setView] = useState("map");
 
   const loadData = async () => {
     try {
@@ -411,132 +415,160 @@ export default function OutbreakSurveillancePage() {
             </CardContent>
           </Card>
 
-          {/* ASHA formal Outbreak reports logs */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Outbreak Reports List */}
-            <div className="lg:col-span-1">
-              <Card className="border-border bg-card shadow-sm h-full">
-                <CardHeader>
-                  <CardTitle className="text-xl font-bold flex items-center gap-2 text-foreground">
-                    <ShieldAlert className="text-sky-500 w-5 h-5" /> ASHA Dispatched Alerts
-                  </CardTitle>
-                  <CardDescription>Official epidemic notifications dispatched by ASHA field workers.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4 max-h-[400px] overflow-y-auto pr-1">
-                  {data?.formalReports.length === 0 ? (
-                    <p className="text-sm text-muted-foreground italic py-4">No formal outbreak dispatches logged today.</p>
-                  ) : (
-                    data?.formalReports.map((report) => (
-                      <div key={report.id} className="border border-border/80 rounded-2xl p-4 bg-slate-50/20 dark:bg-slate-900/10 space-y-2">
-                        <div className="flex items-center justify-between border-b border-border/60 pb-2">
-                          <span className="font-extrabold text-foreground text-sm">{report.reportedBy?.name || "ASHA Worker"}</span>
-                          <Badge variant="destructive" className="text-[10px] font-black">{report.caseCount} cases</Badge>
-                        </div>
-                        <p className="text-xs text-muted-foreground font-semibold">
-                          Village: <strong className="text-foreground">{report.village}</strong> • Block: {report.block}
-                        </p>
-                        <div className="flex flex-wrap gap-1 mt-1.5">
-                          {report.symptoms.map((s, idx) => (
-                            <span key={idx} className="bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-900/30 text-[9px] font-bold px-2 py-0.5 rounded-full">{s}</span>
-                          ))}
-                        </div>
-                        {report.notes && (
-                          <p className="text-[11px] text-muted-foreground italic leading-relaxed mt-2 pt-2 border-t border-border/40">
-                            &quot;{report.notes}&quot;
-                          </p>
-                        )}
-                      </div>
-                    ))
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Live Surveillance Logs */}
-            <div className="lg:col-span-2">
-              <Card className="border-border bg-card shadow-sm h-full">
-                <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div>
-                    <CardTitle className="text-xl font-bold flex items-center gap-2 text-foreground">
-                      <FileSpreadsheet className="text-sky-500 w-5 h-5" /> Surveillance Logs Registry
-                    </CardTitle>
-                    <CardDescription>Exhaustive list of automated symptom checker telemetry reports.</CardDescription>
-                  </div>
-                  
-                  {/* Simple filter drop-downs */}
-                  <div className="flex gap-2 shrink-0">
-                    <Select onValueChange={v => setSelectedVillageFilter(v)} value={selectedVillageFilter}>
-                      <SelectTrigger className="w-[120px] bg-slate-50/50 dark:bg-slate-900/30 text-xs">
-                        <SelectValue placeholder="Village" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="ALL">All Villages</SelectItem>
-                        {NABHA_VILLAGES.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-
-                    <Select onValueChange={v => setSelectedSymptomFilter(v)} value={selectedSymptomFilter}>
-                      <SelectTrigger className="w-[120px] bg-slate-50/50 dark:bg-slate-900/30 text-xs">
-                        <SelectValue placeholder="Symptom" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="ALL">All Symptoms</SelectItem>
-                        {SYMPTOMS_POOL.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </CardHeader>
-                <CardContent className="p-0">
-                  <div className="overflow-x-auto max-h-[350px] overflow-y-auto pr-1">
-                    <table className="w-full text-left text-xs font-semibold text-muted-foreground border-collapse">
-                      <thead className="bg-slate-50 dark:bg-slate-950/80 sticky top-0 border-b border-border/80 text-foreground font-black text-[10px] uppercase tracking-wider">
-                        <tr>
-                          <th className="p-4">Timestamp</th>
-                          <th className="p-4">Village</th>
-                          <th className="p-4">Symptoms</th>
-                          <th className="p-4">Demographics</th>
-                          <th className="p-4">Duration</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-border/60">
-                        {filteredLogs.length === 0 ? (
-                          <tr>
-                            <td colSpan="5" className="p-8 text-center text-sm text-muted-foreground italic">
-                              No surveillance logs found matching the filter criteria.
-                            </td>
-                          </tr>
-                        ) : (
-                          filteredLogs.slice(0, 15).map((log, idx) => (
-                            <tr key={log.id || idx} className="hover:bg-muted/30 transition-colors">
-                              <td className="p-4 whitespace-nowrap text-foreground font-extrabold flex items-center gap-1.5">
-                                <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
-                                {new Date(log.createdAt).toLocaleDateString([], { month: "short", day: "numeric" })}
-                                <span className="text-[10px] font-normal text-muted-foreground ml-1">
-                                  {new Date(log.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                </span>
-                              </td>
-                              <td className="p-4 whitespace-nowrap text-foreground font-bold">{log.village || "Nabha Central"}</td>
-                              <td className="p-4">
-                                <div className="flex flex-wrap gap-1 max-w-[180px]">
-                                  {log.symptoms.map((s, sIdx) => (
-                                    <span key={sIdx} className="bg-sky-50 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400 border border-sky-100 dark:border-sky-900/30 text-[9px] font-bold px-2 py-0.5 rounded-full">{s}</span>
-                                  ))}
-                                </div>
-                              </td>
-                              <td className="p-4 whitespace-nowrap uppercase tracking-wider text-[9px] font-black">
-                                <Badge variant="outline" className="text-[9px] font-black border-border/80">{log.patientType}</Badge>
-                              </td>
-                              <td className="p-4 whitespace-nowrap text-muted-foreground/80">{log.duration}</td>
-                            </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+          {/* Display View Toggle Switches */}
+          <div className="flex gap-2 border-b border-border/80 pb-4 mt-8">
+            <Button 
+              onClick={() => setView("map")} 
+              variant={view === "map" ? "default" : "outline"}
+              className={`font-bold rounded-xl px-5 cursor-pointer transition-all ${
+                view === "map" ? "bg-rose-500 hover:bg-rose-600 text-white shadow-md shadow-rose-500/20" : "border-slate-200 dark:border-slate-800"
+              }`}
+            >
+              🗺️ Map View
+            </Button>
+            <Button 
+              onClick={() => setView("table")} 
+              variant={view === "table" ? "default" : "outline"}
+              className={`font-bold rounded-xl px-5 cursor-pointer transition-all ${
+                view === "table" ? "bg-rose-500 hover:bg-rose-600 text-white shadow-md shadow-rose-500/20" : "border-slate-200 dark:border-slate-800"
+              }`}
+            >
+              📋 Table View
+            </Button>
           </div>
+
+          {view === "map" ? (
+            <div className="h-[500px] w-full bg-card border border-border/80 rounded-3xl overflow-hidden relative shadow-lg mt-6">
+              <OutbreakHeatmap reports={data?.submissions || []} />
+            </div>
+          ) : (
+            /* ASHA formal Outbreak reports logs */
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-6">
+              {/* Outbreak Reports List */}
+              <div className="lg:col-span-1">
+                <Card className="border-border bg-card shadow-sm h-full">
+                  <CardHeader>
+                    <CardTitle className="text-xl font-bold flex items-center gap-2 text-foreground">
+                      <ShieldAlert className="text-sky-500 w-5 h-5" /> ASHA Dispatched Alerts
+                    </CardTitle>
+                    <CardDescription>Official epidemic notifications dispatched by ASHA field workers.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4 max-h-[400px] overflow-y-auto pr-1">
+                    {data?.formalReports.length === 0 ? (
+                      <p className="text-sm text-muted-foreground italic py-4">No formal outbreak dispatches logged today.</p>
+                    ) : (
+                      data?.formalReports.map((report) => (
+                        <div key={report.id} className="border border-border/80 rounded-2xl p-4 bg-slate-50/20 dark:bg-slate-900/10 space-y-2">
+                          <div className="flex items-center justify-between border-b border-border/60 pb-2">
+                            <span className="font-extrabold text-foreground text-sm">{report.reportedBy?.name || "ASHA Worker"}</span>
+                            <Badge variant="destructive" className="text-[10px] font-black">{report.caseCount} cases</Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground font-semibold">
+                            Village: <strong className="text-foreground">{report.village}</strong> • Block: {report.block}
+                          </p>
+                          <div className="flex flex-wrap gap-1 mt-1.5">
+                            {report.symptoms.map((s, idx) => (
+                              <span key={idx} className="bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-900/30 text-[9px] font-bold px-2 py-0.5 rounded-full">{s}</span>
+                            ))}
+                          </div>
+                          {report.notes && (
+                            <p className="text-[11px] text-muted-foreground italic leading-relaxed mt-2 pt-2 border-t border-border/40">
+                              &quot;{report.notes}&quot;
+                            </p>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Live Surveillance Logs */}
+              <div className="lg:col-span-2">
+                <Card className="border-border bg-card shadow-sm h-full">
+                  <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                      <CardTitle className="text-xl font-bold flex items-center gap-2 text-foreground">
+                        <FileSpreadsheet className="text-sky-500 w-5 h-5" /> Surveillance Logs Registry
+                      </CardTitle>
+                      <CardDescription>Exhaustive list of automated symptom checker telemetry reports.</CardDescription>
+                    </div>
+                    
+                    {/* Simple filter drop-downs */}
+                    <div className="flex gap-2 shrink-0">
+                      <Select onValueChange={v => setSelectedVillageFilter(v)} value={selectedVillageFilter}>
+                        <SelectTrigger className="w-[120px] bg-slate-50/50 dark:bg-slate-900/30 text-xs">
+                          <SelectValue placeholder="Village" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="ALL">All Villages</SelectItem>
+                          {NABHA_VILLAGES.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+  
+                      <Select onValueChange={v => setSelectedSymptomFilter(v)} value={selectedSymptomFilter}>
+                        <SelectTrigger className="w-[120px] bg-slate-50/50 dark:bg-slate-900/30 text-xs">
+                          <SelectValue placeholder="Symptom" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="ALL">All Symptoms</SelectItem>
+                          {SYMPTOMS_POOL.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    <div className="overflow-x-auto max-h-[350px] overflow-y-auto pr-1">
+                      <table className="w-full text-left text-xs font-semibold text-muted-foreground border-collapse">
+                        <thead className="bg-slate-50 dark:bg-slate-950/80 sticky top-0 border-b border-border/80 text-foreground font-black text-[10px] uppercase tracking-wider">
+                          <tr>
+                            <th className="p-4">Timestamp</th>
+                            <th className="p-4">Village</th>
+                            <th className="p-4">Symptoms</th>
+                            <th className="p-4">Demographics</th>
+                            <th className="p-4">Duration</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-border/60">
+                          {filteredLogs.length === 0 ? (
+                            <tr>
+                              <td colSpan="5" className="p-8 text-center text-sm text-muted-foreground italic">
+                                No surveillance logs found matching the filter criteria.
+                              </td>
+                            </tr>
+                          ) : (
+                            filteredLogs.slice(0, 15).map((log, idx) => (
+                              <tr key={log.id || idx} className="hover:bg-muted/30 transition-colors">
+                                <td className="p-4 whitespace-nowrap text-foreground font-extrabold flex items-center gap-1.5">
+                                  <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
+                                  {new Date(log.createdAt).toLocaleDateString([], { month: "short", day: "numeric" })}
+                                  <span className="text-[10px] font-normal text-muted-foreground ml-1">
+                                    {new Date(log.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                  </span>
+                                </td>
+                                <td className="p-4 whitespace-nowrap text-foreground font-bold">{log.village || "Nabha Central"}</td>
+                                <td className="p-4">
+                                  <div className="flex flex-wrap gap-1 max-w-[180px]">
+                                    {log.symptoms.map((s, sIdx) => (
+                                      <span key={sIdx} className="bg-sky-50 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400 border border-sky-100 dark:border-sky-900/30 text-[9px] font-bold px-2 py-0.5 rounded-full">{s}</span>
+                                    ))}
+                                  </div>
+                                </td>
+                                <td className="p-4 whitespace-nowrap uppercase tracking-wider text-[9px] font-black">
+                                  <Badge variant="outline" className="text-[9px] font-black border-border/80">{log.patientType}</Badge>
+                                </td>
+                                <td className="p-4 whitespace-nowrap text-muted-foreground/80">{log.duration}</td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>

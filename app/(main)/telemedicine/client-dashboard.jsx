@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { 
-  Users, Activity, Pill, Clock, Video, FileText, Send, Wifi, ChevronRight, UserCircle, ShieldCheck
+  Users, Activity, Pill, Clock, Video, FileText, Send, Wifi, ChevronRight, UserCircle, ShieldCheck, Sparkles
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,11 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 // import VideoCall from "../video-call/video-call-ui"; // Using a placeholder for the demo to avoid WebRTC errors if no key
 
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+
+const PrescriptionOCR = dynamic(() => import("@/components/prescription-ocr"), { ssr: false });
+const PatientBriefingCard = dynamic(() => import("@/components/patient-briefing-card"), { ssr: false });
 
 export default function TelemedicineDashboardClient({ initialAppointments }) {
   const router = useRouter();
@@ -23,6 +28,8 @@ export default function TelemedicineDashboardClient({ initialAppointments }) {
   const [isPrescribing, setIsPrescribing] = useState(false);
   const [isJoining, setIsJoining] = useState(false);
   const [rxForm, setRxForm] = useState({ name: "", dosage: "", frequency: "", duration: "" });
+  const [isOcrDialogOpen, setIsOcrDialogOpen] = useState(false);
+  const [expandedBriefings, setExpandedBriefings] = useState({});
   
   const [currentDate, setCurrentDate] = useState("");
 
@@ -124,34 +131,67 @@ export default function TelemedicineDashboardClient({ initialAppointments }) {
             <div className="flex flex-row lg:flex-col gap-3 overflow-x-auto lg:overflow-y-auto pb-4 lg:pb-0 no-scrollbar" style={{ maxHeight: "calc(100vh - 250px)" }}>
               {initialAppointments.map((app) => {
                 const isActive = activeAppointment?.id === app.id;
+                const isBriefingOpen = !!expandedBriefings[app.id];
                 return (
-                  <Card 
-                    key={app.id} 
-                    className={`cursor-pointer transition-all flex-shrink-0 w-[280px] lg:w-full ${isActive ? 'border-sky-500 ring-1 ring-sky-500 shadow-md bg-sky-50/50 dark:bg-sky-900/10' : 'hover:border-sky-300'} rounded-xl overflow-hidden`}
-                    onClick={() => {
-                      setActiveAppointment(app);
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }}
-                  >
-                    <div className="p-4 flex items-center gap-3">
-                      <Avatar className="h-12 w-12 border border-sky-100">
-                        {app.patient.imageUrl && <AvatarImage src={app.patient.imageUrl} />}
-                        <AvatarFallback className="bg-sky-100 text-sky-700 font-bold">{app.patient.name ? app.patient.name.charAt(0) : "P"}</AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-bold text-sm truncate">{app.patient.name}</h4>
-                        <div className="flex items-center text-xs text-muted-foreground mt-0.5">
-                          <Clock className="h-3 w-3 mr-1" /> {format(new Date(app.startTime), "h:mm a")}
+                  <div key={app.id} className="flex-shrink-0 w-[280px] lg:w-full flex flex-col gap-2">
+                    {/* Collapsible Patient Briefing panel */}
+                    <div className="flex flex-col gap-1.5">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setExpandedBriefings(prev => ({ ...prev, [app.id]: !prev[app.id] }));
+                        }}
+                        className={`w-full justify-between text-xs font-bold rounded-xl h-8 py-1 px-2.5 cursor-pointer shadow-xs border transition-colors ${
+                          isBriefingOpen 
+                            ? "bg-sky-100 dark:bg-sky-900/40 text-sky-700 dark:text-sky-300 border-sky-300" 
+                            : "bg-sky-50/50 hover:bg-sky-100/50 dark:bg-sky-950/20 dark:hover:bg-sky-950/40 text-sky-600 dark:text-sky-400 border-sky-100/30 dark:border-sky-900/20"
+                        }`}
+                      >
+                        <span className="flex items-center gap-1.5">
+                          <Sparkles className="h-3.5 w-3.5 text-sky-500 animate-pulse" />
+                          Pre-Consult Briefing
+                        </span>
+                        <span className="text-[10px] font-medium text-muted-foreground">
+                          {isBriefingOpen ? "Hide" : "View"}
+                        </span>
+                      </Button>
+                      
+                      {isBriefingOpen && (
+                        <div className="w-full bg-card rounded-xl border border-sky-100 dark:border-sky-900/40 p-3.5 shadow-xs max-h-[300px] overflow-y-auto no-scrollbar animate-in slide-in-from-top-2 duration-200">
+                          <PatientBriefingCard appointmentId={app.id} />
                         </div>
-                      </div>
-                      <ChevronRight className={`h-5 w-5 ${isActive ? 'text-sky-500' : 'text-slate-300'}`} />
+                      )}
                     </div>
-                    {app.patientDescription && (
-                      <div className="bg-muted/50 px-4 py-2 text-xs text-muted-foreground truncate border-t border-border">
-                        <span className="font-semibold text-foreground">Issue:</span> {app.patientDescription}
+
+                    <Card 
+                      className={`cursor-pointer transition-all ${isActive ? 'border-sky-500 ring-1 ring-sky-500 shadow-md bg-sky-50/50 dark:bg-sky-900/10' : 'hover:border-sky-300'} rounded-xl overflow-hidden`}
+                      onClick={() => {
+                        setActiveAppointment(app);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                    >
+                      <div className="p-4 flex items-center gap-3">
+                        <Avatar className="h-12 w-12 border border-sky-100">
+                          {app.patient.imageUrl && <AvatarImage src={app.patient.imageUrl} />}
+                          <AvatarFallback className="bg-sky-100 text-sky-700 font-bold">{app.patient.name ? app.patient.name.charAt(0) : "P"}</AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-bold text-sm truncate">{app.patient.name}</h4>
+                          <div className="flex items-center text-xs text-muted-foreground mt-0.5">
+                            <Clock className="h-3 w-3 mr-1" /> {format(new Date(app.startTime), "h:mm a")}
+                          </div>
+                        </div>
+                        <ChevronRight className={`h-5 w-5 ${isActive ? 'text-sky-500' : 'text-slate-300'}`} />
                       </div>
-                    )}
-                  </Card>
+                      {app.patientDescription && (
+                        <div className="bg-muted/50 px-4 py-2 text-xs text-muted-foreground truncate border-t border-border">
+                          <span className="font-semibold text-foreground">Issue:</span> {app.patientDescription}
+                        </div>
+                      )}
+                    </Card>
+                  </div>
                 );
               })}
             </div>
@@ -204,11 +244,43 @@ export default function TelemedicineDashboardClient({ initialAppointments }) {
 
             {/* Prescription Form */}
             <Card className="border-sky-100 dark:border-sky-900 shadow-sm rounded-2xl">
-              <CardHeader className="bg-sky-50/50 dark:bg-sky-900/10 border-b border-sky-100 dark:border-sky-900 pb-4">
-                <CardTitle className="flex items-center gap-2 text-lg">
+              <CardHeader className="bg-sky-50/50 dark:bg-sky-900/10 border-b border-sky-100 dark:border-sky-900 pb-4 flex flex-row items-center justify-between gap-4">
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                   <Pill className="h-5 w-5 text-sky-500" />
                   Quick Prescription
                 </CardTitle>
+                
+                {activeAppointment && (
+                  <Dialog open={isOcrDialogOpen} onOpenChange={setIsOcrDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        className="border-sky-200 text-sky-600 dark:text-sky-400 font-bold rounded-xl h-8 text-xs cursor-pointer gap-1"
+                      >
+                        <Sparkles className="h-3.5 w-3.5" /> Scan Handwritten Prescription
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-md rounded-2xl border-sky-100 dark:border-sky-900/30">
+                      <DialogHeader>
+                        <DialogTitle className="text-center font-bold text-sky-700 dark:text-sky-400">
+                          Scan Handwritten Prescription
+                        </DialogTitle>
+                      </DialogHeader>
+                      <PrescriptionOCR 
+                        patientId={activeAppointment.patient.id} 
+                        onSaveSuccess={() => {
+                          setIsOcrDialogOpen(false);
+                          // Refresh consultations queue to pull in scanned meds optimistically
+                          router.refresh();
+                          
+                          // Also optimistically inject scanned medications in UI snapshot
+                          // We can force loadData or simple queue refresh since it's Next app routing
+                        }}
+                      />
+                    </DialogContent>
+                  </Dialog>
+                )}
               </CardHeader>
               <CardContent className="p-6">
                 <form onSubmit={handlePrescribe} className="space-y-4">

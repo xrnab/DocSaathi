@@ -3,7 +3,7 @@ const CACHE_STATIC = "docsaathi-static-v2";
 const CACHE_API = "docsaathi-api-v2";
 const ALL_CACHES = [CACHE_SHELL, CACHE_STATIC, CACHE_API];
 
-const PRECACHE_PAGES = ["/", "/_offline", "/appointments", "/asha", "/doctors"];
+const PRECACHE_PAGES = ["/", "/_offline", "/appointments", "/asha", "/records"];
 const PRECACHE_STATIC = ["/logo.png", "/banner2.png", "/hero-duo.png", "/manifest.json"];
 
 self.addEventListener("install", (event) => {
@@ -37,22 +37,6 @@ self.addEventListener("activate", (event) => {
   );
 });
 
-function fetchWithTimeout(request, timeoutMs = 5000) {
-  return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error("Network timeout")), timeoutMs);
-    fetch(request).then(
-      (res) => {
-        clearTimeout(timer);
-        resolve(res);
-      },
-      (err) => {
-        clearTimeout(timer);
-        reject(err);
-      }
-    );
-  });
-}
-
 self.addEventListener("fetch", (event) => {
   const { request } = event;
   const url = new URL(request.url);
@@ -68,7 +52,7 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // 2. Cache-First (immutable) for Next.js build outputs
+  // 2. Cache-First (immutable) for Next.js build outputs (JS chunks, CSS, etc.)
   if (url.pathname.startsWith("/_next/static/")) {
     event.respondWith(
       caches.match(request).then((cached) => {
@@ -85,25 +69,79 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // 3. Network-First with 5s timeout for specific critical APIs
-  if (url.pathname.startsWith("/api/doctors") || url.pathname.startsWith("/api/specialities")) {
+  // 3. Cache-First strategy for critical pages: /, /asha, /records, /appointments
+  const cacheFirstPaths = ["/", "/asha", "/records", "/appointments"];
+  const isCacheFirstPath = cacheFirstPaths.some(path => 
+    url.pathname === path || url.pathname.startsWith(path + "/")
+  );
+
+  if (isCacheFirstPath && request.mode === "navigate") {
     event.respondWith(
-      fetchWithTimeout(request, 5000)
-        .then((res) => {
-          if (res.status === 200) {
-            const resClone = res.clone();
+      caches.match(request).then((cachedResponse) => {
+        // Fetch from network in the background to update the cache (Stale-While-Revalidate style for documents)
+        const fetchPromise = fetch(request)
+          .then((networkResponse) => {
+            if (networkResponse.status === 200) {
+              const resClone = networkResponse.clone();
+              caches.open(CACHE_SHELL).then((cache) => cache.put(request, resClone));
+            }
+            return networkResponse;
+          })
+          .catch(() => null);
+
+        if (cachedResponse) {
+          return cachedResponse;
+        }
+
+        // If not in cache, wait for the network fetch
+        return fetchPromise.then((networkResponse) => {
+          if (networkResponse) return networkResponse;
+          // If network fails and not in cache, fallback cascade
+          return caches.match("/").then((cachedRoot) => {
+            if (cachedRoot) return cachedRoot;
+            return caches.match("/_offline").then((cachedOffline) => {
+              if (cachedOffline) return cachedOffline;
+              return new Response("Offline — DocSaathi continues to work. Please connect to the internet.", {
+                status: 503,
+                headers: { "Content-Type": "text/html" }
+              });
+            });
+          });
+        });
+      })
+    );
+    return;
+  }
+
+  // 4. Network-First strategy for /api/* routes
+  if (url.pathname.startsWith("/api/")) {
+    event.respondWith(
+      fetch(request)
+        .then((networkResponse) => {
+          if (networkResponse.status === 200) {
+            const resClone = networkResponse.clone();
             caches.open(CACHE_API).then((cache) => cache.put(request, resClone));
           }
-          return res;
+          return networkResponse;
         })
         .catch(() => {
-          return caches.match(request).then((cached) => cached || new Response(JSON.stringify({ error: "Offline" }), { status: 503, headers: { "Content-Type": "application/json" } }));
+          // If network fails, serve from cache with a fallback response
+          return caches.match(request).then((cachedResponse) => {
+            if (cachedResponse) return cachedResponse;
+            return new Response(JSON.stringify({ 
+              error: "Offline", 
+              message: "You're offline — DocSaathi continues to work. Changes sync when connection returns." 
+            }), { 
+              status: 503, 
+              headers: { "Content-Type": "application/json" } 
+            });
+          });
         })
     );
     return;
   }
 
-  // 4. Navigate requests (documents) -> Network-First with deep fallbacks
+  // 5. Navigate requests for other pages (documents) -> Network-First with deep fallbacks
   if (request.mode === "navigate") {
     event.respondWith(
       fetch(request)
@@ -128,7 +166,7 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // 5. Stale-While-Revalidate for everything else
+  // 6. Stale-While-Revalidate for everything else (static files, images, etc.)
   event.respondWith(
     caches.match(request).then((cached) => {
       const fetchPromise = fetch(request)

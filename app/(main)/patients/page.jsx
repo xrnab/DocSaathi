@@ -16,7 +16,8 @@ import {
   HeartPulse,
   ClipboardList,
   Star,
-  FileText
+  FileText,
+  QrCode
 } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
@@ -118,9 +119,16 @@ export default async function PatientDashboard() {
                 </div>
               </div>
 
-              <Button asChild variant="outline" className="w-full border-sky-200 dark:border-sky-800 text-sky-600 dark:text-sky-400">
-                <Link href="/patients/onboarding">Edit Medical Profile</Link>
-              </Button>
+              <div className="flex flex-col gap-2 pt-2">
+                <Button asChild variant="outline" className="w-full border-sky-200 dark:border-sky-800 text-sky-600 dark:text-sky-400 cursor-pointer">
+                  <Link href="/patients/onboarding">Edit Medical Profile</Link>
+                </Button>
+                <Button asChild className="w-full bg-sky-600 hover:bg-sky-700 text-white font-bold rounded-xl gap-2 cursor-pointer shadow-md shadow-sky-500/10">
+                  <Link href="/patient/qr-card">
+                    <QrCode className="h-4 w-4" /> My QR Card
+                  </Link>
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </div>

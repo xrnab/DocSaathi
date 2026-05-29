@@ -446,3 +446,71 @@ export async function getNabhaImpactStats() {
   }
 }
 
+/**
+ * Resets outbreak surveillance data (SymptomSubmissions) for the guided demo spike
+ */
+export async function resetDemoSurveillanceData() {
+  const isAdmin = await verifyAdmin();
+  if (!isAdmin) {
+    return { error: "Access Denied. Admins only." };
+  }
+
+  try {
+    // Clear old submissions
+    await db.symptomSubmission.deleteMany({});
+
+    const NABHA_VILLAGES = ["Sauja", "Bhadson", "Nabha Central", "Kaul", "Chhintanwala"];
+    const SYMPTOMS_POOL = ["Fever", "Cough", "Diarrhea", "Vomiting", "Jaundice", "Rash"];
+    const seedEntries = [];
+    const now = new Date();
+
+    // Seed baseline data spread across 7 days
+    for (let i = 0; i < 45; i++) {
+      const date = new Date(now);
+      date.setDate(now.getDate() - Math.floor(Math.random() * 7) - 2); // 2 to 9 days ago
+
+      const village = NABHA_VILLAGES[Math.floor(Math.random() * NABHA_VILLAGES.length)];
+      const finalVillage = (village === "Sauja" && Math.random() > 0.3) ? "Nabha Central" : village;
+
+      seedEntries.push({
+        symptoms: [
+          SYMPTOMS_POOL[Math.floor(Math.random() * SYMPTOMS_POOL.length)],
+          Math.random() > 0.7 ? SYMPTOMS_POOL[Math.floor(Math.random() * SYMPTOMS_POOL.length)] : null
+        ].filter(Boolean),
+        duration: "1-3 days",
+        patientType: Math.random() > 0.5 ? "ADULT" : "CHILD",
+        language: Math.random() > 0.5 ? "PA" : "EN",
+        village: finalVillage,
+        createdAt: date
+      });
+    }
+
+    // Seed a sharp SPIKE in "Sauja" within the last 48 hours
+    // 15 cases of Fever and Diarrhea to trigger >200% spike alerts
+    for (let i = 0; i < 15; i++) {
+      const date = new Date(now);
+      date.setHours(now.getHours() - Math.floor(Math.random() * 40)); // last 40 hours
+
+      seedEntries.push({
+        symptoms: ["Fever", "Diarrhea"],
+        duration: "1-3 days",
+        patientType: Math.random() > 0.5 ? "CHILD" : "ADULT",
+        language: "PA",
+        village: "Sauja",
+        createdAt: date
+      });
+    }
+
+    await db.symptomSubmission.createMany({
+      data: seedEntries
+    });
+
+    revalidatePath("/admin/outbreak");
+    revalidatePath("/");
+    return { success: true, count: seedEntries.length };
+  } catch (error) {
+    console.error("Failed to reset demo data:", error);
+    return { error: "Failed to seed demo data." };
+  }
+}
+

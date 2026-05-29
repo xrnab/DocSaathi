@@ -4,7 +4,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { enqueueAction, getPendingCount } from "@/lib/offline-db";
 import { startSyncEngine, stopSyncEngine } from "@/lib/sync-engine";
 
-export function useOfflineSync() {
+export function useOfflineSync(onSyncComplete) {
   const [isOnline, setIsOnline] = useState(
     typeof window !== "undefined" ? navigator.onLine : true
   );
@@ -66,6 +66,9 @@ export function useOfflineSync() {
         setLastSynced(Date.now());
         setIsSyncing(false);
         refreshCount();
+        if (typeof onSyncComplete === "function") {
+          onSyncComplete({ synced, failed });
+        }
       });
     }
 

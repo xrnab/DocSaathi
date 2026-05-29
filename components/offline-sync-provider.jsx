@@ -5,13 +5,42 @@ import { useOfflineSync } from "@/hooks/use-offline-sync";
 import { WifiOff, RefreshCw, CloudUpload, CheckCircle2 } from "lucide-react";
 import { Button } from "./ui/button";
 
+import { getPendingActions } from "@/lib/offline-db";
+import { toast } from "sonner";
+
 const OfflineSyncContext = createContext(null);
 
 export function OfflineSyncProvider({ children }) {
-  const syncValue = useOfflineSync();
+  const [pendingCount, setPendingCount] = useState(0);
+
+  const syncValue = useOfflineSync(({ synced, failed }) => {
+    if (synced > 0) {
+      toast.success(`✅ Synced ${synced} items successfully`);
+    }
+  });
+
+  const updateCount = React.useCallback(async () => {
+    try {
+      const pending = await getPendingActions();
+      setPendingCount(pending.length);
+    } catch (e) {
+      console.error("Failed to fetch pending actions count:", e);
+    }
+  }, []);
+
+  useEffect(() => {
+    updateCount();
+    const interval = setInterval(updateCount, 10000);
+    return () => clearInterval(interval);
+  }, [updateCount]);
+
+  const mergedValue = {
+    ...syncValue,
+    pendingCount
+  };
 
   return (
-    <OfflineSyncContext.Provider value={syncValue}>
+    <OfflineSyncContext.Provider value={mergedValue}>
       {children}
       <SyncStatusBar />
     </OfflineSyncContext.Provider>
@@ -82,7 +111,7 @@ function SyncStatusBar() {
   }
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center px-4 pb-6 sm:pb-8 animate-in slide-in-from-bottom-8 duration-300">
+    <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center px-4 pb-20 sm:pb-8 animate-in slide-in-from-bottom-8 duration-300">
       <div className={`flex items-center justify-between gap-3 px-5 py-3.5 rounded-[1.5rem] shadow-2xl border text-sm max-w-lg w-full ${statusConfig.bgColor} backdrop-blur-md`}>
         <div className="flex items-center gap-3">
           {statusConfig.icon}
