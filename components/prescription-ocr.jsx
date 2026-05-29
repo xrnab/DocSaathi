@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import { Upload, Sparkles, Loader2, Plus, Trash2, Check, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { saveScannedPrescriptions } from "@/actions/records";
 import { toast } from "sonner";
 

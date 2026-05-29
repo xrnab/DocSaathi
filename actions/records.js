@@ -34,7 +34,7 @@ export async function getPatientRecords(patientId = null) {
     // If patientId is provided, check if current user is allowed to see it
     let targetId = patientId || currentUser.id;
     
-    if (patientId && currentUser.role !== "ADMIN" && currentUser.role !== "OWNER") {
+    if (patientId && currentUser.role !== "ADMIN" && currentUser.role !== "OWNER" && currentUser.role !== "ASHA_WORKER") {
        // If doctor, verify clinical relationship
        if (currentUser.role === "DOCTOR") {
          const hasRelationship = await db.appointment.findFirst({
@@ -149,7 +149,7 @@ export async function saveScannedPrescriptions(medicines, patientId = null) {
       }
       targetPatientId = currentUser.id;
     } else {
-      if (currentUser.role !== "DOCTOR" && currentUser.role !== "ADMIN" && currentUser.role !== "OWNER" && currentUser.id !== targetPatientId) {
+      if (currentUser.role !== "DOCTOR" && currentUser.role !== "ADMIN" && currentUser.role !== "OWNER" && currentUser.role !== "ASHA_WORKER" && currentUser.id !== targetPatientId) {
         return { error: "Unauthorized to upload prescriptions on behalf of this patient." };
       }
     }
