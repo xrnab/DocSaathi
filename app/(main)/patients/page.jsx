@@ -146,6 +146,11 @@ export default async function PatientDashboard() {
                     <QrCode className="h-4 w-4" /> My QR Card
                   </Link>
                 </Button>
+                <Button asChild variant="outline" className="w-full border-rose-200 dark:border-rose-900 text-rose-600 dark:text-rose-400 hover:bg-rose-50/50 dark:hover:bg-rose-950/10 cursor-pointer font-bold rounded-xl gap-2">
+                  <Link href="/health-risk" className="flex items-center gap-2">
+                    <HeartPulse className="h-4 w-4 text-rose-500 animate-pulse" /> AI Health Risk
+                  </Link>
+                </Button>
               </div>
             </CardContent>
           </Card>

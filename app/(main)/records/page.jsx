@@ -1,4 +1,4 @@
-import { User, Activity, Droplet, Calendar, FileText, Pill, ShieldCheck } from "lucide-react";
+import { User, Activity, Droplet, Calendar, FileText, Pill, ShieldCheck, HeartPulse } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/page-header";
@@ -11,6 +11,8 @@ import PunjabiVoiceReader from "@/components/punjabi-voice-reader";
 import CollapsiblePrescriptionOCR from "@/components/collapsible-prescription-ocr";
 import PrescriptionStats from "@/components/prescription-stats";
 import HealthTimeline from "@/components/health-timeline-wrapper";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 
 
@@ -52,7 +54,28 @@ export default async function PatientRecordScreen({ searchParams }) {
       {/* Upload & Scan Prescription Drawer */}
       <CollapsiblePrescriptionOCR patientId={patient.id} />
 
+      {/* AI Health Risk Triage Callout */}
+      <Card className="border-rose-100 dark:border-rose-950/40 bg-rose-50/20 dark:bg-rose-950/10 shadow-xs rounded-2xl relative overflow-hidden">
+        <CardContent className="p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-rose-5050/10 rounded-xl text-rose-500 bg-rose-500/10 shrink-0">
+              <HeartPulse className="h-5 w-5 animate-pulse" />
+            </div>
+            <div>
+              <h4 className="text-sm font-bold text-foreground">AI Health Risk Prediction</h4>
+              <p className="text-xs text-muted-foreground mt-0.5">Evaluate potential chronic disease risks and receive customized wellness recommendations.</p>
+            </div>
+          </div>
+          <Link href="/health-risk">
+            <Button size="sm" className="bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl gap-1.5 shadow-sm shadow-rose-500/10 cursor-pointer shrink-0">
+              Get AI Health Risk Assessment →
+            </Button>
+          </Link>
+        </CardContent>
+      </Card>
+
       {/* Patient Profile Header Card */}
+
       <Card className="border-sky-200 dark:border-sky-800 bg-card shadow-md rounded-2xl sm:rounded-3xl overflow-hidden relative">
         <div className="absolute top-0 left-0 w-1.5 sm:w-2 h-full bg-sky-500"></div>
         <CardContent className="p-4 sm:p-6 md:p-8">
