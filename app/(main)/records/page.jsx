@@ -9,6 +9,9 @@ import { OfflineBadge } from "@/components/offline-badge";
 import { format } from "date-fns";
 import PunjabiVoiceReader from "@/components/punjabi-voice-reader";
 import CollapsiblePrescriptionOCR from "@/components/collapsible-prescription-ocr";
+import PrescriptionStats from "@/components/prescription-stats";
+import HealthTimeline from "@/components/health-timeline-wrapper";
+
 
 
 export default async function PatientRecordScreen({ searchParams }) {
@@ -162,6 +165,12 @@ export default async function PatientRecordScreen({ searchParams }) {
               )}
             </CardContent>
           </Card>
+
+          {/* Prescription Stats */}
+          <PrescriptionStats prescriptions={prescriptions} />
+
+          {/* Health Timeline */}
+          <HealthTimeline visits={visits} />
 
           {/* Vaccination History */}
           <Card className="border-sky-100 dark:border-sky-900 shadow-sm rounded-xl sm:rounded-2xl h-fit">

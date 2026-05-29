@@ -66,23 +66,60 @@ export async function getPatients() {
 }
 
 /**
- * Gets all users (Owner only)
+ * Gets all users (Admin or Owner)
  */
 export async function getAllUsers() {
-  const isOwner = await verifyOwner();
-  if (!isOwner) throw new Error("Unauthorized: Only the Owner can manage user roles");
+  const isAdmin = await verifyAdmin();
+  if (!isAdmin) throw new Error("Unauthorized: Access Denied");
 
   try {
     const users = await db.user.findMany({
-      orderBy: {
-        name: "asc",
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        verificationStatus: true,
+        createdAt: true,
+        credits: true,
+        _count: {
+          select: {
+            patientAppointments: true,
+            doctorAppointments: true,
+          },
+        },
       },
+      orderBy: {
+        createdAt: "desc",
+      },
+      take: 50,
     });
 
     return { users };
   } catch (error) {
     console.error("Failed to fetch all users:", error);
     throw new Error("Failed to fetch all users");
+  }
+}
+
+/**
+ * Updates a user's role to ADMIN (Owner only)
+ */
+export async function makeUserAdmin(userId) {
+  const isOwner = await verifyOwner();
+  if (!isOwner) throw new Error("Unauthorized: Only the Owner can promote users to Admin");
+
+  try {
+    const user = await db.user.update({
+      where: { id: userId },
+      data: { role: "ADMIN" },
+    });
+
+    revalidatePath("/admin");
+    return { success: true, user };
+  } catch (error) {
+    console.error("Failed to make user admin:", error);
+    throw new Error(`Failed to update user role: ${error.message}`);
   }
 }
 
@@ -96,7 +133,7 @@ export async function updateUserRole(formData) {
   const userId = formData.get("userId");
   const role = formData.get("role");
 
-  if (!userId || !["OWNER", "ADMIN", "DOCTOR", "PATIENT", "UNASSIGNED"].includes(role)) {
+  if (!userId || !["OWNER", "ADMIN", "DOCTOR", "PATIENT", "UNASSIGNED", "ASHA_WORKER"].includes(role)) {
     throw new Error("Invalid input");
   }
 

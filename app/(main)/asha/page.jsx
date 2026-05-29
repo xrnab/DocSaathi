@@ -10,7 +10,8 @@ import {
   createOutbreakReport, 
   getAshaAppointments, 
   getVerifiedDoctors,
-  bookAshaPatientAppointment
+  bookAshaPatientAppointment,
+  getAshaDashboardStats
 } from "@/actions/asha";
 import { useOfflineAsha } from "@/hooks/use-offline-asha";
 import { useOfflineSyncCtx } from "@/components/offline-sync-provider";
@@ -76,6 +77,7 @@ export default function AshaWorkerDashboard() {
   } = useOfflineAsha();
 
   const [profile, setProfile] = useState(null);
+  const [stats, setStats] = useState({ familiesCount: 0, membersCount: 0, outbreakReports: 0, vaccinationsCount: 0 });
   const [appointments, setAppointments] = useState([]);
   const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -130,6 +132,14 @@ export default function AshaWorkerDashboard() {
           } catch (e) {
             console.error(e);
           }
+          try {
+            const dashboardStats = await getAshaDashboardStats();
+            if (dashboardStats) {
+              setStats(dashboardStats);
+            }
+          } catch (e) {
+            console.error(e);
+          }
         }
         try {
           docs = await getVerifiedDoctors();
@@ -169,6 +179,10 @@ export default function AshaWorkerDashboard() {
         showNotification("Saved locally, will sync when online");
       } else if (res.result?.success) {
         showNotification("Household registry created successfully!");
+        if (isOnline) {
+          const fresh = await getAshaDashboardStats();
+          if (fresh) setStats(fresh);
+        }
       }
       setNewFamily({ headName: "", village: "", block: "", pincode: "" });
     } catch (err) {
@@ -200,6 +214,10 @@ export default function AshaWorkerDashboard() {
         showNotification("Saved locally, will sync when online");
       } else if (res.result?.success) {
         showNotification("All updates successfully synced!");
+        if (isOnline) {
+          const fresh = await getAshaDashboardStats();
+          if (fresh) setStats(fresh);
+        }
       }
       setNewMember({ name: "", age: "", gender: "Male", relation: "Son", immunisations: [] });
     } catch (err) {
@@ -231,6 +249,10 @@ export default function AshaWorkerDashboard() {
         showNotification("Saved locally, will sync when online");
       } else if (res.result?.success) {
         showNotification("Vaccination record updated successfully!");
+        if (isOnline) {
+          const fresh = await getAshaDashboardStats();
+          if (fresh) setStats(fresh);
+        }
       }
     } catch (err) {
       showNotification("Failed to update immunisation", "error");
@@ -265,6 +287,8 @@ export default function AshaWorkerDashboard() {
         const res = await createOutbreakReport(outbreakPayload);
         if (res.success) {
           showNotification("CRITICAL ALERT DISPATCHED: Outbreak reported to District Surveillance Office!");
+          const fresh = await getAshaDashboardStats();
+          if (fresh) setStats(fresh);
         }
       } else {
         await enqueue("CREATE_OUTBREAK_REPORT", outbreakPayload);
@@ -393,50 +417,50 @@ export default function AshaWorkerDashboard() {
 
       {/* Metrics Row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="border-border/60 shadow-sm bg-card hover:shadow-md transition-shadow">
-          <CardContent className="flex items-center p-6 space-x-4">
-            <div className="p-3 bg-sky-50 dark:bg-sky-950/40 rounded-2xl text-sky-500 border border-sky-100 dark:border-sky-800">
+        <Card className="border-border border-l-4 border-l-emerald-500 bg-white dark:bg-card shadow-sm hover:shadow-md transition-all">
+          <CardContent className="flex items-center justify-between p-6">
+            <div>
+              <p className="text-3xl font-extrabold text-foreground">{stats.familiesCount || families.length}</p>
+              <p className="text-xs font-semibold text-muted-foreground mt-1">👨‍👩‍👧 Families Registered</p>
+            </div>
+            <div className="bg-emerald-50 dark:bg-emerald-950/40 p-3 rounded-2xl text-emerald-500 border border-emerald-100 dark:border-emerald-800/30">
               <Users className="w-6 h-6" />
             </div>
-            <div>
-              <p className="text-sm font-semibold text-muted-foreground">Families Registry</p>
-              <p className="text-2xl font-black text-foreground">{families.length} Households</p>
-            </div>
           </CardContent>
         </Card>
 
-        <Card className="border-border/60 shadow-sm bg-card hover:shadow-md transition-shadow">
-          <CardContent className="flex items-center p-6 space-x-4">
-            <div className="p-3 bg-indigo-50 dark:bg-indigo-950/40 rounded-2xl text-indigo-500 border border-indigo-100 dark:border-indigo-800">
+        <Card className="border-border border-l-4 border-l-sky-500 bg-white dark:bg-card shadow-sm hover:shadow-md transition-all">
+          <CardContent className="flex items-center justify-between p-6">
+            <div>
+              <p className="text-3xl font-extrabold text-foreground">{stats.membersCount || totalMembers}</p>
+              <p className="text-xs font-semibold text-muted-foreground mt-1">👥 Total Members</p>
+            </div>
+            <div className="bg-sky-50 dark:bg-sky-950/40 p-3 rounded-2xl text-sky-500 border border-sky-100 dark:border-sky-800/30">
               <UserPlus className="w-6 h-6" />
             </div>
-            <div>
-              <p className="text-sm font-semibold text-muted-foreground">Members Registered</p>
-              <p className="text-2xl font-black text-foreground">{totalMembers} Citizens</p>
-            </div>
           </CardContent>
         </Card>
 
-        <Card className="border-border/60 shadow-sm bg-card hover:shadow-md transition-shadow">
-          <CardContent className="flex items-center p-6 space-x-4">
-            <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 rounded-2xl text-emerald-500 border border-emerald-100 dark:border-emerald-800">
-              <Calendar className="w-6 h-6" />
-            </div>
+        <Card className="border-border border-l-4 border-l-rose-500 bg-white dark:bg-card shadow-sm hover:shadow-md transition-all">
+          <CardContent className="flex items-center justify-between p-6">
             <div>
-              <p className="text-sm font-semibold text-muted-foreground">Doctor Bookings</p>
-              <p className="text-2xl font-black text-foreground">{appointments.length} Consults</p>
+              <p className="text-3xl font-extrabold text-foreground">{stats.outbreakReports}</p>
+              <p className="text-xs font-semibold text-muted-foreground mt-1">🦠 Outbreak Reports Filed</p>
             </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-border/60 shadow-sm bg-card hover:shadow-md transition-shadow">
-          <CardContent className="flex items-center p-6 space-x-4">
-            <div className="p-3 bg-rose-50 dark:bg-rose-950/40 rounded-2xl text-rose-500 border border-rose-100 dark:border-rose-800">
+            <div className="bg-rose-50 dark:bg-rose-950/40 p-3 rounded-2xl text-rose-500 border border-rose-100 dark:border-rose-800/30">
               <Activity className="w-6 h-6" />
             </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border border-l-4 border-l-purple-500 bg-white dark:bg-card shadow-sm hover:shadow-md transition-all">
+          <CardContent className="flex items-center justify-between p-6">
             <div>
-              <p className="text-sm font-semibold text-muted-foreground">Regional Health Credits</p>
-              <p className="text-2xl font-black text-foreground">{profile?.credits || 0} Credits</p>
+              <p className="text-3xl font-extrabold text-foreground">{stats.vaccinationsCount}</p>
+              <p className="text-xs font-semibold text-muted-foreground mt-1">💉 Vaccinations Tracked</p>
+            </div>
+            <div className="bg-purple-50 dark:bg-purple-950/40 p-3 rounded-2xl text-purple-500 border border-purple-100 dark:border-purple-800/30">
+              <Heart className="w-6 h-6" />
             </div>
           </CardContent>
         </Card>

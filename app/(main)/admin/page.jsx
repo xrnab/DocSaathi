@@ -5,6 +5,7 @@ import { PendingPayouts } from "./components/pending-payouts";
 import { VerifiedPatients } from "./components/verified-patients";
 import { UserManagement } from "./components/user-management";
 import { NabhaImpact } from "./components/nabha-impact";
+import UsersTable from "./_components/users-table";
 import {
   getPendingDoctors,
   getVerifiedDoctors,
@@ -31,7 +32,7 @@ export default async function AdminPage() {
     getVerifiedDoctors(),
     getPendingPayouts(),
     getPatients(),
-    isOwner ? getAllUsers() : Promise.resolve({ users: [] }),
+    getAllUsers().catch(() => ({ users: [] })), // accessible to any admin now
     getNabhaImpactStats(),
   ]);
 
@@ -55,6 +56,10 @@ export default async function AdminPage() {
 
       <TabsContent value="nabha" className="border-none p-0">
         <NabhaImpact stats={nabhaStatsData} />
+      </TabsContent>
+
+      <TabsContent value="all_users" className="border-none p-0">
+        <UsersTable users={allUsersData.users || []} />
       </TabsContent>
 
       {isOwner && (
