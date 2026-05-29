@@ -168,6 +168,45 @@ export async function updatePatientMedicalProfile(formData) {
 }
 
 /**
+ * Updates the ASHA worker's profile details
+ */
+export async function updateAshaProfile(formData) {
+  const { userId } = await auth();
+
+  if (!userId) {
+    throw new Error("Unauthorized");
+  }
+
+  const name = formData.get("name");
+  const village = formData.get("village");
+  const block = formData.get("block");
+  const ashaId = formData.get("ashaId");
+
+  if (!name || !village || !block || !ashaId) {
+    throw new Error("All fields are required");
+  }
+
+  try {
+    const updatedUser = await db.user.update({
+      where: { clerkUserId: userId },
+      data: {
+        name,
+        village,
+        block,
+        ashaId,
+      },
+    });
+
+    revalidatePath("/");
+    revalidatePath("/asha");
+    return { success: true, user: updatedUser };
+  } catch (error) {
+    console.error("Failed to update ASHA profile:", error);
+    throw new Error(`Failed to update ASHA profile: ${error.message}`);
+  }
+}
+
+/**
  * Gets the current user's complete profile information
  */
 export async function getCurrentUser() {

@@ -201,3 +201,202 @@ export async function getDoctorEarnings() {
     throw new Error("Failed to fetch doctor earnings: " + error.message);
   }
 }
+
+const ASHA_CREDIT_VALUE = 500; // ₹500 per credit total
+const ASHA_PLATFORM_FEE_PER_CREDIT = 100; // ₹100 platform fee
+const ASHA_EARNINGS_PER_CREDIT = 400; // ₹400 to ASHA worker
+
+/**
+ * Request payout for all remaining credits for an ASHA Worker
+ */
+export async function requestAshaPayout(formData) {
+  const { userId } = await auth();
+
+  if (!userId) {
+    throw new Error("Unauthorized");
+  }
+
+  try {
+    const asha = await db.user.findUnique({
+      where: {
+        clerkUserId: userId,
+        role: "ASHA_WORKER",
+      },
+    });
+
+    if (!asha) {
+      throw new Error("ASHA worker profile not found");
+    }
+
+    const upiId = formData.get("upiId");
+    const accountNumber = formData.get("accountNumber") || null;
+    const ifscCode = formData.get("ifscCode") || null;
+
+    if (!upiId) {
+      throw new Error("UPI ID is required");
+    }
+
+    if (!upiId.includes("@")) {
+      throw new Error("Invalid UPI ID: must contain '@' symbol");
+    }
+
+    // Check if ASHA worker has any pending payout requests
+    const existingPendingPayout = await db.payout.findFirst({
+      where: {
+        doctorId: asha.id, // Using doctorId field on User relation polymorphically
+        status: "PROCESSING",
+      },
+    });
+
+    if (existingPendingPayout) {
+      throw new Error(
+        "You already have a pending payout request. Please wait for it to be processed."
+      );
+    }
+
+    // Get current credit balance
+    const creditCount = asha.credits;
+
+    if (creditCount === 0) {
+      throw new Error("No credits available for payout");
+    }
+
+    if (creditCount < 1) {
+      throw new Error("Minimum 1 credit required for payout");
+    }
+
+    const totalAmount = creditCount * ASHA_CREDIT_VALUE;
+    const platformFee = creditCount * ASHA_PLATFORM_FEE_PER_CREDIT;
+    const netAmount = creditCount * ASHA_EARNINGS_PER_CREDIT;
+
+    // Create payout request
+    const payout = await db.payout.create({
+      data: {
+        doctorId: asha.id, // Polymorphic user reference
+        amount: totalAmount,
+        credits: creditCount,
+        platformFee,
+        netAmount,
+        upiId,
+        accountNumber,
+        ifscCode,
+        status: "PROCESSING",
+      },
+    });
+
+    revalidatePath("/asha");
+    return { success: true, payout };
+  } catch (error) {
+    console.error("Failed to request ASHA payout:", error);
+    throw new Error("Failed to request payout: " + error.message);
+  }
+}
+
+/**
+ * Get ASHA Worker's payout history
+ */
+export async function getAshaPayouts() {
+  const { userId } = await auth();
+
+  if (!userId) {
+    throw new Error("Unauthorized");
+  }
+
+  try {
+    const asha = await db.user.findUnique({
+      where: {
+        clerkUserId: userId,
+        role: "ASHA_WORKER",
+      },
+    });
+
+    if (!asha) {
+      throw new Error("ASHA worker profile not found");
+    }
+
+    const payouts = await db.payout.findMany({
+      where: {
+        doctorId: asha.id,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    return { payouts };
+  } catch (error) {
+    throw new Error("Failed to fetch payouts: " + error.message);
+  }
+}
+
+/**
+ * Get ASHA Worker's earnings summary
+ */
+export async function getAshaEarnings() {
+  const { userId } = await auth();
+
+  if (!userId) {
+    throw new Error("Unauthorized");
+  }
+
+  try {
+    const asha = await db.user.findUnique({
+      where: {
+        clerkUserId: userId,
+        role: "ASHA_WORKER",
+      },
+    });
+
+    if (!asha) {
+      throw new Error("ASHA worker profile not found");
+    }
+
+    // Get all completed proxy appointments booked by this ASHA worker
+    // ASHA worker acts as patientId for proxy bookings
+    const completedAppointments = await db.appointment.findMany({
+      where: {
+        patientId: asha.id,
+        status: "COMPLETED",
+      },
+    });
+
+    // Calculate this month's completed appointments
+    const currentMonth = new Date();
+    currentMonth.setDate(1);
+    currentMonth.setHours(0, 0, 0, 0);
+
+    const thisMonthAppointments = completedAppointments.filter(
+      (appointment) => new Date(appointment.createdAt) >= currentMonth
+    );
+
+    // Use ASHA's actual credits from the user model
+    const totalEarnings = asha.credits * ASHA_EARNINGS_PER_CREDIT;
+
+    // Calculate this month's earnings
+    const thisMonthEarnings =
+      thisMonthAppointments.length * ASHA_EARNINGS_PER_CREDIT;
+
+    // Simple average per month calculation
+    const averageEarningsPerMonth =
+      totalEarnings > 0
+        ? totalEarnings / Math.max(1, new Date().getMonth() + 1)
+        : 0;
+
+    // Get current credit balance for payout calculations
+    const availableCredits = asha.credits;
+    const availablePayout = availableCredits * ASHA_EARNINGS_PER_CREDIT;
+
+    return {
+      earnings: {
+        totalEarnings,
+        thisMonthEarnings,
+        completedAppointments: completedAppointments.length,
+        averageEarningsPerMonth,
+        availableCredits,
+        availablePayout,
+      },
+    };
+  } catch (error) {
+    throw new Error("Failed to fetch ASHA earnings: " + error.message);
+  }
+}

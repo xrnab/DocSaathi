@@ -323,6 +323,7 @@ export async function getPendingPayouts() {
             email: true,
             specialty: true,
             credits: true,
+            role: true,
           },
         },
       },

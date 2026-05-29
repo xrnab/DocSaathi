@@ -115,9 +115,15 @@ export function PendingPayouts({ payouts }) {
                         </div>
                         <div>
                           <h3 className="font-semibold text-foreground">
-                            {formatDoctorName(payout.doctor.name)}
+                            {payout.doctor.role === "ASHA_WORKER"
+                              ? `ASHA: ${payout.doctor.name}`
+                              : formatDoctorName(payout.doctor.name)}
                           </h3>
-                          <p className="text-sm text-muted-foreground">{payout.doctor.specialty}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {payout.doctor.role === "ASHA_WORKER"
+                              ? "ASHA Community Worker"
+                              : payout.doctor.specialty || "General Medicine"}
+                          </p>
                           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-sm text-muted-foreground">
                             <div className="flex items-center gap-1">
                               <DollarSign className="h-3.5 w-3.5 text-emerald-500" />
@@ -190,13 +196,27 @@ export function PendingPayouts({ payouts }) {
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <Stethoscope className="h-4 w-4 text-sky-500" />
-                  <h3 className="font-semibold text-foreground text-sm">Doctor Information</h3>
+                  <h3 className="font-semibold text-foreground text-sm">
+                    {selectedPayout.doctor.role === "ASHA_WORKER"
+                      ? "ASHA Worker Information"
+                      : "Doctor Information"}
+                  </h3>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   {[
-                    { label: "Name", value: `Dr. ${selectedPayout.doctor.name}` },
+                    {
+                      label: selectedPayout.doctor.role === "ASHA_WORKER" ? "ASHA Name" : "Name",
+                      value: selectedPayout.doctor.role === "ASHA_WORKER"
+                        ? selectedPayout.doctor.name
+                        : `Dr. ${selectedPayout.doctor.name}`,
+                    },
                     { label: "Email", value: selectedPayout.doctor.email },
-                    { label: "Specialty", value: selectedPayout.doctor.specialty },
+                    {
+                      label: "Specialty",
+                      value: selectedPayout.doctor.role === "ASHA_WORKER"
+                        ? "ASHA Community Worker"
+                        : selectedPayout.doctor.specialty || "General Medicine",
+                    },
                     { label: "Current Credits", value: selectedPayout.doctor.credits },
                   ].map(({ label, value }) => (
                     <div key={label} className="bg-muted/50 rounded-lg p-3">
@@ -311,13 +331,18 @@ export function PendingPayouts({ payouts }) {
               <Alert>
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
-                  This will deduct <strong>{selectedPayout.credits}</strong> credits from Dr. {selectedPayout.doctor.name}&apos;s account and mark the payout as processed.
+                  This will deduct <strong>{selectedPayout.credits}</strong> credits from {selectedPayout.doctor.role === "ASHA_WORKER" ? selectedPayout.doctor.name : `Dr. ${selectedPayout.doctor.name}`}&apos;s account and mark the payout as processed.
                 </AlertDescription>
               </Alert>
 
               <div className="bg-muted/50 rounded-lg p-4 space-y-2 text-sm">
                 {[
-                  { label: "Doctor", value: `Dr. ${selectedPayout.doctor.name}` },
+                  {
+                    label: selectedPayout.doctor.role === "ASHA_WORKER" ? "ASHA Worker" : "Doctor",
+                    value: selectedPayout.doctor.role === "ASHA_WORKER"
+                      ? selectedPayout.doctor.name
+                      : `Dr. ${selectedPayout.doctor.name}`,
+                  },
                   { label: "Amount to pay", value: `₹${selectedPayout.netAmount.toFixed(2)}`, highlight: true },
                   { label: "UPI ID", value: selectedPayout.upiId },
                   ...(selectedPayout.accountNumber ? [{ label: "Bank Account", value: selectedPayout.accountNumber }] : []),

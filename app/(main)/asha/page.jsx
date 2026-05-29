@@ -18,6 +18,9 @@ import {
   updateEmergencyStatus, 
   assignDoctorToEmergency 
 } from "@/actions/emergency";
+import { getAshaEarnings, getAshaPayouts } from "@/actions/payout";
+import { AshaEarnings } from "./_components/asha-earnings";
+import { AshaProfile } from "./_components/asha-profile";
 import { getPusherClient } from "@/lib/pusher";
 import { useOfflineAsha } from "@/hooks/use-offline-asha";
 import { useOfflineSyncCtx } from "@/components/offline-sync-provider";
@@ -90,6 +93,8 @@ export default function AshaWorkerDashboard() {
   const [lastSynced, setLastSynced] = useState(null);
   const [appointments, setAppointments] = useState([]);
   const [doctors, setDoctors] = useState([]);
+  const [earnings, setEarnings] = useState({ thisMonthEarnings: 0, completedAppointments: 0, averageEarningsPerMonth: 0, availableCredits: 0, availablePayout: 0 });
+  const [payouts, setPayouts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("registry");
 
@@ -185,6 +190,13 @@ export default function AshaWorkerDashboard() {
   }, [prefillName]);
 
   useEffect(() => {
+    const tabParam = searchParams ? searchParams.get("tab") : null;
+    if (tabParam && ["registry", "immunisation", "outbreak", "proxy", "emergency", "earnings", "profile"].includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
     async function loadData() {
       try {
         const prof = await getAshaWorkerProfile();
@@ -220,6 +232,18 @@ export default function AshaWorkerDashboard() {
             console.error(e);
           } finally {
             setStatsLoading(false);
+          }
+          try {
+            const earnRes = await getAshaEarnings();
+            if (earnRes?.earnings) {
+              setEarnings(earnRes.earnings);
+            }
+            const payRes = await getAshaPayouts();
+            if (payRes?.payouts) {
+              setPayouts(payRes.payouts);
+            }
+          } catch (e) {
+            console.error("Failed to load ASHA financial data:", e);
           }
         }
         try {
@@ -588,6 +612,26 @@ export default function AshaWorkerDashboard() {
           {emergencies.filter(e => e.status === "ACTIVE").length > 0 && (
             <span className="h-2.5 w-2.5 rounded-full bg-rose-500 animate-ping shrink-0" />
           )}
+        </button>
+        <button 
+          onClick={() => setActiveTab("earnings")}
+          className={`pb-4 px-4 text-sm font-bold border-b-2 transition-all shrink-0 ${
+            activeTab === "earnings" 
+              ? "border-sky-500 text-sky-600 dark:text-sky-400 font-bold" 
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Financials & Payouts
+        </button>
+        <button 
+          onClick={() => setActiveTab("profile")}
+          className={`pb-4 px-4 text-sm font-bold border-b-2 transition-all shrink-0 ${
+            activeTab === "profile" 
+              ? "border-sky-500 text-sky-600 dark:text-sky-400 font-bold" 
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Manage Profile
         </button>
         <Link href="/asha/scan" className="pb-4 px-4 text-sm font-bold text-muted-foreground hover:text-foreground flex items-center gap-1.5 ml-auto shrink-0">
           <Button size="sm" className="bg-sky-600 hover:bg-sky-700 text-white gap-1.5 font-bold rounded-xl h-8 cursor-pointer shadow-md shadow-sky-600/10">
@@ -1277,6 +1321,20 @@ export default function AshaWorkerDashboard() {
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Financials & Payouts Tab Content */}
+      {activeTab === "earnings" && (
+        <div className="animate-in fade-in duration-300">
+          <AshaEarnings earnings={earnings} payouts={payouts} />
+        </div>
+      )}
+
+      {/* Manage Profile Tab Content */}
+      {activeTab === "profile" && profile && (
+        <div className="animate-in fade-in duration-300 max-w-4xl mx-auto">
+          <AshaProfile user={profile} />
         </div>
       )}
     </div>

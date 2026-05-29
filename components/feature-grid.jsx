@@ -69,6 +69,32 @@ export function FeatureGrid({ features, userRole }) {
               description = "Access and update medical records for all patients you have consulted.";
               href = "/doctor/patients";
             }
+          } else if (userRole === "ASHA_WORKER") {
+            if (title === "Create Your Profile") {
+              title = "ASHA Worker Profile";
+              description = "Manage your Clerk settings, ASHA ID card details, block name, and village jurisdiction.";
+              href = "/asha?tab=profile";
+            } else if (title === "Book Appointments") {
+              title = "Proxy Book Doctor";
+              description = "Schedule medical consultations with verified clinic specialists on behalf of village patients.";
+              href = "/asha?tab=proxy";
+            } else if (title === "Video Consultation") {
+              title = "SOS Emergency Hub";
+              description = "Receive, respond, and route doctors immediately for active village critical health alerts.";
+              href = "/asha?tab=emergency";
+            } else if (title === "Consultation Credits") {
+              title = "Earned Credits & Payouts";
+              description = "Review your accumulated government credit balance, track financials, and request payouts.";
+              href = "/asha?tab=earnings";
+            } else if (title === "Verified Doctors") {
+              title = "Colleague Specialists";
+              description = "Browse clinical professionals verified by the platform and check their availability.";
+              href = "/doctors";
+            } else if (title === "Medical Documentation") {
+              title = "Household Registries";
+              description = "Access and update family health registry cards and local child/maternal immunisations.";
+              href = "/asha?tab=registry";
+            }
           } else {
             if (title === "Medical Documentation") {
               href = "/records";

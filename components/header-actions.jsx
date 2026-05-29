@@ -201,7 +201,7 @@ export function HeaderActions({ dbUser }) {
 
       {/* Credits/Pricing - Circular Blue Button */}
       {(role !== "ADMIN" && role !== "OWNER") && (
-        <Link href={!dbUser || role === "PATIENT" ? "/pricing" : "/doctor"}>
+        <Link href={!dbUser || role === "PATIENT" ? "/pricing" : role === "ASHA_WORKER" ? "/asha" : "/doctor"}>
           <Button
             variant="outline"
             size="icon"
