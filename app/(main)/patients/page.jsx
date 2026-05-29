@@ -17,12 +17,14 @@ import {
   ClipboardList,
   Star,
   FileText,
-  QrCode
+  QrCode,
+  Eye
 } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { PageHeader } from "@/components/page-header";
 import Image from "next/image";
+import AccessibilityToggle from "@/components/accessibility-toggle";
 
 export default async function PatientDashboard() {
   const user = await getCurrentUser();
@@ -53,6 +55,22 @@ export default async function PatientDashboard() {
   return (
     <div className="max-w-6xl mx-auto space-y-8 pb-20 px-4 sm:px-0">
       <PageHeader title="My Health Dashboard" />
+
+      {/* Accessibility Alert Card */}
+      <div className="flex items-center justify-between gap-3 p-4 rounded-2xl border border-amber-200 bg-amber-50/50 dark:border-amber-900/40 dark:bg-amber-950/10">
+        <div className="flex items-center gap-3">
+          <Eye className="h-5 w-5 text-amber-600 shrink-0 animate-pulse" />
+          <div>
+            <p className="text-sm font-bold text-foreground">
+              Need larger text?
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Turn on Accessibility Mode for bigger buttons and text
+            </p>
+          </div>
+        </div>
+        <AccessibilityToggle />
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Profile Card */}

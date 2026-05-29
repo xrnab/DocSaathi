@@ -206,3 +206,48 @@ img {
 .is-scrolling iframe {
   pointer-events: none !important;
 }
+
+/* Elderly Accessibility Mode */
+.accessibility-mode {
+  font-size: 120% !important;
+}
+.accessibility-mode * {
+  font-size: inherit;
+  line-height: 1.8 !important;
+  letter-spacing: 0.02em;
+}
+.accessibility-mode button,
+.accessibility-mode [role="button"] {
+  min-height: 52px !important;
+  min-width: 52px !important;
+  font-size: 1.1rem !important;
+  font-weight: 700 !important;
+}
+.accessibility-mode input,
+.accessibility-mode select,
+.accessibility-mode textarea {
+  font-size: 1.1rem !important;
+  min-height: 48px !important;
+  padding: 12px 16px !important;
+}
+.accessibility-mode h1 { font-size: 2.2rem !important; }
+.accessibility-mode h2 { font-size: 1.8rem !important; }
+.accessibility-mode h3 { font-size: 1.4rem !important; }
+.accessibility-mode p, 
+.accessibility-mode label,
+.accessibility-mode span {
+  font-size: 1.05rem !important;
+}
+.accessibility-mode .text-xs { font-size: 0.9rem !important; }
+.accessibility-mode .text-sm { font-size: 1rem !important; }
+.accessibility-mode nav a,
+.accessibility-mode nav button {
+  padding: 12px 20px !important;
+}
+/* High contrast borders */
+.accessibility-mode .border {
+  border-width: 2px !important;
+  border-color: currentColor !important;
+  opacity: 0.7;
+}
+

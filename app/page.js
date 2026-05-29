@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Stethoscope, MapPin, Activity, Pill, FileText, Hospital } from "lucide-react";
+import { ArrowRight, Stethoscope, MapPin, Activity, Pill, FileText, Hospital, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +18,7 @@ import { FeatureGrid } from "@/components/feature-grid";
 import { SeasonalReportGrid } from "@/components/seasonal-report-grid";
 import LiveStatsBanner from "@/components/live-stats-banner";
 import LiveStatsDialog from "@/components/live-stats-dialog";
+import AccessibilityToggle from "@/components/accessibility-toggle";
 
 export default async function Home() {
   const userRole = await getUserRole();
@@ -59,6 +60,20 @@ export default async function Home() {
                 <p className="text-slate-300 text-sm sm:text-base md:text-base max-w-md mx-auto lg:mx-0 font-medium leading-relaxed">
                   Book appointments, consult via video, and manage your health journey in one secure platform.
                 </p>
+
+                {/* Accessibility Mode Info Card */}
+                <div className="flex flex-row items-center gap-3 p-4 rounded-2xl border border-amber-500/20 bg-amber-500/10 dark:border-amber-900/40 dark:bg-amber-950/10 text-left max-w-md mx-auto lg:mx-0">
+                  <Eye className="h-5 w-5 text-amber-500 shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs sm:text-sm font-bold text-white leading-tight">
+                      Need larger text?
+                    </p>
+                    <p className="text-[10px] sm:text-xs text-slate-300 leading-snug mt-0.5">
+                      Turn on Accessibility Mode for bigger buttons and text.
+                    </p>
+                  </div>
+                  <AccessibilityToggle />
+                </div>
                 
                 {/* Action Buttons Grid */}
                 <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 sm:gap-3 pt-2">

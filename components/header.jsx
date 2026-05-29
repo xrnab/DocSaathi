@@ -5,6 +5,7 @@ import Link from "next/link";
 import { checkUser } from "@/lib/checkUser";
 import { checkAndAllocateCredits } from "@/actions/credits";
 import { ModeToggle } from "./mode-toggle";
+import AccessibilityToggle from "./accessibility-toggle";
 import GoogleTranslate from "./google-translate";
 import { HeaderActions } from "./header-actions";
 import { BottomNav } from "./bottom-nav";
@@ -87,7 +88,8 @@ export default function Header() {
               <GoogleTranslate />
             </div>
             
-            <div className="hidden sm:inline-flex shrink-0">
+            <div className="hidden sm:inline-flex shrink-0 gap-2">
+              <AccessibilityToggle />
               <ModeToggle />
             </div>
           </HeaderScrollContainer>
