@@ -36,6 +36,7 @@ export default function SmsDemoPage() {
   ]);
   const [inputValue, setInputValue] = useState("");
   const [loading, setLoading] = useState(false);
+  const [smsState, setSmsState] = useState(null);
   const [appointments, setAppointments] = useState([]);
   const threadRef = useRef(null);
 
@@ -88,9 +89,10 @@ export default function SmsDemoPage() {
     try {
       // Simulate network delay over zero-internet SMS network
       setTimeout(async () => {
-        const res = await processIncomingSMS(finalVal);
+        const res = await processIncomingSMS(finalVal, smsState);
         playBeep(600, 0.12);
         setMessages(prev => [...prev, { sender: "incoming", text: res.reply, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }]);
+        setSmsState(res.newState);
         setLoading(false);
         if (res.success && res.appointmentId) {
           fetchAppointments();
@@ -223,7 +225,7 @@ export default function SmsDemoPage() {
                 📞
               </button>
               <button 
-                onClick={() => { playBeep(500, 0.2); setMessages([messages[0]]); }}
+                onClick={() => { playBeep(500, 0.2); setMessages([messages[0]]); setSmsState(null); }}
                 className="h-5 sm:h-6 bg-rose-800 hover:bg-rose-700 rounded-lg border border-rose-700 text-white flex items-center justify-center shadow-sm text-[9px]"
               >
                 ✖
@@ -380,7 +382,7 @@ export default function SmsDemoPage() {
                   <div>
                     <h4 className="font-bold text-foreground text-xs sm:text-sm">DocSaathi NLP Parser</h4>
                     <p className="text-[10px] sm:text-xs text-muted-foreground leading-relaxed mt-0.5">
-                      The SMS Gateway processes the incoming payload, parses the keyword, filters available verified doctor schedules, and responds within 2 seconds.
+                      The SMS Gateway processes the incoming payload, parses keywords, and identifies potential doctors or available slots.
                     </p>
                   </div>
                 </div>
@@ -390,7 +392,7 @@ export default function SmsDemoPage() {
                   <div>
                     <h4 className="font-bold text-foreground text-xs sm:text-sm flex items-center gap-1.5">Instant DB Lock</h4>
                     <p className="text-[10px] sm:text-xs text-muted-foreground leading-relaxed mt-0.5">
-                      Replying <code>1</code> locks the time slot in our database, deducts credits, and returns an automated receipt directly to the feature phone.
+                      Confirming a slot locks the appointment in our database, deducts credits, and returns an automated receipt to the feature phone.
                     </p>
                   </div>
                 </div>
@@ -402,26 +404,26 @@ export default function SmsDemoPage() {
                   <Sparkles className="text-sky-500 w-4 h-4" /> Quick-Insert Templates
                 </h4>
                 <p className="text-[10px] sm:text-xs text-muted-foreground leading-relaxed">
-                  Click pre-configured templates to immediately populate the simulator:
+                  Follow the multi-step flow to book a consultation:
                 </p>
                 <div className="flex flex-wrap gap-2 pt-1">
                   <button 
                     onClick={() => insertTemplate("DOCTOR FEVER NABHA")}
                     className="px-3 py-2 text-[10px] sm:text-xs font-bold bg-sky-50 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400 border border-sky-200 dark:border-sky-800 rounded-xl hover:bg-sky-100 transition-colors"
                   >
-                    🔍 Find Nabha Fever Specialist
+                    🔍 Step 1: Find Doctor
                   </button>
                   <button 
                     onClick={() => insertTemplate("1")}
                     className="px-3 py-2 text-[10px] sm:text-xs font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 rounded-xl hover:bg-emerald-100 transition-colors"
                   >
-                    ✅ Confirm Slot 1
+                    ✅ Step 2/3: Reply '1'
                   </button>
                   <button 
-                    onClick={() => insertTemplate("DOCTOR")}
-                    className="px-3 py-2 text-[10px] sm:text-xs font-bold bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 rounded-xl hover:bg-indigo-100 transition-colors"
+                    onClick={() => { setSmsState(null); setMessages([messages[0]]); }}
+                    className="px-3 py-2 text-[10px] sm:text-xs font-bold bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 rounded-xl hover:bg-rose-100 transition-colors"
                   >
-                    📋 Generic Doctor Inquiry
+                    🔄 Reset Conversation
                   </button>
                 </div>
               </div>
