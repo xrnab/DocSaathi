@@ -44,7 +44,8 @@ import {
   Clock,
   Compass,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  ChevronDown
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
@@ -187,6 +188,45 @@ export default function UnifiedEmergencyPage() {
   }, [dbUser, fetchStaffData, fetchActiveEmergency]);
 
   // Capture patient geolocation
+  // Capture patient geolocation and instantly trigger SOS in one click
+  const handleQuickSOSTrigger = async () => {
+    setSubmittingSOS(true);
+    let lat = null;
+    let lng = null;
+
+    if (navigator.geolocation) {
+      try {
+        const pos = await new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 5000,
+          });
+        });
+        lat = pos.coords.latitude;
+        lng = pos.coords.longitude;
+      } catch (err) {
+        console.warn("Could not retrieve GPS coordinates for quick SOS:", err);
+      }
+    }
+
+    try {
+      const res = await createEmergencyRequest(
+        lat,
+        lng,
+        "One-Click Quick Trigger",
+        "🚨 Critical SOS alert triggered instantly via one-click emergency button."
+      );
+      if (res.success) {
+        showToast("🚨 SOS CRITICAL ALERT DISPATCHED SUCCESS!");
+        fetchActiveEmergency();
+      }
+    } catch (err) {
+      showToast(err.message || "Failed to trigger SOS", "error");
+    } finally {
+      setSubmittingSOS(false);
+    }
+  };
+
   const handleGetLocation = () => {
     if (!navigator.geolocation) {
       setLocationError("Geolocation is not supported by your browser.");
@@ -841,87 +881,127 @@ export default function UnifiedEmergencyPage() {
                     </Button>
                   </div>
                 ) : (
-                  <form onSubmit={handleSubmitSOS} className="space-y-6">
-                    
-                    {/* Geolocation Coordinate Lock Button */}
-                    <div className="bg-slate-50/50 dark:bg-slate-900/30 p-5 rounded-2xl border border-border/80 flex flex-col items-center justify-center text-center space-y-4">
-                      <div className="space-y-1">
-                        <h4 className="text-sm font-bold text-foreground">Lock coordinates automatically</h4>
-                        <p className="text-xs text-muted-foreground">Allows responders to locate your coordinates in Nabha fields/villages.</p>
-                      </div>
+                  <div className="space-y-8 flex flex-col items-center">
+                    {/* Large pulsing circular SOS button */}
+                    <div className="relative group cursor-pointer flex justify-center py-6">
+                      <div className="absolute inset-0 bg-red-600 rounded-full blur-xl opacity-40 group-hover:opacity-60 transition-opacity animate-pulse scale-90" />
+                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-44 h-44 sm:w-52 sm:h-52 rounded-full border-4 border-red-500/30 animate-ping opacity-60" style={{ animationDuration: '3s' }} />
+                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-36 h-36 sm:w-44 sm:h-44 rounded-full border-2 border-red-500/20 animate-ping opacity-45" style={{ animationDuration: '2s' }} />
+                      
+                      <button
+                        type="button"
+                        disabled={submittingSOS}
+                        onClick={handleQuickSOSTrigger}
+                        className="relative w-36 h-36 sm:w-44 sm:h-44 rounded-full bg-gradient-to-br from-red-500 to-red-700 dark:from-red-600 dark:to-red-800 hover:from-red-600 hover:to-red-800 dark:hover:from-red-700 dark:hover:to-red-900 border-4 border-white/10 shadow-2xl flex flex-col items-center justify-center text-center p-4 transition-all duration-300 transform active:scale-95 group-hover:scale-102 cursor-pointer select-none"
+                      >
+                        {submittingSOS ? (
+                          <Loader2 className="h-10 w-10 text-white animate-spin" />
+                        ) : (
+                          <>
+                            <PhoneCall className="h-10 w-10 sm:h-12 sm:w-12 text-white animate-bounce shrink-0" />
+                            <span className="text-white font-black text-xl sm:text-2xl mt-1.5 uppercase tracking-widest leading-none drop-shadow-md">SOS</span>
+                            <span className="text-white/80 font-black text-[8px] sm:text-[9px] uppercase tracking-wider mt-0.5 leading-none">TAP TO DISPATCH</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
 
-                      {(latitude && longitude) ? (
-                        <div className="text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-3.5 py-1.5 rounded-full border border-emerald-500/20 animate-pulse">
-                          📍 Coordinates Locked: {latitude.toFixed(5)}, {longitude.toFixed(5)}
+                    <div className="text-center space-y-1.5 max-w-sm">
+                      <p className="font-extrabold text-foreground text-sm uppercase tracking-wider">TAP SOS TO TRIGGER DISPATCH INSTANTLY</p>
+                      <p className="text-xs text-muted-foreground leading-normal">
+                        This will automatically capture your GPS coordinates and send a priority alert to regional ASHA workers and public health controllers. **No typing required.**
+                      </p>
+                    </div>
+
+                    {/* Collapsible custom input drawer */}
+                    <div className="w-full pt-4 border-t border-border/80">
+                      <details className="group">
+                        <summary className="flex items-center justify-center gap-1.5 text-xs font-bold text-slate-500 dark:text-slate-400 cursor-pointer hover:underline select-none">
+                          <span>Or report custom village details / symptoms (Optional)</span>
+                          <ChevronDown className="h-3.5 w-3.5 transition-transform group-open:rotate-180" />
+                        </summary>
+                        
+                        <div className="pt-4 space-y-4 text-left animate-in slide-in-from-top-2 duration-300">
+                          {/* Geolocation Coordinate Lock Button */}
+                          <div className="bg-slate-50/50 dark:bg-slate-900/30 p-5 rounded-2xl border border-border/80 flex flex-col items-center justify-center text-center space-y-4">
+                            <div className="space-y-1">
+                              <h4 className="text-sm font-bold text-foreground">Lock coordinates manually</h4>
+                              <p className="text-xs text-muted-foreground">Allows responders to locate your coordinates in Nabha fields/villages.</p>
+                            </div>
+
+                            {(latitude && longitude) ? (
+                              <div className="text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-3.5 py-1.5 rounded-full border border-emerald-500/20 animate-pulse">
+                                📍 Coordinates Locked: {latitude.toFixed(5)}, {longitude.toFixed(5)}
+                              </div>
+                            ) : (
+                              <Button 
+                                type="button" 
+                                onClick={handleGetLocation} 
+                                disabled={fetchingLocation}
+                                className="bg-sky-600 hover:bg-sky-700 text-white font-bold rounded-xl gap-2 cursor-pointer shadow-sm shadow-sky-600/10"
+                              >
+                                {fetchingLocation ? (
+                                  <>
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                    Locking location...
+                                  </>
+                                ) : (
+                                  <>
+                                    <MapPin className="h-4 w-4 shrink-0" />
+                                    Lock GPS Location
+                                  </>
+                                )}
+                              </Button>
+                            )}
+
+                            {locationError && (
+                              <p className="text-xs font-bold text-red-500">{locationError}</p>
+                            )}
+                          </div>
+
+                          {/* Manual Address Input */}
+                          <div className="space-y-1.5">
+                            <Label htmlFor="address">Address / Village / landmark (Optional)</Label>
+                            <Input
+                              id="address"
+                              placeholder="e.g. Sauja village, fields near Nabha Patiala highway..."
+                              value={address}
+                              onChange={(e) => setAddress(e.target.value)}
+                              className="bg-slate-50/30 dark:bg-slate-900/20"
+                            />
+                          </div>
+
+                          {/* SOS Notes */}
+                          <div className="space-y-1.5">
+                            <Label htmlFor="message">Describe the emergency situation (Briefly)</Label>
+                            <Textarea
+                              id="message"
+                              placeholder="e.g. Elderly patient chest pain and breathing difficulty, or pesticide burn accident..."
+                              value={message}
+                              onChange={(e) => setMessage(e.target.value)}
+                              className="bg-slate-50/30 dark:bg-slate-900/20 min-h-[90px]"
+                            />
+                          </div>
+
+                          {/* Critical SOS Trigger Button */}
+                          <Button 
+                            onClick={handleSubmitSOS}
+                            disabled={submittingSOS}
+                            className="w-full bg-red-600 hover:bg-red-700 text-white font-black h-12 rounded-xl text-lg flex items-center justify-center gap-2 shadow-lg shadow-red-500/20 cursor-pointer animate-pulse"
+                          >
+                            {submittingSOS ? (
+                              <Loader2 className="h-5 w-5 animate-spin" />
+                            ) : (
+                              <>
+                                <PhoneCall className="h-5 w-5 animate-bounce shrink-0" />
+                                TRIGGER EMERGENCY SOS DISPATCH
+                              </>
+                            )}
+                          </Button>
                         </div>
-                      ) : (
-                        <Button 
-                          type="button" 
-                          onClick={handleGetLocation} 
-                          disabled={fetchingLocation}
-                          className="bg-sky-600 hover:bg-sky-700 text-white font-bold rounded-xl gap-2 cursor-pointer shadow-sm shadow-sky-600/10"
-                        >
-                          {fetchingLocation ? (
-                            <>
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                              Locking location...
-                            </>
-                          ) : (
-                            <>
-                              <MapPin className="h-4 w-4 shrink-0" />
-                              Lock GPS Location
-                            </>
-                          )}
-                        </Button>
-                      )}
-
-                      {locationError && (
-                        <p className="text-xs font-bold text-red-500">{locationError}</p>
-                      )}
+                      </details>
                     </div>
-
-                    {/* Manual Address Input */}
-                    <div className="space-y-1.5">
-                      <Label htmlFor="address">Address / Village / landmark (Optional)</Label>
-                      <Input
-                        id="address"
-                        placeholder="e.g. Sauja village, fields near Nabha Patiala highway..."
-                        value={address}
-                        onChange={(e) => setAddress(e.target.value)}
-                        className="bg-slate-50/30 dark:bg-slate-900/20"
-                      />
-                    </div>
-
-                    {/* SOS Notes */}
-                    <div className="space-y-1.5">
-                      <Label htmlFor="message">Describe the emergency situation (Briefly)</Label>
-                      <Textarea
-                        id="message"
-                        required
-                        placeholder="e.g. Elderly patient chest pain and breathing difficulty, or pesticide burn accident..."
-                        value={message}
-                        onChange={(e) => setMessage(e.target.value)}
-                        className="bg-slate-50/30 dark:bg-slate-900/20 min-h-[90px]"
-                      />
-                    </div>
-
-                    {/* Critical SOS Trigger Button */}
-                    <Button 
-                      type="submit" 
-                      disabled={submittingSOS}
-                      className="w-full bg-red-600 hover:bg-red-700 text-white font-black h-12 rounded-xl text-lg flex items-center justify-center gap-2 shadow-lg shadow-red-500/20 cursor-pointer animate-pulse"
-                    >
-                      {submittingSOS ? (
-                        <Loader2 className="h-5 w-5 animate-spin" />
-                      ) : (
-                        <>
-                          <PhoneCall className="h-5 w-5 animate-bounce shrink-0" />
-                          TRIGGER EMERGENCY SOS DISPATCH
-                        </>
-                      )}
-                    </Button>
-
-                  </form>
+                  </div>
                 )}
 
                 {/* Direct Speed Dials */}
