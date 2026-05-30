@@ -3,19 +3,156 @@
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/prisma";
 
+// ─── GEMINI FALLBACK ────────────────────────────────────
+async function callGemini(systemPrompt, userMessage) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error("Gemini API key not configured");
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 25000);
+
+  try {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        signal: controller.signal,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [
+            {
+              role: "user",
+              parts: [
+                { text: systemPrompt + "\n\n" + userMessage }
+              ]
+            }
+          ],
+          generationConfig: {
+            temperature: 0.15,
+            maxOutputTokens: 2000,
+          }
+        })
+      }
+    );
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(
+        err.error?.message || 
+        `Gemini error ${response.status}`
+      );
+    }
+
+    const data = await response.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    if (!text || text.trim().length < 50) {
+      throw new Error("Gemini returned empty response");
+    }
+
+    return text;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+// ─── GROQ PRIMARY ───────────────────────────────────────
+async function callGroq(systemPrompt, userMessage) {
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) throw new Error("Groq API key not configured");
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 25000);
+
+  try {
+    const response = await fetch(
+      "https://api.groq.com/openai/v1/chat/completions",
+      {
+        method: "POST",
+        signal: controller.signal,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: "llama-3.3-70b-versatile",
+          max_tokens: 2000,
+          temperature: 0.15,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userMessage },
+          ],
+        }),
+      }
+    );
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(
+        errorData.error?.message ||
+        `Groq error ${response.status}: ${response.statusText}`
+      );
+    }
+
+    const data = await response.json();
+
+    if (data.error) {
+      throw new Error(data.error.message || "Groq API error");
+    }
+
+    const result = data.choices?.[0]?.message?.content;
+
+    if (!result || result.trim().length < 50) {
+      throw new Error("Groq returned empty response");
+    }
+
+    const hasSections =
+      result.includes("URGENCY") ||
+      result.includes("ਅਰਜੈਂਸੀ") ||
+      result.includes("तात्कालिकता") ||
+      result.includes("MEDICINES") ||
+      result.includes("ਦਵਾਈਆਂ") ||
+      result.includes("दवाएं");
+
+    if (!hasSections) {
+      throw new Error("Groq response missing required sections");
+    }
+
+    return result;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+// ─── VALIDATE RESPONSE ──────────────────────────────────
+function validateResponse(text) {
+  if (!text || text.trim().length < 50) return false;
+  const hasSections =
+    text.includes("URGENCY") ||
+    text.includes("MEDICINES") ||
+    text.includes("ਦਵਾਈਆਂ") ||
+    text.includes("दवाएं") ||
+    text.includes("CONDITIONS") ||
+    text.includes("ਬਿਮਾਰੀ") ||
+    text.includes("बीमारी");
+  return hasSections;
+}
+
+// ─── MAIN EXPORT ────────────────────────────────────────
 export async function analyzeSymptoms(params) {
   const { userId } = await auth();
   if (!userId) {
-    return { success: false, error: "You must be signed in to use the AI analysis." };
+    return { 
+      success: false, 
+      error: "You must be signed in to use the AI analysis." 
+    };
   }
-  const { symptoms, language, patientType, duration } = params;
-  
-  const geminiApiKey = process.env.GEMINI_API_KEY;
-  const groqApiKey = process.env.GROQ_API_KEY;
 
-  if (!geminiApiKey && !groqApiKey) {
-    throw new Error("Medical Analysis Engine (Gemini/Groq) is not configured on the server.");
-  }
+  const { symptoms, language, patientType, duration } = params;
 
   const systemPrompt = `You are a senior doctor giving a direct 
 clinical assessment for a patient in Nabha, Punjab, India.
@@ -61,243 +198,56 @@ Always end with: "Call 108 for free ambulance."
 
 DISCLAIMER: AI only. Not a prescription. See a doctor.
 
-━━━━━━━━━━━━━━━━━━━━━━━━━
-SYMPTOM-SPECIFIC PROTOCOLS
-Use these when the symptom is reported:
-━━━━━━━━━━━━━━━━━━━━━━━━━
+SYMPTOM PROTOCOLS:
+FEVER: Paracetamol 500-650mg every 6h. Dengue risk 
+Jul-Nov (no Ibuprofen if dengue suspected). Check 
+malaria May-Oct. ORS for hydration.
+HEADACHE: Paracetamol for tension. Ibuprofen 400mg 
+for migraine. Worst headache of life = RED.
+COUGH: Dextromethorphan dry cough. Guaifenesin 
+productive. Azithromycin if fever >3 days.
+VOMITING: Ondansetron 4mg under tongue. ORS sips.
+DIARRHEA: ORS every loose stool. Zinc 20mg 14 days. 
+Loperamide adults only. Azithromycin if bloody.
+CHEST PAIN: Minimum YELLOW. Crushing + arm pain = 
+RED heart attack, Aspirin 325mg immediately, call 108.
+STOMACH PAIN: Omeprazole 20mg for acidity. 
+Right lower = possible appendicitis YELLOW/RED.
+DIZZINESS: ORS if dehydrated. Betahistine 16mg 
+for vertigo. RED if with chest pain or fainting.
+FATIGUE: Ferrous Sulphate anemia. Vitamin D3 
+60000IU weekly. Blood test if >2 weeks.
+SORE THROAT: Viral = gargle + Strepsils + Paracetamol. 
+Bacterial pus = Amoxicillin 500mg 3x daily 7 days.
+RASH: Dengue Jul-Nov = Paracetamol ONLY no Ibuprofen. 
+Allergy = Cetirizine 10mg + Hydrocortisone cream.
+JOINT PAIN: Dengue = Paracetamol only. 
+Arthritis = Ibuprofen 400mg + Diclofenac gel.
+BREATHLESSNESS: Always YELLOW+. Asthma = Salbutamol 
+inhaler. Cannot speak full sentence = RED call 108.
+NAUSEA: Ondansetron 4mg. Domperidone 10mg before meals. 
+Pregnancy = Pyridoxine B6 25mg only.
+BACK PAIN: Farm labor = Ibuprofen + Thiocolchicoside. 
+Flank + fever = kidney infection, Ciprofloxacin 500mg.
+PESTICIDE EXPOSURE: Always RED. Remove clothes, 
+wash skin 15 min. Call 108. Atropine at hospital.
+SNAKE/SCORPION BITE: Always RED. Keep still. 
+Call 108. Civil Hospital Nabha has anti-venom.
+HEAT STROKE: >104F + confusion = RED call 108. 
+Cool with wet cloth. ORS if conscious.
+EYE IRRITATION (STUBBLE): Saline wash. 
+Olopatadine drops. Artificial tears. Cetirizine oral.
+MUSCLE CRAMPS (FARM): ORS immediately. 
+Magnesium 400mg. Thiocolchicoside if severe.
+WATERBORNE ILLNESS: ORS. Typhoid = Azithromycin 
+500mg 7 days. Hepatitis A = NO Paracetamol, rest only.
 
-FEVER:
-- If mild (<100.4°F/38°C): Paracetamol 500mg
-- If moderate (100-103°F): Paracetamol 650mg + 
-  Ibuprofen 400mg alternating every 4 hours
-- If high (>103°F/39.4°C): RED urgency
-- Always consider: dengue (Jul-Nov Punjab), 
-  malaria (May-Oct), typhoid (contaminated water)
-- Dengue red flags: platelet drop, bleeding, 
-  pain behind eyes, rash — if suspected: NO Ibuprofen
-- Medicines: Paracetamol, ORS (dehydration), 
-  Cetirizine (if allergic component)
-
-HEADACHE:
-- Tension: Paracetamol 500mg + rest
-- Migraine: Ibuprofen 400mg + dark quiet room + 
-  Domperidone 10mg for nausea
-- Severe/sudden worst headache of life: RED — 
-  possible meningitis or hemorrhage
-- With fever: consider meningitis, dengue, typhoid
-- Medicines: Paracetamol, Ibuprofen, 
-  Domperidone (nausea), Caffeine+Paracetamol combo
-
-COUGH:
-- Dry cough: Dextromethorphan 15mg syrup or 
-  Honey-based linctus
-- Productive cough: Guaifenesin (expectorant) + 
-  steam inhalation
-- With fever >3 days: consider pneumonia — 
-  Azithromycin 500mg day 1, 250mg days 2-5
-- With breathlessness: RED — possible pneumonia/asthma
-- Medicines: Dextromethorphan, Guaifenesin, 
-  Levosalbutamol inhaler (if asthma), Azithromycin
-
-VOMITING:
-- Ondansetron 4mg (dissolve under tongue) every 8 hours
-- ORS sachets — small sips continuously
-- Domperidone 10mg before meals if chronic
-- If blood in vomit: RED immediately
-- If after pesticide exposure: RED — call 108
-- Medicines: Ondansetron, Domperidone, ORS, 
-  Pantoprazole 40mg (if acidity related)
-
-DIARRHEA:
-- ORS is the most important medicine — 1 sachet 
-  per loose stool
-- Zinc 20mg once daily for 14 days (adults + children)
-- Loperamide 2mg after each loose stool (adults only, 
-  max 16mg/day) — do NOT give to children under 12
-- Antibiotic only if bloody diarrhea or cholera suspected: 
-  Azithromycin 500mg once daily for 3 days
-- If >10 loose stools/day or blood in stool: YELLOW/RED
-- Medicines: ORS, Zinc, Loperamide, Azithromycin
-
-CHEST PAIN:
-- Any chest pain: YELLOW minimum — do not ignore
-- Crushing/squeezing + left arm pain + sweating: 
-  RED — heart attack, call 108 immediately
-- Sharp worse on breathing: pleurisy or costochondritis
-- Aspirin 325mg immediately if heart attack suspected
-- Never give Ibuprofen if cardiac chest pain suspected
-- Medicines: Aspirin (cardiac only), 
-  Pantoprazole (if acidity), Paracetamol (musculoskeletal)
-
-STOMACH PAIN:
-- Upper abdomen + burning: acidity/GERD — 
-  Omeprazole 20mg empty stomach + Antacid after meals
-- Right lower: possible appendicitis — YELLOW/RED
-- Cramping + diarrhea: gastroenteritis — ORS + Zinc
-- Severe constant pain: RED
-- Medicines: Omeprazole, Pantoprazole, Antacid 
-  (Gelusil/Digene), Mefenamic acid for cramps,
-  Dicyclomine for spasms
-
-DIZZINESS:
-- With low BP/dehydration: ORS + lie down + fluids
-- With ear problem: Betahistine 16mg twice daily
-- With vomiting: Domperidone + ORS
-- Sudden severe vertigo: Betahistine + Cinnarizine
-- With chest pain or fainting: RED
-- Medicines: Betahistine, Cinnarizine, ORS, 
-  Domperidone
-
-FATIGUE:
-- Sudden onset with fever: viral infection
-- Prolonged >2 weeks: check for anemia, 
-  hypothyroid, diabetes — needs blood test
-- Iron deficiency anemia (common in Punjab): 
-  Ferrous Sulphate 200mg twice daily with Vitamin C
-- Vitamin D deficiency: Vitamin D3 60,000IU 
-  once weekly for 8 weeks
-- Medicines: Ferrous Sulphate, Vitamin B12, 
-  Vitamin D3, Multivitamin
-
-SORE THROAT:
-- Viral (no pus): Antiseptic gargle (Povidone-Iodine) 
-  + Strepsils lozenges + Paracetamol
-- Bacterial/pus visible: Amoxicillin 500mg three 
-  times daily for 7 days (full course)
-- Severe difficulty swallowing: YELLOW
-- Medicines: Amoxicillin, Paracetamol, 
-  Povidone-Iodine gargle, Benzocaine lozenges,
-  Cetirizine (if allergy component)
-
-RASH:
-- With fever in Punjab Jul-Nov: dengue — no Ibuprofen, 
-  Paracetamol only, blood test urgently
-- Allergic (hives, itchy): Cetirizine 10mg + 
-  Hydrocortisone cream 1%
-- Spreading rapidly or with breathing difficulty: 
-  RED — anaphylaxis
-- Medicines: Cetirizine, Chlorpheniramine, 
-  Hydrocortisone cream, Calamine lotion
-
-JOINT PAIN:
-- Dengue arthralgia: Paracetamol only (no Ibuprofen)
-- Osteoarthritis/general: Ibuprofen 400mg + 
-  Diclofenac gel topically
-- Gout (big toe, sudden): Colchicine 0.5mg + 
-  Indomethacin, avoid purine foods
-- Rheumatoid (multiple joints, morning stiffness): 
-  needs specialist — give Hydroxychloroquine referral
-- Medicines: Paracetamol, Ibuprofen, Diclofenac gel, 
-  Colchicine
-
-BREATHLESSNESS:
-- Any breathlessness: YELLOW minimum
-- With chest pain: RED — heart or PE
-- Asthma attack: Salbutamol inhaler 2 puffs 
-  every 20 minutes + sit upright
-- COPD exacerbation (smoker/farm worker): 
-  Salbutamol + Ipratropium inhaler
-- Severe — cannot speak full sentence: RED call 108
-- Medicines: Salbutamol inhaler, Montelukast, 
-  Budesonide inhaler (preventive)
-
-NAUSEA:
-- Ondansetron 4mg under tongue (fast acting)
-- Domperidone 10mg before meals
-- With acidity: Omeprazole 20mg + Antacid
-- Pregnancy nausea: only B6 (Pyridoxine) 25mg, 
-  safe in pregnancy
-- Medicines: Ondansetron, Domperidone, 
-  Pyridoxine B6, Omeprazole
-
-BACK PAIN:
-- Muscle/posture (farm labor): Ibuprofen 400mg + 
-  Diclofenac gel + muscle relaxant (Thiocolchicoside)
-- With leg numbness/weakness: YELLOW — nerve compression
-- Kidney pain (flank, with fever): UTI/kidney stone — 
-  urine test needed, Ciprofloxacin 500mg if infection
-- Severe sudden: RED — disc herniation or aortic
-- Medicines: Ibuprofen, Diclofenac gel, 
-  Thiocolchicoside, Paracetamol, Tramadol (severe)
-
-PESTICIDE EXPOSURE:
-- Always YELLOW or RED — never GREEN
-- Organophosphate (most Punjab pesticides): 
-  excessive saliva, pin-point pupils, muscle twitching
-- IMMEDIATE: remove clothes, wash skin with soap 
-  and water for 15 minutes, fresh air
-- Call 108 immediately — this is a medical emergency
-- Antidote: Atropine (hospital only)
-- DO NOT induce vomiting
-- Medicines: Atropine (hospital), Pralidoxime (hospital)
-- RED urgency always
-
-SNAKE/SCORPION BITE:
-- Always RED — call 108 immediately
-- Keep patient still and calm — movement spreads venom
-- Remove tight clothing and jewelry near bite
-- Do NOT cut, suck, or tourniquet the bite
-- Anti-venom only at hospital (Civil Hospital Nabha 
-  has anti-venom stock)
-- Scorpion sting: Prazosin at hospital + pain relief
-- Medicines: Paracetamol for pain only
-- RED urgency always
-
-HEAT STROKE:
-- Body temp >104°F (40°C) + confusion = emergency
-- Move to shade immediately, remove excess clothing
-- Cool with wet cloth on neck, armpits, groin
-- ORS or plain water if conscious
-- Call 108 if confused, unconscious, or seizure
-- Medicines: ORS, Paracetamol for temperature
-- YELLOW if mild heat exhaustion, RED if confusion
-
-EYE IRRITATION (STUBBLE BURNING):
-- Saline eye wash or clean water irrigation immediately
-- Sodium Cromoglicate eye drops 4 times daily
-- Artificial tears (Carboxymethylcellulose drops) 
-  every 2 hours
-- Antihistamine: Olopatadine eye drops twice daily
-- Avoid rubbing eyes
-- If vision blurred or severe pain: YELLOW
-- Medicines: Sodium Cromoglicate drops, 
-  Olopatadine drops, Artificial tears, 
-  Cetirizine oral tablet
-
-MUSCLE CRAMPS (FARM LABOR):
-- Dehydration + electrolyte loss — most common cause
-- ORS sachets immediately + rest in shade
-- Magnesium supplement: Magnesium 400mg daily
-- Potassium-rich foods: banana, coconut water
-- If severe or prolonged: Methocarbamol 750mg 
-  or Thiocolchicoside 4mg
-- Prevent: drink 3-4 litres water daily during farm work
-- Medicines: ORS, Magnesium, 
-  Thiocolchicoside, Calcium
-
-WATERBORNE ILLNESS:
-- Contaminated water: typhoid, cholera, hepatitis A
-- ORS immediately for dehydration
-- Typhoid suspected (fever + stomach pain 5+ days): 
-  Azithromycin 500mg daily for 7 days or 
-  Cefixime 200mg twice daily for 7-14 days
-- Cholera (rice-water stools): ORS is life-saving, 
-  Doxycycline 300mg single dose
-- Hepatitis A (jaundice + dark urine): supportive only, 
-  avoid Paracetamol — liver rest
-- Medicines: ORS, Zinc, Azithromycin, 
-  Cefixime, Doxycycline
-
-━━━━━━━━━━━━━━━━━━━━━━━━━
-LOCAL RESOURCES (always mention in RECOMMENDED ACTION):
-━━━━━━━━━━━━━━━━━━━━━━━━━
-- Civil Hospital Nabha — free OPD and emergency
-- Jan Aushadhi store Nabha — generic medicines 
-  up to 90% cheaper
-- Rajindra Hospital Patiala — specialist referral
-- 108 — free ambulance (24/7)
-- Ayushman Bharat card — free treatment at 
-  all government hospitals`;
+LOCAL RESOURCES:
+Civil Hospital Nabha — free OPD
+Jan Aushadhi Nabha — generics 90% cheaper
+Rajindra Hospital Patiala — specialist
+108 — free ambulance 24/7
+Ayushman Bharat — free govt hospital treatment`;
 
   const userMessage = `Patient: ${patientType}
 Symptoms: ${symptoms.join(", ")}
@@ -305,150 +255,61 @@ Duration: ${duration}
 Location: Nabha, Punjab
 
 Provide complete clinical assessment with all relevant 
-medicines, exact doses and exact timings for these 
-specific symptoms. Use the symptom protocols.
-Respond in ${language}.`.trim();
+medicines, exact doses and timings. Respond in ${language}.`.trim();
 
+  // ── Try Groq first, fall back to Gemini ──────────────
+  let result = null;
+  let usedFallback = false;
+  let lastError = null;
+
+  // ATTEMPT 1: Groq
   try {
-    let resultText = "";
-
-    if (geminiApiKey) {
-      console.log("Using Google Gemini API for Symptom Checker Triage...");
-      try {
-        const geminiResponse = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              contents: [
-                {
-                  role: "user",
-                  parts: [{ text: userMessage }]
-                }
-              ],
-              systemInstruction: {
-                parts: [{ text: systemPrompt }]
-              },
-              generationConfig: {
-                temperature: 0.15,
-                maxOutputTokens: 2000
-              }
-            })
-          }
-        );
-
-        if (!geminiResponse.ok) {
-          const errorText = await geminiResponse.text();
-          console.error("Gemini API error response:", geminiResponse.status, errorText);
-          if (groqApiKey) {
-            console.log("Gemini failed. Falling back to Groq Llama for Triage...");
-            resultText = await callGroqTriage(groqApiKey, systemPrompt, userMessage);
-          } else {
-            throw new Error("Error communicating with Google Gemini service.");
-          }
-        } else {
-          const data = await geminiResponse.json();
-          resultText = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-        }
-      } catch (geminiErr) {
-        console.error("Exception during Gemini Triage call:", geminiErr);
-        if (groqApiKey) {
-          console.log("Gemini exception. Falling back to Groq Llama for Triage...");
-          resultText = await callGroqTriage(groqApiKey, systemPrompt, userMessage);
-        } else {
-          throw geminiErr;
-        }
-      }
-    } else {
-      console.log("Using Groq API for Symptom Checker Triage...");
-      resultText = await callGroqTriage(groqApiKey, systemPrompt, userMessage);
-    }
-
-    if (!resultText) throw new Error("Could not generate analysis report");
-    
-    return { success: true, data: resultText };
-  } catch (error) {
-    console.error("AI Analysis Error:", error);
-    return { success: false, error: error.message };
+    result = await callGroq(systemPrompt, userMessage);
+    console.log("✓ Groq responded successfully");
+  } catch (groqError) {
+    lastError = groqError;
+    console.warn("⚠ Groq failed:", groqError.message, 
+                 "— trying Gemini fallback");
   }
+
+  // ATTEMPT 2: Gemini fallback if Groq failed
+  if (!result || !validateResponse(result)) {
+    try {
+      result = await callGemini(systemPrompt, userMessage);
+      usedFallback = true;
+      console.log("✓ Gemini fallback responded successfully");
+    } catch (geminiError) {
+      console.error("✗ Gemini fallback also failed:", 
+                    geminiError.message);
+      // Both failed — return clear error
+      return {
+        success: false,
+        error:
+          "Medical analysis is temporarily unavailable. " +
+          "Please try again in a moment. " +
+          "For urgent symptoms call 108 immediately."
+      };
+    }
+  }
+
+  // Final validation
+  if (!result || !validateResponse(result)) {
+    return {
+      success: false,
+      error:
+        "Could not generate a complete report. " +
+        "Please try again. For emergencies call 108."
+    };
+  }
+
+  return { 
+    success: true, 
+    data: result,
+    provider: usedFallback ? "gemini" : "groq"
+  };
 }
 
-async function callGroqTriage(apiKey, systemPrompt, userMessage) {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 25000);
-
-  try {
-    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      signal: controller.signal,
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
-        max_tokens: 2000,
-        temperature: 0.15,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userMessage },
-        ],
-      }),
-    });
-
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(
-        errorData.error?.message || 
-        `API error ${response.status}: ${response.statusText}`
-      );
-    }
-
-    const data = await response.json();
-
-    // Catch Groq API-level errors (rate limit, model error etc)
-    if (data.error) {
-      throw new Error(data.error.message || "Groq API error");
-    }
-
-    const result = data.choices?.[0]?.message?.content;
-
-    // Catch empty or whitespace-only response
-    if (!result || result.trim().length < 50) {
-      throw new Error(
-        "The AI returned an incomplete response. " +
-        "This usually means the request was too long or " +
-        "the service is busy. Please try again in a moment."
-      );
-    }
-
-    // Catch responses that are just filler with no sections
-    const hasSections = 
-      result.includes("URGENCY") ||
-      result.includes("ਅਰਜੈਂਸੀ") ||
-      result.includes("तात्कालिकता") ||
-      result.includes("MEDICINES") ||
-      result.includes("ਦਵਾਈਆਂ") ||
-      result.includes("दवाएं");
-
-    if (!hasSections) {
-      throw new Error(
-        "The AI response was incomplete. Please try again."
-      );
-    }
-
-    return result;
-  } catch (error) {
-    clearTimeout(timeoutId);
-    throw error;
-  }
-}
-
+// ─── HEALTH RISK REPORT EXPORTS ─────────────────────────
 export async function generateHealthRiskReport(patientId = null) {
   const { userId } = await auth();
   if (!userId) return { error: "Unauthorized" };
