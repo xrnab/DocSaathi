@@ -95,7 +95,7 @@ const GoogleTranslate = () => {
             <Languages className="h-4 w-4 sm:h-4.5 sm:w-4.5 text-white" />
           </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-48 bg-background/95 backdrop-blur-xl border-border p-1 shadow-2xl rounded-xl z-[100]">
+        <DropdownMenuContent align="end" className="w-48 bg-background/95 backdrop-blur-xl border-border p-1 shadow-2xl rounded-xl z-[200]">
           <div className="px-2 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider">
             Select Language
           </div>

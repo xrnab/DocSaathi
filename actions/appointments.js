@@ -123,7 +123,6 @@ export async function bookAppointment(formData) {
         const slot = await tx.availability.findFirst({
           where: {
             doctorId,
-            startTime,
             status: "AVAILABLE"
           }
         });

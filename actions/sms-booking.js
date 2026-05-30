@@ -6,6 +6,8 @@ import { revalidatePath } from "next/cache";
 import { createNotification } from "@/actions/notifications";
 import { format } from "date-fns";
 
+import { getAvailableTimeSlots } from "./appointments";
+
 /**
  * Formats a Date object into a timezone-aware (Asia/Kolkata) string for SMS.
  */
@@ -127,27 +129,43 @@ export async function processIncomingSMS(messageText, currentState = null) {
 
       const doctorId = currentState.doctorIds[selectionIndex];
       const doctor = await db.user.findUnique({ where: { id: doctorId } });
-      const slots = await db.availability.findMany({
-        where: { doctorId, status: "AVAILABLE", startTime: { gte: new Date() } },
-        orderBy: { startTime: 'asc' },
-        take: 3
+      if (!doctor) {
+        return { reply: "DocSaathi: Doctor not found.", success: false, newState: null };
+      }
+
+      const { days } = await getAvailableTimeSlots(doctorId);
+      
+      // Flatten all slots across the next 4 days
+      const allSlots = [];
+      days.forEach(d => {
+        d.slots.forEach(slot => {
+          allSlots.push(slot);
+        });
       });
 
-      if (slots.length === 0) {
+      const slotsToShow = allSlots.slice(0, 3);
+
+      if (slotsToShow.length === 0) {
         return { reply: `DocSaathi: Dr. ${doctor.name} has no slots. Text 'DOCTOR' to restart.`, success: false, newState: null };
       }
 
-      let replyText = `Available slots for Dr. ${doctor.name}:\n`;
-      slots.forEach((s, i) => {
-        const timeLabel = formatSmsDateTime(s.startTime);
+      let replyText = `DocSaathi: Dr. ${doctor.name} is available at these times. Do you want to book?\n`;
+      slotsToShow.forEach((s, i) => {
+        const timeLabel = formatSmsDateTime(new Date(s.startTime));
         replyText += `${i + 1}. ${timeLabel}\n`;
       });
-      replyText += "Reply with slot number.";
+      replyText += "Reply with slot number to book.";
 
       return {
         reply: replyText,
         success: true,
-        newState: { step: "SELECT_SLOT", doctorId, doctorName: doctor.name, slotIds: slots.map(s => s.id), slotDetails: slots.map(s => ({ id: s.id, start: s.startTime, end: s.endTime })) }
+        newState: { 
+          step: "SELECT_SLOT", 
+          doctorId, 
+          doctorName: doctor.name, 
+          slotIds: slotsToShow.map((s, idx) => `slot-${idx}`), 
+          slotDetails: slotsToShow.map((s, idx) => ({ id: `slot-${idx}`, start: s.startTime, end: s.endTime })) 
+        }
       };
     }
 
@@ -202,11 +220,20 @@ export async function processIncomingSMS(messageText, currentState = null) {
           data: { userId: currentState.doctorId, amount: APPOINTMENT_CREDIT_COST, type: "APPOINTMENT_DEDUCTION" }
         });
 
-        // Mark slot as booked
-        await tx.availability.update({
-          where: { id: selectedSlot.id },
-          data: { status: "BOOKED" }
+        // Find the doctor's active daily availability slot and mark it as booked
+        const activeAvailability = await tx.availability.findFirst({
+          where: {
+            doctorId: currentState.doctorId,
+            status: "AVAILABLE"
+          }
         });
+
+        if (activeAvailability) {
+          await tx.availability.update({
+            where: { id: activeAvailability.id },
+            data: { status: "BOOKED" }
+          });
+        }
 
         // Create appointment
         return tx.appointment.create({

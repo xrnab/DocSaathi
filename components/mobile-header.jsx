@@ -1,8 +1,8 @@
 import React, { Suspense } from "react";
-import { Activity, Menu, Home, Stethoscope, BarChart3, CreditCard, ShieldCheck, Heart, MessageSquare, PhoneCall, Sparkles } from "lucide-react";
+import { Activity, Menu, Home, Stethoscope, CreditCard, ShieldCheck, Heart, MessageSquare, PhoneCall, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { Button } from "./ui/button";
-import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "./ui/sheet";
+import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetClose } from "./ui/sheet";
 import { ModeToggle } from "./mode-toggle";
 import GoogleTranslate from "./google-translate";
 import { checkUser } from "@/lib/checkUser";
@@ -39,53 +39,67 @@ async function MobileMenu() {
           </SheetHeader>
 
           <nav className="flex flex-col gap-1">
-            <Link href="/" className="flex items-center gap-3 p-3 rounded-2xl hover:bg-white/10 transition-colors group">
-              <Home className="h-5 w-5 text-sky-400 group-hover:scale-110 transition-transform" />
-              <span className="font-bold text-sm uppercase tracking-wider text-slate-200">Home</span>
-            </Link>
-            <Link href="/doctors" className="flex items-center gap-3 p-3 rounded-2xl hover:bg-white/10 transition-colors group">
-              <Stethoscope className="h-5 w-5 text-emerald-400 group-hover:scale-110 transition-transform" />
-              <span className="font-bold text-sm uppercase tracking-wider text-slate-200">Doctors</span>
-            </Link>
-            <Link href="/impact" className="flex items-center gap-3 p-3 rounded-2xl hover:bg-white/10 transition-colors group">
-              <BarChart3 className="h-5 w-5 text-amber-400 group-hover:scale-110 transition-transform" />
-              <span className="font-bold text-sm uppercase tracking-wider text-slate-200">Impact</span>
-            </Link>
-            <Link href="/pricing" className="flex items-center gap-3 p-3 rounded-2xl hover:bg-white/10 transition-colors group">
-              <CreditCard className="h-5 w-5 text-indigo-400 group-hover:scale-110 transition-transform" />
-              <span className="font-bold text-sm uppercase tracking-wider text-slate-200">Pricing</span>
-            </Link>
+            <SheetClose asChild>
+              <Link href="/" className="flex items-center gap-3 p-3 rounded-2xl hover:bg-white/10 transition-colors group">
+                <Home className="h-5 w-5 text-sky-400 group-hover:scale-110 transition-transform" />
+                <span className="font-bold text-sm uppercase tracking-wider text-slate-200">Home</span>
+              </Link>
+            </SheetClose>
+            
+            <SheetClose asChild>
+              <Link href="/doctors" className="flex items-center gap-3 p-3 rounded-2xl hover:bg-white/10 transition-colors group">
+                <Stethoscope className="h-5 w-5 text-emerald-400 group-hover:scale-110 transition-transform" />
+                <span className="font-bold text-sm uppercase tracking-wider text-slate-200">Doctors</span>
+              </Link>
+            </SheetClose>
+
+            <SheetClose asChild>
+              <Link href="/pricing" className="flex items-center gap-3 p-3 rounded-2xl hover:bg-white/10 transition-colors group">
+                <CreditCard className="h-5 w-5 text-indigo-400 group-hover:scale-110 transition-transform" />
+                <span className="font-bold text-sm uppercase tracking-wider text-slate-200">Pricing</span>
+              </Link>
+            </SheetClose>
             
             <div className="h-px bg-white/10 my-2" />
 
             {role === "ADMIN" && (
-              <Link href="/admin" className="flex items-center gap-3 p-3 rounded-2xl hover:bg-white/10 transition-colors group">
-                <ShieldCheck className="h-5 w-5 text-sky-400 group-hover:scale-110 transition-transform" />
-                <span className="font-bold text-sm uppercase tracking-wider text-slate-200">Admin</span>
-              </Link>
+              <SheetClose asChild>
+                <Link href="/admin" className="flex items-center gap-3 p-3 rounded-2xl hover:bg-white/10 transition-colors group">
+                  <ShieldCheck className="h-5 w-5 text-sky-400 group-hover:scale-110 transition-transform" />
+                  <span className="font-bold text-sm uppercase tracking-wider text-slate-200">Admin</span>
+                </Link>
+              </SheetClose>
             )}
             {role === "DOCTOR" && (
-              <Link href="/doctor" className="flex items-center gap-3 p-3 rounded-2xl hover:bg-white/10 transition-colors group">
-                <Stethoscope className="h-5 w-5 text-indigo-400 group-hover:scale-110 transition-transform" />
-                <span className="font-bold text-sm uppercase tracking-wider text-slate-200">Doctor Hub</span>
-              </Link>
+              <SheetClose asChild>
+                <Link href="/doctor" className="flex items-center gap-3 p-3 rounded-2xl hover:bg-white/10 transition-colors group">
+                  <Stethoscope className="h-5 w-5 text-indigo-400 group-hover:scale-110 transition-transform" />
+                  <span className="font-bold text-sm uppercase tracking-wider text-slate-200">Doctor Hub</span>
+                </Link>
+              </SheetClose>
             )}
             {role === "ASHA_WORKER" && (
-              <Link href="/asha" className="flex items-center gap-3 p-3 rounded-2xl hover:bg-white/10 transition-colors group">
-                <Heart className="h-5 w-5 text-rose-400 group-hover:scale-110 transition-transform" />
-                <span className="font-bold text-sm uppercase tracking-wider text-slate-200">ASHA Worker</span>
-              </Link>
+              <SheetClose asChild>
+                <Link href="/asha" className="flex items-center gap-3 p-3 rounded-2xl hover:bg-white/10 transition-colors group">
+                  <Heart className="h-5 w-5 text-rose-400 group-hover:scale-110 transition-transform" />
+                  <span className="font-bold text-sm uppercase tracking-wider text-slate-200">ASHA Worker</span>
+                </Link>
+              </SheetClose>
             )}
             
-            <Link href="/sms-demo" className="flex items-center gap-3 p-3 rounded-2xl hover:bg-white/10 transition-colors group">
-              <MessageSquare className="h-5 w-5 text-slate-400 group-hover:scale-110 transition-transform" />
-              <span className="font-bold text-sm uppercase tracking-wider text-slate-200">SMS Demo</span>
-            </Link>
+            <SheetClose asChild>
+              <Link href="/sms-demo" className="flex items-center gap-3 p-3 rounded-2xl hover:bg-white/10 transition-colors group">
+                <MessageSquare className="h-5 w-5 text-slate-400 group-hover:scale-110 transition-transform" />
+                <span className="font-bold text-sm uppercase tracking-wider text-slate-200">SMS Demo</span>
+              </Link>
+            </SheetClose>
 
-            <Link href="/demo" className="flex items-center gap-3 p-3 rounded-2xl hover:bg-white/10 transition-colors group">
-              <Sparkles className="h-5 w-5 text-emerald-400 group-hover:scale-110 transition-transform" />
-              <span className="font-bold text-sm uppercase tracking-wider text-slate-200">Live Demo Portal</span>
-            </Link>
+            <SheetClose asChild>
+              <Link href="/demo" className="flex items-center gap-3 p-3 rounded-2xl hover:bg-white/10 transition-colors group">
+                <Sparkles className="h-5 w-5 text-emerald-400 group-hover:scale-110 transition-transform" />
+                <span className="font-bold text-sm uppercase tracking-wider text-slate-200">Live Demo Portal</span>
+              </Link>
+            </SheetClose>
           </nav>
         </div>
 
@@ -95,12 +109,14 @@ async function MobileMenu() {
              <MobileUserSection dbUser={user} />
            </Suspense>
 
-           <Link href="/emergency" className="w-full">
-             <Button variant="destructive" className="w-full justify-center gap-2.5 rounded-2xl h-12 bg-red-600 hover:bg-red-700 font-black shadow-lg shadow-red-500/25 text-xs">
-               <PhoneCall className="h-4 w-4 animate-pulse" />
-               <span className="uppercase tracking-widest">Emergency SOS</span>
-             </Button>
-           </Link>
+           <SheetClose asChild>
+             <Link href="/emergency" className="w-full">
+               <Button variant="destructive" className="w-full justify-center gap-2.5 rounded-2xl h-12 bg-red-600 hover:bg-red-700 font-black shadow-lg shadow-red-500/25 text-xs">
+                 <PhoneCall className="h-4 w-4 animate-pulse" />
+                 <span className="uppercase tracking-widest">Emergency SOS</span>
+               </Button>
+             </Link>
+           </SheetClose>
 
            <div className="grid grid-cols-2 gap-3">
              <div className="flex flex-col gap-1.5 p-3 rounded-2xl bg-white/5 border border-white/10">
