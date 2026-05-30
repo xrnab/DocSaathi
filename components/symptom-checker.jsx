@@ -372,21 +372,28 @@ export default function SymptomChecker() {
         setReport(triageReport);
       }
 
-      // Submit report to sync system
-      const submitRes = await submitSymptoms({
-        symptoms: allSymptoms,
-        duration,
-        patientType: patientType.toUpperCase(),
-        language: language === "Punjabi" ? "PA" : language === "Hindi" ? "HI" : "EN",
-        village: "Nabha Central"
-      });
-
-      if (submitRes.queued) {
-        toast.info("Symptoms saved offline! Outbreak tracker will sync when connection returns.", {
-          duration: 5000
+      // Submit to outbreak tracker — wrapped separately
+      // so a failure here never clears the report
+      try {
+        const submitRes = await submitSymptoms({
+          symptoms: allSymptoms,
+          duration,
+          patientType: patientType.toUpperCase(),
+          language: language === "Punjabi" ? "PA" : 
+                    language === "Hindi" ? "HI" : "EN",
+          village: "Nabha Central"
         });
-      } else {
-        toast.success("Symptoms submitted successfully to outbreak tracker!");
+        if (submitRes?.queued) {
+          toast.info(
+            "Symptoms saved offline! Will sync when online.", 
+            { duration: 4000 }
+          );
+        } else if (submitRes) {
+          toast.success("Symptoms submitted successfully to outbreak tracker!");
+        }
+      } catch (syncErr) {
+        // Silent fail — do not affect report display
+        console.warn("Outbreak sync failed silently:", syncErr);
       }
     } catch (err) {
       console.error("Symptom checker error:", err);
@@ -651,7 +658,15 @@ export default function SymptomChecker() {
                     <div className="flex-1 min-w-0">
                       <p className="text-xs sm:text-sm font-bold text-red-500 truncate">{error}</p>
                     </div>
-                    <Button variant="ghost" size="sm" onClick={() => setError(null)} className="text-red-400 hover:bg-red-500/10 shrink-0 h-8 text-[10px] sm:text-xs">Dismiss</Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={handleAnalyze}
+                      className="text-sky-400 hover:bg-sky-500/10 shrink-0 h-8 text-[10px] sm:text-xs font-bold"
+                    >
+                      Try Again
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => setError(null)} className="text-red-400 hover:bg-red-500/10 shrink-0 h-8 text-[10px] sm:text-xs ml-2">Dismiss</Button>
                   </div>
                 )}
 
@@ -784,13 +799,39 @@ export default function SymptomChecker() {
                               {(() => {
                                 const parsed = parseReport(report);
                                 const filtered = parsed.filter(s => s.label !== "URGENCY");
-                                return filtered.map((s, idx) => {
-                                  const config = SECTION_THEMES[s.label] || SECTION_THEMES["DEFAULT"];
-                                  const IconComponent = config.icon;
-                                  
+
+                                // Fallback: if parser found no sections, show raw text
+                                if (filtered.length === 0 && report) {
                                   return (
-                                    <div 
-                                      key={idx} 
+                                    <div className="p-6 rounded-2xl border-2 bg-sky-500/5 border-sky-500/20">
+                                      <div className="flex items-center gap-3 mb-4">
+                                        <div className="p-3 rounded-2xl bg-sky-500/10">
+                                          <Activity className="h-5 w-5 text-sky-500" />
+                                        </div>
+                                        <h4 className="text-xs font-black uppercase tracking-widest text-sky-600 dark:text-sky-400">
+                                          Medical Assessment
+                                        </h4>
+                                      </div>
+                                      <div className="space-y-2">
+                                        {report.split("\n").filter(l => l.trim()).map(
+                                          (line, i) => (
+                                            <p key={i} className="text-slate-700 dark:text-slate-300 text-sm leading-relaxed">
+                                              {line.trim().replace(/^[-*•▸]\s*/, "")}
+                                            </p>
+                                          )
+                                        )}
+                                      </div>
+                                    </div>
+                                  );
+                                }
+
+                                return filtered.map((s, idx) => {
+                                  const config = SECTION_THEMES[s.label] || 
+                                                 SECTION_THEMES["DEFAULT"];
+                                  const IconComponent = config.icon;
+                                  return (
+                                    <div
+                                      key={idx}
                                       className={cn(
                                         "p-6 sm:p-8 rounded-[2rem] border-2 transition-all duration-300 hover:shadow-lg",
                                         config.bg,
@@ -798,30 +839,42 @@ export default function SymptomChecker() {
                                       )}
                                     >
                                       <div className="flex items-center gap-4 mb-5">
-                                        <div className={cn("p-3 rounded-2xl shrink-0 shadow-sm", config.iconBg)}>
+                                        <div className={cn(
+                                          "p-3 rounded-2xl shrink-0 shadow-sm", 
+                                          config.iconBg
+                                        )}>
                                           <IconComponent className="h-5 w-5" />
                                         </div>
-                                        <h4 className={cn("text-xs font-black uppercase tracking-widest leading-none", config.text)}>
+                                        <h4 className={cn(
+                                          "text-xs font-black uppercase tracking-widest leading-none",
+                                          config.text
+                                        )}>
                                           {s.label}
                                         </h4>
                                       </div>
-                                      
                                       <div className="space-y-2">
                                         {s.content.map((line, lIdx) => {
                                           const trimmed = line.trim();
                                           if (!trimmed) return null;
-                                          if (trimmed.startsWith("-") || trimmed.startsWith("*")) {
+                                          if (trimmed.startsWith("-") || 
+                                              trimmed.startsWith("*") ||
+                                              trimmed.startsWith("•") ||
+                                              trimmed.startsWith("▸")) {
                                             return (
-                                              <div key={lIdx} className="flex items-start gap-3 mt-2.5 first:mt-0">
-                                                <span className={cn("mt-2.5 h-1.5 w-1.5 rounded-full shrink-0 bg-current", config.text)} />
+                                              <div key={lIdx} 
+                                                className="flex items-start gap-3 mt-2.5">
+                                                <span className={cn(
+                                                  "mt-2.5 h-1.5 w-1.5 rounded-full shrink-0",
+                                                  config.text
+                                                )} />
                                                 <span className="text-slate-700 dark:text-slate-300 font-medium text-sm sm:text-base leading-relaxed">
-                                                  {trimmed.substring(1).trim()}
+                                                  {trimmed.replace(/^[-*•▸]\s*/, "")}
                                                 </span>
                                               </div>
                                             );
                                           }
                                           return (
-                                            <p key={lIdx} className="text-slate-700 dark:text-slate-300 font-medium text-sm sm:text-base leading-relaxed mt-2.5 first:mt-0">
+                                            <p key={lIdx} className="text-slate-700 dark:text-slate-300 font-medium text-sm sm:text-base leading-relaxed mt-2.5">
                                               {trimmed}
                                             </p>
                                           );

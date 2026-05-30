@@ -377,30 +377,76 @@ Respond in ${language}.`.trim();
 }
 
 async function callGroqTriage(apiKey, systemPrompt, userMessage) {
-  const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: "llama-3.3-70b-versatile",
-      max_tokens: 2000,
-      temperature: 0.15,
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userMessage },
-      ],
-    }),
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 25000);
 
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.error?.message || "Analysis service unavailable");
+  try {
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      signal: controller.signal,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: "llama-3.3-70b-versatile",
+        max_tokens: 2000,
+        temperature: 0.15,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userMessage },
+        ],
+      }),
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(
+        errorData.error?.message || 
+        `API error ${response.status}: ${response.statusText}`
+      );
+    }
+
+    const data = await response.json();
+
+    // Catch Groq API-level errors (rate limit, model error etc)
+    if (data.error) {
+      throw new Error(data.error.message || "Groq API error");
+    }
+
+    const result = data.choices?.[0]?.message?.content;
+
+    // Catch empty or whitespace-only response
+    if (!result || result.trim().length < 50) {
+      throw new Error(
+        "The AI returned an incomplete response. " +
+        "This usually means the request was too long or " +
+        "the service is busy. Please try again in a moment."
+      );
+    }
+
+    // Catch responses that are just filler with no sections
+    const hasSections = 
+      result.includes("URGENCY") ||
+      result.includes("ਅਰਜੈਂਸੀ") ||
+      result.includes("तात्कालिकता") ||
+      result.includes("MEDICINES") ||
+      result.includes("ਦਵਾਈਆਂ") ||
+      result.includes("दवाएं");
+
+    if (!hasSections) {
+      throw new Error(
+        "The AI response was incomplete. Please try again."
+      );
+    }
+
+    return result;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    throw error;
   }
-
-  const data = await response.json();
-  return data.choices[0]?.message?.content || "";
 }
 
 export async function generateHealthRiskReport(patientId = null) {
