@@ -134,11 +134,8 @@ export async function bookAppointment(formData) {
           );
         }
 
-        // Mark slot as BOOKED atomically
-        await tx.availability.update({
-          where: { id: slot.id },
-          data: { status: "BOOKED" }
-        });
+        // Keep the availability record AVAILABLE so that the doctor remains available for other days and other slots.
+        // Overlap verification is handled dynamically by checking the Appointment table.
 
         // Deduct credits atomically
         const updatedUser = await tx.user.update({

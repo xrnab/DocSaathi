@@ -221,20 +221,8 @@ export async function processIncomingSMS(messageText, currentState = null) {
           data: { userId: currentState.doctorId, amount: APPOINTMENT_CREDIT_COST, type: "APPOINTMENT_DEDUCTION" }
         });
 
-        // Find the doctor's active daily availability slot and mark it as booked
-        const activeAvailability = await tx.availability.findFirst({
-          where: {
-            doctorId: currentState.doctorId,
-            status: "AVAILABLE"
-          }
-        });
-
-        if (activeAvailability) {
-          await tx.availability.update({
-            where: { id: activeAvailability.id },
-            data: { status: "BOOKED" }
-          });
-        }
+        // Keep the availability record AVAILABLE so that the doctor remains available for other days and other slots.
+        // Overlap verification is handled dynamically by checking the Appointment table.
 
         // Create appointment
         return tx.appointment.create({
