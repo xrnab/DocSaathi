@@ -149,7 +149,7 @@ export async function processIncomingSMS(messageText, currentState = null) {
         return { reply: `DocSaathi: Dr. ${doctor.name} has no slots. Text 'DOCTOR' to restart.`, success: false, newState: null };
       }
 
-      let replyText = `DocSaathi: Dr. ${doctor.name} is available at these times. Do you want to book?\n`;
+      let replyText = `DocSaathi: Dr. ${doctor.name} is available ${slotsToShow.length > 1 ? "at these times" : "this time"}. Do you want to book?\n`;
       slotsToShow.forEach((s, i) => {
         const timeLabel = formatSmsDateTime(new Date(s.startTime));
         replyText += `${i + 1}. ${timeLabel}\n`;
@@ -176,8 +176,9 @@ export async function processIncomingSMS(messageText, currentState = null) {
       // Handle Demo Mode Finalize
       if (currentState.isDemo) {
         const time = currentState.slotTimes[selectionIndex] || "10:00 AM";
+        const bookingDoneTime = format(new Date(), "h:mm a");
         return {
-          reply: `DocSaathi SUCCESS (SIMULATED): Appt with ${currentState.doctorName} confirmed for ${time}. Booking ID: SMS-DEMO`,
+          reply: `DocSaathi SUCCESS (SIMULATED): Appt with ${currentState.doctorName} confirmed for ${time}.\nBooking done at ${bookingDoneTime}.\nBooking ID: SMS-DEMO`,
           success: true,
           newState: null
         };
@@ -271,8 +272,10 @@ export async function processIncomingSMS(messageText, currentState = null) {
         console.error("SMS booking notification failed:", notifyErr);
       }
 
+      const bookingDoneTime = format(new Date(), "h:mm a");
+
       return {
-        reply: `DocSaathi SUCCESS: Appt with Dr. ${currentState.doctorName} confirmed for ${formattedTimeLabel}. Booking ID: ${bookResult.id.substring(0,8)}`,
+        reply: `DocSaathi SUCCESS: Appt with Dr. ${currentState.doctorName} confirmed for ${formattedTimeLabel}.\nBooking done at ${bookingDoneTime}.\nBooking ID: ${bookResult.id.substring(0,8)}`,
         appointmentId: bookResult.id,
         success: true,
         newState: null
