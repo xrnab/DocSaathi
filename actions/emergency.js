@@ -61,6 +61,27 @@ async function verifyAdminOrOwner() {
 }
 
 /**
+ * Helper to safely trigger path revalidation for the admin emergency console
+ * only when called by an authorized Admin or Owner.
+ * This prevents non-admin roles (ASHA, Doctor, Patients) from triggering
+ * an unauthorized redirect crash inside Next.js revalidation.
+ */
+async function safeRevalidateAdminEmergency() {
+  try {
+    const { userId } = await auth();
+    if (!userId) return;
+    const user = await db.user.findUnique({
+      where: { clerkUserId: userId },
+    });
+    if (user && ["ADMIN", "OWNER"].includes(user.role)) {
+      revalidatePath("/admin/emergency");
+    }
+  } catch (err) {
+    console.error("Failed to safely revalidate admin emergency path:", err);
+  }
+}
+
+/**
  * Create a new emergency SOS request
  */
 export async function createEmergencyRequest(latitude, longitude, address, message) {
@@ -129,7 +150,7 @@ export async function createEmergencyRequest(latitude, longitude, address, messa
       console.warn("Pusher SOS dispatch event failed:", pusherErr.message);
     }
 
-    revalidatePath("/admin/emergency");
+    await safeRevalidateAdminEmergency();
     revalidatePath("/emergency");
     return { success: true, id: emergency.id };
   } catch (error) {
@@ -265,7 +286,7 @@ export async function updateEmergencyStatus(id, status) {
       console.warn("Failed to broadcast SOS update over Pusher:", err.message);
     }
 
-    revalidatePath("/admin/emergency");
+    await safeRevalidateAdminEmergency();
     revalidatePath("/emergency");
     return { success: true, emergency: updated };
   } catch (error) {
@@ -364,7 +385,7 @@ export async function resolveEmergencyByAsha(id) {
       console.warn(err);
     }
 
-    revalidatePath("/admin/emergency");
+    await safeRevalidateAdminEmergency();
     revalidatePath("/emergency");
     return { success: true, emergency: updated };
   } catch (error) {
@@ -445,7 +466,7 @@ export async function resolveEmergencyByDoctor(id) {
       console.warn(err);
     }
 
-    revalidatePath("/admin/emergency");
+    await safeRevalidateAdminEmergency();
     revalidatePath("/emergency");
     return { success: true, emergency: updated };
   } catch (error) {
@@ -556,7 +577,7 @@ export async function assignDoctorToEmergency(emergencyId, doctorId) {
       console.warn("Failed to broadcast SOS directive over Pusher:", err.message);
     }
 
-    revalidatePath("/admin/emergency");
+    await safeRevalidateAdminEmergency();
     revalidatePath("/emergency");
     return { success: true, emergency: updated };
   } catch (error) {
@@ -667,7 +688,7 @@ export async function assignAshaToEmergency(emergencyId, ashaId) {
       console.warn("Failed to broadcast SOS directive over Pusher:", err.message);
     }
 
-    revalidatePath("/admin/emergency");
+    await safeRevalidateAdminEmergency();
     revalidatePath("/emergency");
     return { success: true, emergency: updated };
   } catch (error) {
