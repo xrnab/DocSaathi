@@ -206,6 +206,10 @@ export async function updateEmergencyStatus(id, status) {
     throw new Error("Unauthorized access. Privilege check failed.");
   }
 
+  if (status === "RESOLVED" && staff.role === "ASHA_WORKER") {
+    throw new Error("ASHA Workers are not authorized to directly resolve emergency cases. They can only notify that they have reached the location and directed the doctor.");
+  }
+
   try {
     const data = { status };
     if (status === "RESOLVED") {
@@ -294,7 +298,7 @@ export async function resolveEmergencyByAsha(id) {
     });
 
     // Notify patient
-    const patientMsg = `ASHA health worker ${updated.assignedAsha?.name || "Responder"} has reached your location!`;
+    const patientMsg = `ASHA health worker ${updated.assignedAsha?.name || "Responder"} has reached your location and directed the doctor!`;
     await createNotification(updated.patientId, patientMsg, "SYSTEM").catch((e) => console.error(e));
 
     try {
@@ -305,6 +309,45 @@ export async function resolveEmergencyByAsha(id) {
       });
     } catch (e) {
       console.warn(e);
+    }
+
+    // Notify assigned doctor if exists
+    if (updated.assignedDoctorId) {
+      const docMsg = `🚨 SOS UPDATE: ASHA worker ${updated.assignedAsha?.name || "Responder"} has reached the location of patient ${updated.patient?.name || "Patient"} and directed you for the emergency SOS response.`;
+      await createNotification(updated.assignedDoctorId, docMsg, "SYSTEM").catch((e) => console.error("Failed to notify doctor:", e));
+      try {
+        await pusherServer.trigger(`user-${updated.assignedDoctorId}`, "appointment-updated", {
+          appointmentId: updated.id,
+          status: "RESPONDING",
+          message: docMsg,
+        });
+      } catch (e) {
+        console.warn(e);
+      }
+    }
+
+    // Notify all system admins/owners
+    const adminMsg = `🚨 SOS UPDATE: ASHA worker ${updated.assignedAsha?.name || "Responder"} has reached the location of patient ${updated.patient?.name || "Patient"} and directed the doctor.`;
+    try {
+      const admins = await db.user.findMany({
+        where: {
+          role: { in: ["ADMIN", "OWNER"] },
+        },
+      });
+      for (const admin of admins) {
+        await createNotification(admin.id, adminMsg, "SYSTEM").catch((e) => console.error("Failed to notify admin:", e));
+        try {
+          await pusherServer.trigger(`user-${admin.id}`, "appointment-updated", {
+            appointmentId: updated.id,
+            status: "RESPONDING",
+            message: adminMsg,
+          });
+        } catch (e) {
+          console.warn(e);
+        }
+      }
+    } catch (adminErr) {
+      console.error("Failed to notify admins of ASHA check-in:", adminErr);
     }
 
     // Notify Admins & Doctors in real-time
@@ -350,7 +393,7 @@ export async function resolveEmergencyByDoctor(id) {
     }
 
     if (!emergency.ashaResolved) {
-      throw new Error("Strict Protocol Violation: ASHA worker must reach the location and resolve from their end before the Doctor can conduct the final resolution.");
+      throw new Error("Strict Protocol Violation: ASHA worker must reach the location and direct the doctor from their end before the Doctor can conduct the final resolution.");
     }
 
     // If both are resolved, update overall status to RESOLVED

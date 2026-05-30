@@ -312,11 +312,11 @@ export default function UnifiedEmergencyPage() {
     try {
       const res = await resolveEmergencyByAsha(emergencyId);
       if (res.success) {
-        showToast("ASHA Responder reached location check-in approved!");
+        showToast("Successfully notified Doctor and Admins that you have reached the location and directed the doctor!");
         fetchStaffData();
       }
     } catch (err) {
-      showToast(err.message || "Check-in failed", "error");
+      showToast(err.message || "Arrival notification failed", "error");
     }
   };
 
@@ -402,7 +402,7 @@ export default function UnifiedEmergencyPage() {
                 {role === "DOCTOR" 
                   ? "Conduct critical operations or consultations assigned to you."
                   : role === "ASHA_WORKER"
-                  ? "Accredited village responder board. Coordinate dispatches and resolve at scene."
+                  ? "Accredited village responder board. Coordinate dispatches and notify when arrived & directed doctor."
                   : "Nabha district healthcare controller. Dispatch ASHA workers and specialize refer doctor pathways."
                 }
               </CardDescription>
@@ -497,7 +497,7 @@ export default function UnifiedEmergencyPage() {
                               <AlertCircle className="w-4 h-4 shrink-0" />
                             )}
                             <div className="min-w-0">
-                              <p className="truncate">2. ASHA: {em.ashaResolved ? "Arrived" : em.assignedAsha ? "Heading" : "Pending"}</p>
+                              <p className="truncate">2. ASHA: {em.ashaResolved ? "Arrived & Directed" : em.assignedAsha ? "Heading" : "Pending"}</p>
                               {em.assignedAsha && <p className="text-[9px] font-normal truncate">({em.assignedAsha.name})</p>}
                             </div>
                           </div>
@@ -637,11 +637,11 @@ export default function UnifiedEmergencyPage() {
                               onClick={() => handleAshaArrived(em.id)}
                               className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold rounded-xl h-11 flex items-center justify-center gap-1.5 shadow-md shadow-indigo-600/10 animate-pulse cursor-pointer"
                             >
-                              <MapPin className="w-4 h-4 shrink-0" /> I have reached location
+                              <MapPin className="w-4 h-4 shrink-0" /> Reached Location & Directed Doctor
                             </Button>
                           ) : (
                             <div className="p-3 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-300 rounded-xl border border-emerald-100/50 text-xs font-bold text-center">
-                              {em.ashaResolved ? "👩‍⚕️ Checked-In at Scene" : "Pending dispatch..."}
+                              {em.ashaResolved ? "👩‍⚕️ Arrived & Directed Doctor" : "Pending dispatch..."}
                             </div>
                           )}
 
@@ -751,14 +751,14 @@ export default function UnifiedEmergencyPage() {
                           <p>
                             2. Local ASHA Worker:{" "}
                             {activeEmergency.ashaResolved
-                              ? "Arrived at Scene! 👩‍⚕️"
+                              ? "Arrived & Directed Doctor! 👩‍⚕️"
                               : activeEmergency.assignedAsha
                               ? "Dispatched & Coming! 🏃‍♀️"
                               : "Assigning Nearest Community Worker..."}
                           </p>
                           <p className="text-[10px] font-normal text-muted-foreground mt-0.5">
                             {activeEmergency.ashaResolved
-                              ? `ASHA worker ${activeEmergency.assignedAsha?.name || "Responder"} has reached your place and is conducting triage.`
+                              ? `ASHA worker ${activeEmergency.assignedAsha?.name || "Responder"} has reached your place and directed the doctor.`
                               : activeEmergency.assignedAsha
                               ? `${activeEmergency.assignedAsha?.name || "ASHA worker"} has been directed and is on their way now.`
                               : "District team is mapping the closest active ASHA worker to dispatch immediately."}
