@@ -631,17 +631,10 @@ export default function UnifiedEmergencyPage() {
                             )}
                           </div>
 
-                          {/* ASHA Arrived trigger */}
-                          {canAshaCheckIn ? (
-                            <Button 
-                              onClick={() => handleAshaArrived(em.id)}
-                              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold rounded-xl h-11 flex items-center justify-center gap-1.5 shadow-md shadow-indigo-600/10 animate-pulse cursor-pointer"
-                            >
-                              <MapPin className="w-4 h-4 shrink-0" /> Reached Location & Directed Doctor
-                            </Button>
-                          ) : (
-                            <div className="p-3 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-300 rounded-xl border border-emerald-100/50 text-xs font-bold text-center">
-                              {em.ashaResolved ? "👩‍⚕️ Arrived & Directed Doctor" : "Pending dispatch..."}
+                          {/* ASHA Arrived Status Banner */}
+                          {em.assignedAsha && (
+                            <div className="p-3 bg-indigo-50 dark:bg-indigo-950/20 text-indigo-800 dark:text-indigo-300 rounded-xl border border-indigo-100/50 text-xs font-bold text-center flex items-center justify-center gap-1.5 shadow-sm">
+                              👩‍⚕️ Dispatched Responder: <strong>{em.assignedAsha.name}</strong>
                             </div>
                           )}
 

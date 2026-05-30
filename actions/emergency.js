@@ -216,6 +216,8 @@ export async function updateEmergencyStatus(id, status) {
       data.resolvedAt = new Date();
       data.ashaResolved = true;
       data.doctorResolved = true;
+    } else if (status === "RESPONDING") {
+      data.ashaResolved = true;
     }
 
     const updated = await db.emergencyRequest.update({
@@ -481,6 +483,7 @@ export async function assignDoctorToEmergency(emergencyId, doctorId) {
       data: {
         assignedDoctorId: doctorId,
         status: emergency.status === "ACTIVE" ? "RESPONDING" : emergency.status,
+        ashaResolved: true,
       },
       include: {
         patient: true,
@@ -589,6 +592,7 @@ export async function assignAshaToEmergency(emergencyId, ashaId) {
       data: {
         assignedAshaId: ashaId,
         status: emergency.status === "ACTIVE" ? "RESPONDING" : emergency.status,
+        ashaResolved: true,
       },
       include: {
         patient: true,
