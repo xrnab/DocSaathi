@@ -660,13 +660,39 @@ export default function SymptomChecker() {
                   <div className="p-4 sm:p-14">
                     {(() => {
                         const fullReport = typeof report === 'string' ? report : "";
-                        const urgencyMatch = fullReport.match(/URGENCY:\s*(\w+)/i);
-                        const level = urgencyMatch ? urgencyMatch[1].toUpperCase() : "";
                         
+                        // Strip asterisks and normalize spaces for robust regex matching
+                        const cleanReport = fullReport.replace(/\*/g, "").trim();
+                        
+                        // Try matching URGENCY line (English or localized)
+                        const urgencyMatch = cleanReport.match(/URGENCY:\s*(\S+)/i);
+                        let level = urgencyMatch ? urgencyMatch[1].toUpperCase().trim() : "";
+                        
+                        // Fallback parsing: look for urgency indicators in English, Punjabi, Hindi, Bengali, Tamil
+                        const upperReport = cleanReport.toUpperCase();
+                        
+                        const isRedMatch = 
+                          level === "RED" || level === "EMERGENCY" || level === "CRITICAL" ||
+                          level.includes("ਲਾਲ") || level.includes("लाल") || level.includes("சிவப்பு") || level.includes("লাল") ||
+                          upperReport.includes("URGENCY: RED") || upperReport.includes("URGENCY:RED") ||
+                          upperReport.includes("ਗੰਭੀਰਤਾ: ਲਾਲ") || upperReport.includes("गंभीरता: लाल");
+                          
+                        const isYellowMatch = 
+                          level === "YELLOW" || level === "MODERATE" || level.includes("24") ||
+                          level.includes("ਪੀਲਾ") || level.includes("पीला") || level.includes("হলুদ") || level.includes("மஞ்சள்") ||
+                          upperReport.includes("URGENCY: YELLOW") || upperReport.includes("URGENCY:YELLOW") ||
+                          upperReport.includes("ਗੰਭੀਰਤਾ: ਪੀਲਾ") || upperReport.includes("गंभीरता: पीला");
+                          
+                        const isGreenMatch = 
+                          level === "GREEN" || level === "NORMAL" || level === "STABLE" ||
+                          level.includes("ਹਰਾ") || level.includes("हरा") || level.includes("সবুজ") || level.includes("பச்சை") ||
+                          upperReport.includes("URGENCY: GREEN") || upperReport.includes("URGENCY:GREEN") ||
+                          upperReport.includes("ਗੰਭੀਰਤਾ: ਹਰਾ") || upperReport.includes("गंभीरता: हरा");
+                          
                         const isError = level.includes("ERROR") || level.includes("FAILED");
-                        const isRed = !isError && (level === "RED" || level === "EMERGENCY" || level === "CRITICAL" || fullReport.toUpperCase().includes("URGENCY: RED"));
-                        const isYellow = !isError && !isRed && (level === "YELLOW" || level.includes("24") || fullReport.toUpperCase().includes("URGENCY: YELLOW"));
-                        const isGreen = !isError && !isRed && !isYellow && (level === "GREEN" || level === "NORMAL" || fullReport.toUpperCase().includes("URGENCY: GREEN"));
+                        const isRed = !isError && isRedMatch;
+                        const isYellow = !isError && !isRed && isYellowMatch;
+                        const isGreen = !isError && !isRed && !isYellow && isGreenMatch;
                         
                         const theme = isError
                           ? { bg: "bg-slate-100 dark:bg-slate-950/40", border: "border-slate-200 dark:border-slate-800", title: "text-slate-600 dark:text-slate-400", accent: "#64748b" }
@@ -820,9 +846,29 @@ export default function SymptomChecker() {
                                 >
                                   <a 
                                     href={`https://wa.me/?text=${encodeURIComponent(
-                                      `DocSaathi Triage Assessment Report:\n\n` + 
-                                      (typeof report === 'string' ? report.substring(0, 700) : '') + 
-                                      `\n\nConsult a doctor immediately. Get care at: ${typeof window !== 'undefined' ? window.location.origin : ''}`
+                                      (() => {
+                                        let emoji = "⚪";
+                                        let urgencyText = "Standard Care";
+                                        if (isRed) {
+                                          emoji = "🔴";
+                                          urgencyText = "CRITICAL — SEEK EMERGENCY CARE IMMEDIATELY";
+                                        } else if (isYellow) {
+                                          emoji = "🟡";
+                                          urgencyText = "MODERATE — CONSULT A DOCTOR TODAY";
+                                        } else if (isGreen) {
+                                          emoji = "🟢";
+                                          urgencyText = "STABLE — MONITOR AT HOME";
+                                        }
+                                        
+                                        // Keep formatting clean for WhatsApp bold (*text*)
+                                        const title = `*DocSaathi Triage Assessment Report*\n`;
+                                        const statusLine = `*Urgency Status:* ${emoji} ${urgencyText}\n\n`;
+                                        const cleanReport = fullReport.replace(/\*\*/g, "*").trim();
+                                        
+                                        const fullMsg = `${title}${statusLine}${cleanReport}\n\n*Consult a qualified doctor for medical diagnosis and treatment. Get care at:* ${typeof window !== 'undefined' ? window.location.origin : ''}`;
+                                        
+                                        return fullMsg.length > 3500 ? fullMsg.substring(0, 3450) + "...\n\n(Report truncated for length)" : fullMsg;
+                                      })()
                                     )}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
