@@ -20,7 +20,7 @@ export function ImpactStatistics() {
           setMetrics({
             consultations: `${data.totalAppointments}+`,
             families: `${data.totalFamilies}`,
-            villages: `${data.totalOutbreakReports}+`
+            villages: `${data.totalVillages || data.totalOutbreakReports}+`
           });
         }
       } catch (err) {
